@@ -5,6 +5,7 @@ const { PROVIDERS, getProvider } = require("./src/providers/index");
 const { runGeneration, UserError } = require("./src/pipeline");
 const settings = require("./src/settings");
 const { toBase64 } = require("./src/bytes");
+const { addUsage, estimateCost, formatCost } = require("./src/cost");
 
 const $ = (id) => document.getElementById(id);
 const CUSTOM = "__custom__";
@@ -17,6 +18,7 @@ const TIERS = [
 let prefs = settings.loadPrefs();
 let busy = false;
 let lastRun = null; // { placed, count, active }
+const sessionSpend = newSpend(); // since the panel was opened
 
 // ---------- pickers ----------
 // Photoshop's sp-picker breaks ("locks") if its own menu is rebuilt while it is closing, so a picker's
@@ -139,6 +141,34 @@ function persist() {
   settings.savePrefs(prefs);
 }
 
+// ---------- cost ----------
+// Estimated from the tokens each reply reports. Replies count even when the run is then cancelled
+// or a variation is blocked, because the service may still bill them.
+
+function newSpend() {
+  return { usage: null, cost: 0, priced: false, unpriced: false };
+}
+
+function addSpend(spend, usage, cost) {
+  spend.usage = addUsage(spend.usage, usage);
+  if (cost == null) spend.unpriced = true;
+  else {
+    spend.cost += cost;
+    spend.priced = true;
+  }
+}
+
+function spendText(spend) {
+  const text = formatCost(spend.priced ? spend.cost : null, spend.usage);
+  return spend.priced && spend.unpriced ? `${text} (custom models not priced)` : text;
+}
+
+function renderCost(run) {
+  $("costRun").textContent = `This run: ${spendText(run)}`;
+  $("costSession").textContent = `Since the panel opened: ${spendText(sessionSpend)}`;
+  $("cost").hidden = false;
+}
+
 // ---------- results ----------
 
 function dataUrl(r) {
@@ -203,6 +233,13 @@ async function generate() {
   };
   tick();
   const timer = setInterval(tick, 1000);
+  const runSpend = newSpend();
+  const onUsage = (usage) => {
+    const cost = estimateCost(model, usage);
+    addSpend(runSpend, usage, cost);
+    addSpend(sessionSpend, usage, cost);
+    renderCost(runSpend);
+  };
   try {
     const out = await runGeneration({
       ps,
@@ -221,6 +258,7 @@ async function generate() {
         tick();
       },
       cancelled: () => cancelRequested,
+      onUsage,
     });
     lastRun = { placed: out.placed, count: out.results.length, active: 0 };
     renderThumbs(out.results);

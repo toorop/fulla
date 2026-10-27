@@ -331,3 +331,75 @@ test("gemini quota refusals: free tier says so and never retries; long waits are
   assert.equal(out.length, 1);
   assert.equal(f3.calls.length, 2, "short wait retried once, then succeeded");
 });
+
+// ---------------- Usage (for the cost estimate) ----------------
+// Reply shapes follow each service's API reference; the counts are made up.
+
+const geminiUsage = {
+  promptTokenCount: 1300,
+  candidatesTokenCount: 1120,
+  thoughtsTokenCount: 200,
+  totalTokenCount: 2620,
+  promptTokensDetails: [{ modality: "TEXT", tokenCount: 100 }, { modality: "IMAGE", tokenCount: 1200 }],
+  candidatesTokensDetails: [{ modality: "IMAGE", tokenCount: 1120 }],
+};
+
+test("gemini reads usageMetadata by modality, thinking counted as text output", () => {
+  assert.deepEqual(gemini._usageFrom({ usageMetadata: geminiUsage }), { inputText: 100, inputImage: 1200, outputText: 200, outputImage: 1120, total: 2620 });
+  // no per-modality detail: output is all image, input all text (same price at Google)
+  assert.deepEqual(gemini._usageFrom({ usageMetadata: { promptTokenCount: 50, candidatesTokenCount: 1120 } }), { inputText: 50, inputImage: 0, outputText: 0, outputImage: 1120, total: 1170 });
+  assert.equal(gemini._usageFrom({ candidates: [] }), null);
+});
+
+test("gemini reports usage for every reply, blocked variations included", async () => {
+  const ok = { json: { ...geminiOk(4).json, usageMetadata: geminiUsage } };
+  const blocked = { json: { promptFeedback: { blockReason: "OTHER" }, usageMetadata: { promptTokenCount: 1300, totalTokenCount: 1300 } } };
+  const fetch = fakeFetch((u, i, n) => (n === 2 ? blocked : ok));
+  const seen = [];
+  const target = gemini.fitSize("gemini-nano-banana-2.1", 1024, 1024, "1K");
+  const out = await gemini.generate(req({ fetch, model: "gemini-nano-banana-2.1", target, n: 3, onUsage: (u) => seen.push(u) }));
+  assert.equal(out.length, 2);
+  assert.equal(seen.length, 3);
+  assert.deepEqual(seen.map((u) => u.total).sort(), [1300, 2620, 2620]);
+  // replies without usageMetadata report nothing
+  const quiet = [];
+  await gemini.generate(req({ fetch: fakeFetch(() => geminiOk(4)), model: "gemini-nano-banana-2.1", target, n: 1, onUsage: (u) => quiet.push(u) }));
+  assert.equal(quiet.length, 0);
+});
+
+test("openai reads usage once per reply, even when output details come back zeroed", async () => {
+  const usage = {
+    input_tokens: 1250,
+    input_tokens_details: { text_tokens: 50, image_tokens: 1200 },
+    output_tokens: 4160,
+    output_tokens_details: { image_tokens: 0, text_tokens: 0 },
+    total_tokens: 5410,
+  };
+  assert.deepEqual(openai._usageFrom({ usage }), { inputText: 50, inputImage: 1200, outputText: 0, outputImage: 4160, total: 5410 });
+  // no details: input counted at the dearer image rate
+  assert.deepEqual(openai._usageFrom({ usage: { input_tokens: 300, output_tokens: 1000 } }), { inputText: 0, inputImage: 300, outputText: 0, outputImage: 1000, total: 1300 });
+  assert.equal(openai._usageFrom({ data: [] }), null);
+
+  const fetch = fakeFetch(() => ({ json: { data: [{ b64_json: toBase64(tinyPng()) }, { b64_json: toBase64(tinyPng()) }], usage } }));
+  const seen = [];
+  await openai.generate(req({ fetch, model: "gpt-image-2.5-sunburst", onUsage: (u) => seen.push(u) }));
+  assert.equal(seen.length, 1, "one reply for all variations");
+  assert.equal(seen[0].total, 5410);
+  // billed reply without an image is still reported
+  const empty = fakeFetch(() => ({ json: { data: [], usage } }));
+  const seen2 = [];
+  await assert.rejects(openai.generate(req({ fetch: empty, model: "gpt-image-2", onUsage: (u) => seen2.push(u) })), /no image/);
+  assert.equal(seen2.length, 1);
+});
+
+test("pipeline passes usage through, even when the run is then cancelled", async () => {
+  const spending = { ...fakeProvider(1), async generate(r) { r.onUsage({ total: 7 }); return [{ bytes: tinyPng(), mime: "image/png" }]; } };
+  let cancel = false;
+  const seen = [];
+  const run = (o) => runGeneration({ ps: fakePs(), provider: spending, apiKey: "k", model: "m", mode: "fill", onUsage: (u) => { seen.push(u); cancel = true; }, cancelled: () => cancel, ...o });
+  await assert.rejects(run(), /Cancelled/);
+  assert.deepEqual(seen, [{ total: 7 }]);
+  // without a listener, nothing breaks
+  const quiet = { ...fakeProvider(1), async generate(r) { if (r.onUsage) r.onUsage({ total: 1 }); return [{ bytes: tinyPng(), mime: "image/png" }]; } };
+  await runGeneration({ ps: fakePs(), provider: quiet, apiKey: "k", model: "m", mode: "fill" });
+});

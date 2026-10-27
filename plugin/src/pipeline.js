@@ -100,6 +100,7 @@ async function readExpand(ps, doc, fit, expand) {
  * @param {{percent: number, sides: object}} [o.expand]
  * @param {(label: string) => void} [o.progress]
  * @param {() => boolean} [o.cancelled]
+ * @param {(usage: object) => void} [o.onUsage]  token counts of each service reply, even if the run then fails
  */
 async function runGeneration(o) {
   const { ps, provider, mode } = o;
@@ -132,6 +133,7 @@ async function runGeneration(o) {
     n: Math.max(1, Math.min(4, o.n || 1)),
     target: job.geo.target,
     quality: o.quality,
+    onUsage: o.onUsage,
   });
   checkCancel();
 

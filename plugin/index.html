@@ -65,6 +65,10 @@
 
       <sp-button id="generate" variant="cta">Generate</sp-button>
       <div id="status" class="status" aria-live="polite"></div>
+      <div id="cost" class="hint" hidden>
+        <div id="costRun"></div>
+        <div id="costSession"></div>
+      </div>
 
       <section id="results" hidden>
         <sp-label>Variations</sp-label>
@@ -89,7 +93,7 @@
           <sp-button id="saveKeys" variant="secondary" size="s">Save keys</sp-button>
           <span id="keyStatus" class="hint"></span>
         </div>
-        <div class="hint">Keys stay on this computer and go only to the service you pick. You pay that service per image.</div>
+        <div class="hint">Keys stay on this computer and go only to the service you pick. You pay that service per image. The cost shown after each run is an estimate from the tokens the service reports, at its list prices; your bill is the reference.</div>
       </section>
     </main>
     <script src="main.js"></script>

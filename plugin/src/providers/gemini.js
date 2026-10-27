@@ -128,6 +128,30 @@ function extractImage(json) {
   throw new ProviderError("Gemini didn't return an image. Try rephrasing the prompt.", { code: fr || "no_image" });
 }
 
+/** Token counts from the reply's usageMetadata, in the shape cost.js expects; null when absent. */
+function usageFrom(json) {
+  const u = json && json.usageMetadata;
+  if (!u) return null;
+  const byModality = (list) => {
+    const o = {};
+    for (const d of list || []) if (d && d.modality) o[d.modality] = (o[d.modality] || 0) + (d.tokenCount || 0);
+    return o;
+  };
+  const prompt = u.promptTokenCount || 0;
+  const cand = u.candidatesTokenCount || 0;
+  const thoughts = u.thoughtsTokenCount || 0;
+  const inputImage = byModality(u.promptTokensDetails).IMAGE || 0;
+  // Without a per-modality split, all output counts as image: OpenFill asks for IMAGE only.
+  const outputImage = u.candidatesTokensDetails ? byModality(u.candidatesTokensDetails).IMAGE || 0 : cand;
+  return {
+    inputText: prompt - inputImage,
+    inputImage,
+    outputText: cand - outputImage + thoughts,
+    outputImage,
+    total: u.totalTokenCount || prompt + cand + thoughts,
+  };
+}
+
 // Which config field the API accepted last time, per model ("responseFormat" or "imageConfig").
 const configStyle = {};
 
@@ -176,6 +200,9 @@ async function generateOne(req, text, imgB64, maskB64, size) {
     json = await call(other);
     configStyle[req.model] = other;
   }
+  // Reported before extracting: a blocked result may still be billed.
+  const usage = usageFrom(json);
+  if (usage && req.onUsage) req.onUsage(usage);
   return extractImage(json);
 }
 
@@ -206,5 +233,6 @@ module.exports = {
   generate,
   _classify: classify,
   _extractImage: extractImage,
+  _usageFrom: usageFrom,
   _configStyle: configStyle,
 };

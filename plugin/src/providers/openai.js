@@ -80,6 +80,22 @@ function classify(status, json, text) {
   return new ProviderError(`OpenAI: ${msg}`, { status, code, detail });
 }
 
+/** Token counts from the reply's `usage`, in the shape cost.js expects; null when absent. */
+function usageFrom(json) {
+  const u = json && json.usage;
+  if (!u) return null;
+  const input = u.input_tokens || 0;
+  const output = u.output_tokens || 0;
+  const inD = u.input_tokens_details;
+  const outD = u.output_tokens_details;
+  // Without details, input counts as image tokens: the dearer rate, and the request is mostly images.
+  const inputText = inD ? inD.text_tokens || 0 : 0;
+  const inputImage = inD ? inD.image_tokens || 0 : input;
+  // output_tokens_details can come back zeroed, so image output is what is left after text.
+  const outputText = outD ? outD.text_tokens || 0 : 0;
+  return { inputText, inputImage, outputText, outputImage: output - outputText, total: u.total_tokens || input + output };
+}
+
 /**
  * @param {object} req
  * @param {string} req.apiKey
@@ -91,6 +107,7 @@ function classify(status, json, text) {
  * @param {{width: number, height: number}} req.target  output size
  * @param {string} [req.quality]
  * @param {Function} req.fetch
+ * @param {(usage: object) => void} [req.onUsage]  called with the token counts of each reply
  * @returns {Promise<Array<{bytes: Uint8Array, mime: string}>>}
  */
 async function generate(req) {
@@ -116,6 +133,9 @@ async function generate(req) {
     classify,
     host: HOST,
   });
+  // Reported before the image check: a reply without an image may still be billed.
+  const usage = usageFrom(json);
+  if (usage && req.onUsage) req.onUsage(usage);
   const items = (json.data || []).filter((d) => d && d.b64_json);
   if (!items.length) throw new ProviderError("OpenAI returned no image. Try again or change the prompt.", { code: "no_image" });
   return items.map((d) => ({ bytes: fromBase64(d.b64_json), mime: "image/png" }));
@@ -134,4 +154,5 @@ module.exports = {
   // exposed for tests
   _fitSize: fitSize,
   _classify: classify,
+  _usageFrom: usageFrom,
 };

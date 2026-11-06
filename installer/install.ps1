@@ -1,5 +1,5 @@
 <#
-Installs OpenFill into Photoshop without the Creative Cloud app (per user, no admin needed).
+Installs Fulla into Photoshop without the Creative Cloud app (per user, no admin needed).
 
   1. Copies the plugin to   %APPDATA%\Adobe\UXP\Plugins\External\<plugin id>
   2. Adds an entry to       %APPDATA%\Adobe\UXP\PluginsInfo\v1\PS.json  (backed up first, other plugins kept)
@@ -19,7 +19,7 @@ function Write-Utf8NoBom([string]$Path, [string]$Text) {
 
 $Source = (Resolve-Path $Source).Path
 $manifestPath = Join-Path $Source "manifest.json"
-if (-not (Test-Path $manifestPath)) { throw "No manifest.json in $Source. Point -Source at the OpenFill plugin folder." }
+if (-not (Test-Path $manifestPath)) { throw "No manifest.json in $Source. Point -Source at the Fulla plugin folder." }
 $manifest = Get-Content $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
 $id = $manifest.id
 $version = $manifest.version
@@ -46,7 +46,7 @@ $plugins = New-Object System.Collections.ArrayList
 $info = $null
 if (Test-Path $infoPath) {
   $stamp = Get-Date -Format "yyyyMMdd-HHmmss-fff"
-  Copy-Item $infoPath "$infoPath.openfill-backup-$stamp"
+  Copy-Item $infoPath "$infoPath.fulla-backup-$stamp"
   $raw = Get-Content $infoPath -Raw -Encoding UTF8
   if ($raw -and $raw.Trim()) {
     $info = $raw | ConvertFrom-Json
@@ -74,5 +74,5 @@ else { $info | Add-Member -NotePropertyName plugins -NotePropertyValue $plugins.
 
 Write-Utf8NoBom $infoPath (ConvertTo-Json -InputObject $info -Depth 20)
 
-Write-Host "OpenFill $version installed to $dest" -ForegroundColor Green
-Write-Host "Start Photoshop and open Plugins > OpenFill."
+Write-Host "Fulla $version installed to $dest" -ForegroundColor Green
+Write-Host "Start Photoshop and open Plugins > Fulla."

@@ -1,6 +1,6 @@
 // Build two release files (no dependencies, uses Node's zlib):
-//   dist/openfill-<version>.ccx          zip of plugin/ with manifest.json at the root (Creative Cloud double-click)
-//   dist/openfill-<version>-windows.zip  OpenFill/ folder with the plugin, installer and "Install OpenFill.bat"
+//   dist/fulla-<version>.ccx          zip of plugin/ with manifest.json at the root (Creative Cloud double-click)
+//   dist/fulla-<version>-windows.zip  Fulla/ folder with the plugin, installer and "Install Fulla.bat"
 //                                        for Photoshop without the Creative Cloud app
 
 const fs = require("node:fs");
@@ -100,19 +100,19 @@ function main() {
 
   const INST = path.join(ROOT, "installer");
   const manual = [
-    ...files.map((f) => ({ name: `OpenFill/plugin/${f.name}`, data: f.data })),
-    { name: "OpenFill/Install OpenFill.bat", data: fs.readFileSync(path.join(INST, "Install OpenFill.bat")) },
-    { name: "OpenFill/Uninstall OpenFill.bat", data: fs.readFileSync(path.join(INST, "Uninstall OpenFill.bat")) },
-    { name: "OpenFill/installer/install.ps1", data: fs.readFileSync(path.join(INST, "install.ps1")) },
-    { name: "OpenFill/installer/uninstall.ps1", data: fs.readFileSync(path.join(INST, "uninstall.ps1")) },
-    { name: "OpenFill/README.md", data: fs.readFileSync(path.join(ROOT, "README.md")) },
-    { name: "OpenFill/LICENSE", data: fs.readFileSync(path.join(ROOT, "LICENSE")) },
+    ...files.map((f) => ({ name: `Fulla/plugin/${f.name}`, data: f.data })),
+    { name: "Fulla/Install Fulla.bat", data: fs.readFileSync(path.join(INST, "Install Fulla.bat")) },
+    { name: "Fulla/Uninstall Fulla.bat", data: fs.readFileSync(path.join(INST, "Uninstall Fulla.bat")) },
+    { name: "Fulla/installer/install.ps1", data: fs.readFileSync(path.join(INST, "install.ps1")) },
+    { name: "Fulla/installer/uninstall.ps1", data: fs.readFileSync(path.join(INST, "uninstall.ps1")) },
+    { name: "Fulla/README.md", data: fs.readFileSync(path.join(ROOT, "README.md")) },
+    { name: "Fulla/LICENSE", data: fs.readFileSync(path.join(ROOT, "LICENSE")) },
   ];
   const winZip = zip(manual);
 
   fs.mkdirSync(DIST, { recursive: true });
   for (const f of fs.readdirSync(DIST)) fs.rmSync(path.join(DIST, f));
-  const base = `openfill-${manifest.version}`;
+  const base = `fulla-${manifest.version}`;
   fs.writeFileSync(path.join(DIST, `${base}.ccx`), ccx);
   fs.writeFileSync(path.join(DIST, `${base}-windows.zip`), winZip);
   console.log(`Built dist/${base}.ccx (${(ccx.length / 1024).toFixed(1)} KB) and dist/${base}-windows.zip (${(winZip.length / 1024).toFixed(1)} KB), ${files.length} plugin files`);

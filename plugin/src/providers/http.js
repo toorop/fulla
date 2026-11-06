@@ -49,7 +49,7 @@ async function postJson({ fetch, url, headers, body, classify, retries = 2, host
     }
     if (res.ok && json) return json;
     const err = res.ok
-      ? new ProviderError(`${host} sent a response OpenFill couldn't read.`, { status: res.status, detail: text.slice(0, 300) })
+      ? new ProviderError(`${host} sent a response Fulla couldn't read.`, { status: res.status, detail: text.slice(0, 300) })
       : classify(res.status, json, text);
     if (err.retryable && attempt++ < retries) {
       const after = Number(res.headers && res.headers.get && res.headers.get("retry-after"));

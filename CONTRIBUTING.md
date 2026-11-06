@@ -1,12 +1,12 @@
-# Contributing to OpenFill
+# Contributing to Fulla
 
-Thanks for helping. OpenFill is open to contributions; releases stay with the maintainer, and only work that meets the bar below gets in.
+Thanks for helping. Fulla is open to contributions; releases stay with the maintainer, and only work that meets the bar below gets in.
 
 ## How a change gets in
 
 1. **Open an issue first** for anything bigger than a small fix, so we agree on the approach before you write code.
 2. **Fork, branch, and open a pull request** against `main`. Fill in the checklist in the pull request template.
-3. **Automated checks** run on every pull request: 43 unit tests on Windows and Linux, the package build, and the Windows installer. Red checks can't merge.
+3. **Automated checks** run on every pull request: the unit tests on Windows and Linux, the package build, and the Windows installer. Red checks can't merge.
 4. **Code review.** Every pull request gets a full code review (the maintainer works with Claude, an AI assistant, for a line-by-line pass) and the maintainer's own review. Expect questions and requested changes; that's normal.
 5. **Maintainer approval merges it.** Nobody else can merge to `main` or publish a release.
 
@@ -32,7 +32,7 @@ npm test          # unit tests
 npm run package   # builds dist/
 ```
 
-Install a development copy into Photoshop with `installer/install.ps1 -Source plugin` (Windows), then open **Plugins > OpenFill**.
+Install a development copy into Photoshop with `installer/install.ps1 -Source plugin` (Windows), then open **Plugins > Fulla**.
 
 ## Conduct
 

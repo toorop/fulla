@@ -1,6 +1,6 @@
 // API keys in UXP secure storage (encrypted by the OS); everything else in localStorage.
 
-const PREFS_KEY = "openfill.prefs.v1";
+const PREFS_KEY = "fulla.prefs.v1";
 
 const DEFAULTS = {
   mode: "fill",
@@ -40,23 +40,23 @@ async function getKey(providerId) {
   try {
     // Missing keys reject on older hosts and resolve null on Photoshop 26.10+.
     if (s) {
-      const v = bytesToString(await s.getItem(`openfill.key.${providerId}`)).trim();
+      const v = bytesToString(await s.getItem(`fulla.key.${providerId}`)).trim();
       if (v) return v;
     }
   } catch (_) {
     /* fall through */
   }
-  return (localStorage.getItem(`openfill.key.${providerId}`) || "").trim();
+  return (localStorage.getItem(`fulla.key.${providerId}`) || "").trim();
 }
 
 async function setKey(providerId, value) {
   const v = (value || "").trim();
   const s = secure();
   if (s) {
-    if (v) await s.setItem(`openfill.key.${providerId}`, v);
+    if (v) await s.setItem(`fulla.key.${providerId}`, v);
     else {
       try {
-        await s.removeItem(`openfill.key.${providerId}`);
+        await s.removeItem(`fulla.key.${providerId}`);
       } catch (_) {
         /* older hosts reject when the key was never stored */
       }
@@ -64,8 +64,8 @@ async function setKey(providerId, value) {
     return "secure";
   }
   // Older hosts without secure storage: keep it local to this machine's plugin data.
-  if (v) localStorage.setItem(`openfill.key.${providerId}`, v);
-  else localStorage.removeItem(`openfill.key.${providerId}`);
+  if (v) localStorage.setItem(`fulla.key.${providerId}`, v);
+  else localStorage.removeItem(`fulla.key.${providerId}`);
   return "local";
 }
 

@@ -1,5 +1,5 @@
 name: Bug report
-description: Something in OpenFill doesn't work as described
+description: Something in Fulla doesn't work as described
 labels: [bug]
 body:
   - type: input
@@ -10,9 +10,9 @@ body:
     validations:
       required: true
   - type: input
-    id: openfill
+    id: fulla
     attributes:
-      label: OpenFill version
+      label: Fulla version
       placeholder: 0.1.0
     validations:
       required: true

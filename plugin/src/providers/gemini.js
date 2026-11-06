@@ -1,5 +1,5 @@
 // Google Gemini adapter: generateContent with the image plus a black/white mask image.
-// Gemini has no true mask parameter; the mask is a hint and OpenFill clips the result in Photoshop.
+// Gemini has no true mask parameter; the mask is a hint and Fulla clips the result in Photoshop.
 
 const { toBase64, fromBase64 } = require("../bytes");
 const { encodePng } = require("../png");
@@ -141,7 +141,7 @@ function usageFrom(json) {
   const cand = u.candidatesTokenCount || 0;
   const thoughts = u.thoughtsTokenCount || 0;
   const inputImage = byModality(u.promptTokensDetails).IMAGE || 0;
-  // Without a per-modality split, all output counts as image: OpenFill asks for IMAGE only.
+  // Without a per-modality split, all output counts as image: Fulla asks for IMAGE only.
   const outputImage = u.candidatesTokensDetails ? byModality(u.candidatesTokensDetails).IMAGE || 0 : cand;
   return {
     inputText: prompt - inputImage,

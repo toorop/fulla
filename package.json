@@ -1,5 +1,5 @@
 {
-  "name": "openfill",
+  "name": "fulla",
   "version": "0.1.0",
   "private": true,
   "description": "Generative fill, remove, expand and variations in Photoshop using your own OpenAI or Gemini API key.",

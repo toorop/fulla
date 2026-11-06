@@ -38,7 +38,7 @@ async function bp(descriptors) {
 
 function ensureSupported() {
   if (!imaging || typeof imaging.getPixels !== "function") {
-    throw new HostError("OpenFill needs Photoshop 2023 version 24.4 or newer. Update Photoshop and try again.");
+    throw new HostError("Fulla needs Photoshop 2023 version 24.4 or newer. Update Photoshop and try again.");
   }
 }
 
@@ -239,7 +239,7 @@ async function readSelection(docId, bounds, size) {
 
 async function writeTemp(bytes, ext) {
   const folder = await lfs.getTemporaryFolder();
-  const name = `openfill-${Date.now()}-${Math.floor(Math.random() * 1e6)}.${ext}`;
+  const name = `fulla-${Date.now()}-${Math.floor(Math.random() * 1e6)}.${ext}`;
   const file = await folder.createFile(name, { overwrite: true });
   await file.write(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), { format: formats.binary });
   return file;
@@ -381,7 +381,7 @@ async function commit(o) {
 
 async function showVariation(placed, index) {
   return modal(
-    "OpenFill: choose variation",
+    "Fulla: choose variation",
     () => bp(placed.layerIds.map((id, i) => ({ _obj: i === index ? "show" : "hide", null: [{ _ref: "layer", _id: id }] }))),
     { historyDocId: placed.docId }
   );

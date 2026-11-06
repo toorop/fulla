@@ -240,7 +240,7 @@ test("pipeline fill: read in one modal, network outside, commit as one undo step
   const modals = ps.log.filter((l) => l[0] === "modal");
   assert.equal(modals.length, 2);
   assert.equal(modals[0][2].historyDocId, undefined, "read scope makes no history");
-  assert.equal(modals[1][1], "OpenFill: a cat");
+  assert.equal(modals[1][1], "Fulla: a cat");
   assert.equal(modals[1][2].historyDocId, 1, "commit is one undo step on the right document");
   const commit = ps.log.find((l) => l[0] === "commit")[1];
   assert.equal(commit.results.length, 2);
@@ -293,9 +293,9 @@ test("pipeline errors are user-friendly and leave the document alone", async () 
 });
 
 test("layer names are short and readable", () => {
-  assert.equal(layerName("remove", "x"), "OpenFill: Remove");
-  assert.equal(layerName("expand", ""), "OpenFill: Expand");
-  assert.equal(layerName("fill", "  a   very long prompt that keeps going and going forever "), "OpenFill: a very long prompt that keeps going and…");
+  assert.equal(layerName("remove", "x"), "Fulla: Remove");
+  assert.equal(layerName("expand", ""), "Fulla: Expand");
+  assert.equal(layerName("fill", "  a   very long prompt that keeps going and going forever "), "Fulla: a very long prompt that keeps going and…");
 });
 
 test("gemini quota refusals: free tier says so and never retries; long waits are reported; short waits retry", async () => {

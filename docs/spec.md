@@ -1,11 +1,13 @@
-# OpenFill: spec
+# Fulla: spec
+
+Fulla started on 2026-11-06 from OpenFill v0.1.0 by Daman Reddy (MIT). This spec is inherited from OpenFill; sections change as Fulla diverges.
 
 Date: 2026-10-12. Status: v0.1.0 beta. Verified in Photoshop 27.10 by the in-Photoshop self-test (23 scenarios); a paid end-to-end generation is still pending.
 
 ## Goal
 Free, open-source (MIT) Photoshop plugin: Generative Fill, Remove, Expand and Variations using the user's own OpenAI or Google Gemini API key. No server, no Creative Cloud app required.
 
-## Decisions (Daman, 2026-10-12)
+## Decisions inherited from Fulla (2026-10-12)
 | Topic | Decision |
 |---|---|
 | Audience | Public, open source, MIT |
@@ -13,7 +15,7 @@ Free, open-source (MIT) Photoshop plugin: Generative Fill, Remove, Expand and Va
 | v1 features | Fill, Remove, Expand, Variations (1-4) |
 | Billing | Bring your own key; no backend |
 | Photoshop | 2023 to 2026 (v24.4 to v27.x), one build. 24.4 is the first release with the Imaging API |
-| Install | .ccx for Creative Cloud users; `-windows.zip` with Install OpenFill.bat (per-user `%APPDATA%\Adobe\UXP`, PS.json merged and backed up) for installs without the Creative Cloud app |
+| Install | .ccx for Creative Cloud users; `-windows.zip` with Install Fulla.bat (per-user `%APPDATA%\Adobe\UXP`, PS.json merged and backed up) for installs without the Creative Cloud app |
 | Store | GitHub releases |
 
 ## How a generation works
@@ -46,7 +48,7 @@ Neither service follows the mask pixel-exactly, so the Photoshop layer mask does
 | `plugin/src/png.js`, `image.js`, `bytes.js` | PNG encoder, resize/mask helpers, base64 |
 | `plugin/src/settings.js` | Keys in UXP secure storage, prefs in localStorage |
 | `plugin/src/selftest.js` | In-Photoshop self-test (dev only, left out of releases) |
-| `scripts/package.js` | Builds `dist/openfill-<ver>.ccx` and `-windows.zip` |
+| `scripts/package.js` | Builds `dist/fulla-<ver>.ccx` and `-windows.zip` |
 | `installer/` | Manual install without Creative Cloud |
 | `test/` | Node tests (`npm test`), fake Photoshop and fake APIs |
 

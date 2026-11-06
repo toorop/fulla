@@ -11,10 +11,10 @@ const { taskFor } = require("./prompts");
 class UserError extends Error {}
 
 function layerName(mode, prompt) {
-  if (mode === "remove") return "OpenFill: Remove";
+  if (mode === "remove") return "Fulla: Remove";
   const p = (prompt || "").trim().replace(/\s+/g, " ");
   const label = mode === "expand" ? "Expand" : "Fill";
-  return p ? `OpenFill: ${p.length > 40 ? p.slice(0, 39) + "…" : p}` : `OpenFill: ${label}`;
+  return p ? `Fulla: ${p.length > 40 ? p.slice(0, 39) + "…" : p}` : `Fulla: ${label}`;
 }
 
 const asUserError = (fn) => {
@@ -116,7 +116,7 @@ async function runGeneration(o) {
   const fit = (w, h) => provider.fitSize(o.model, w, h, o.maxTier || "2K");
 
   progress("Reading the image");
-  const job = await ps.modal("OpenFill: read", () => (mode === "expand" ? readExpand(ps, doc, fit, o.expand) : readFill(ps, doc, fit, mode)));
+  const job = await ps.modal("Fulla: read", () => (mode === "expand" ? readExpand(ps, doc, fit, o.expand) : readFill(ps, doc, fit, mode)));
   checkCancel();
 
   // A little extra room so the model can blend; the Photoshop layer mask still uses the exact selection.

@@ -1,7 +1,7 @@
 {
   "manifestVersion": 5,
-  "id": "io.github.damanjz.openfill",
-  "name": "OpenFill",
+  "id": "io.github.toorop.fulla",
+  "name": "Fulla",
   "version": "0.1.0",
   "main": "index.html",
   "host": {
@@ -11,8 +11,8 @@
   "entrypoints": [
     {
       "type": "panel",
-      "id": "openfillPanel",
-      "label": { "default": "OpenFill" },
+      "id": "fullaPanel",
+      "label": { "default": "Fulla" },
       "minimumSize": { "width": 240, "height": 360 },
       "maximumSize": { "width": 2000, "height": 3000 },
       "preferredDockedSize": { "width": 300, "height": 620 },

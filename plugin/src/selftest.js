@@ -102,7 +102,7 @@ async function newDoc({ width = 1200, height = 800, resolution = 72, transparent
   // Unique name per document: rewriting a file Photoshop has open triggers its "disk copy changed" dialog.
   const file = await outFolder.createFile(`pattern-${width}x${height}-${resolution}${transparent ? "-alpha" : ""}${opaque ? "-island" : ""}-${Date.now()}-${made.length}.png`, { overwrite: true });
   await file.write(png.buffer.slice(png.byteOffset, png.byteOffset + png.byteLength), { format: formats.binary });
-  return ps.modal("OpenFill self-test: open", async () => {
+  return ps.modal("Fulla self-test: open", async () => {
     const d = await app.open(file);
     made.push(d);
     if (bits16) d.bitsPerChannel = constants.BitsPerChannelType.SIXTEEN;
@@ -115,7 +115,7 @@ async function selectRect(r) {
 }
 
 async function select(doc, shape, r) {
-  return ps.modal("OpenFill self-test: select", async () => {
+  return ps.modal("Fulla self-test: select", async () => {
     if (shape === "none") return ps.bp([{ _obj: "set", _target: [SELECTION], to: { _enum: "ordinal", _value: "none" } }]);
     if (shape === "ellipse") {
       return ps.bp([{ _obj: "set", _target: [SELECTION], to: { _obj: "ellipse", top: px(r.top), left: px(r.left), bottom: px(r.bottom), right: px(r.right) }, antiAlias: true }]);
@@ -129,7 +129,7 @@ async function select(doc, shape, r) {
 async function readWhole(doc) {
   const w = Math.round(doc.width);
   const h = Math.round(doc.height);
-  const r = await ps.modal("OpenFill self-test: read", () => ps.readComposite(doc.id, { left: 0, top: 0, right: w, bottom: h }, { width: w, height: h }));
+  const r = await ps.modal("Fulla self-test: read", () => ps.readComposite(doc.id, { left: 0, top: 0, right: w, bottom: h }, { width: w, height: h }));
   expect(r.width === w && r.height === h, `full read came back ${r.width}x${r.height}, expected ${w}x${h}`);
   return r;
 }
@@ -144,7 +144,7 @@ async function probe(doc, x, y) {
 const historyCount = (doc) => doc.historyStates.length;
 
 async function undoTo(doc, count) {
-  await ps.modal("OpenFill self-test: undo", async () => {
+  await ps.modal("Fulla self-test: undo", async () => {
     doc.activeHistoryState = doc.historyStates[count - 1];
   });
 }
@@ -152,7 +152,7 @@ async function undoTo(doc, count) {
 async function groupInfo(doc, groupId) {
   const group = Array.from(doc.layers).find((l) => l.id === groupId);
   expect(group, `group ${groupId} not found at top level`);
-  const [m] = await ps.modal("OpenFill self-test: inspect", () =>
+  const [m] = await ps.modal("Fulla self-test: inspect", () =>
     ps.bp([{ _obj: "get", _target: [{ _property: "hasUserMask" }, { _ref: "layer", _id: groupId }, { _ref: "document", _id: doc.id }] }])
   );
   return {
@@ -170,7 +170,7 @@ async function snapshot(doc, name) {
   const h = Math.round(doc.height);
   const k = Math.min(1, 640 / Math.max(w, h));
   const size = { width: Math.max(1, Math.round(w * k)), height: Math.max(1, Math.round(h * k)) };
-  const r = await ps.modal("OpenFill self-test: snapshot", () => ps.readComposite(doc.id, { left: 0, top: 0, right: w, bottom: h }, size));
+  const r = await ps.modal("Fulla self-test: snapshot", () => ps.readComposite(doc.id, { left: 0, top: 0, right: w, bottom: h }, size));
   const rgb = toRGB(r.data, r.width, r.height, r.components, 200);
   const file = await outFolder.createFile(`${name}.png`, { overwrite: true });
   const png = encodePng(rgb, r.width, r.height, 3);
@@ -334,12 +334,12 @@ const SCENARIOS = {
   diag,
 
   async probeCheck() {
-    // The reads OpenFill depends on (regions at odd offsets, scaled) must hit exact pixels.
+    // The reads Fulla depends on (regions at odd offsets, scaled) must hit exact pixels.
     const doc = await newDoc(); // red x<600, blue x>=600
     for (const [x, y, want] of [[100, 100, RED], [599, 400, RED], [600, 400, BLUE], [1199, 799, BLUE], [0, 0, RED]]) {
       near(await probe(doc, x, y), want, 2, `full-resolution read (${x},${y})`);
     }
-    const region = async (b, size) => ps.modal("OpenFill self-test: region", () => ps.readComposite(doc.id, b, size));
+    const region = async (b, size) => ps.modal("Fulla self-test: region", () => ps.readComposite(doc.id, b, size));
     const colAt = (r, x) => [r.data[x * r.components], r.data[x * r.components + 1], r.data[x * r.components + 2]];
     const cases = [
       { b: { left: 37, top: 53, right: 937, bottom: 653 }, size: { width: 900, height: 600 } }, // 1:1, odd offset
@@ -459,7 +459,7 @@ const SCENARIOS = {
       el.dispatchEvent(new Event("change"));
       await tick();
     };
-    const prefs = () => JSON.parse(localStorage.getItem("openfill.prefs.v1") || "{}");
+    const prefs = () => JSON.parse(localStorage.getItem("fulla.prefs.v1") || "{}");
     const before = prefs().provider || "openai";
     const log = [];
     await choose("provider", "Google Gemini");
@@ -670,7 +670,7 @@ const SCENARIOS = {
     // Free: an invalid key is rejected before any image is generated.
     const w = 64, h = 64;
     try {
-      await openai.generate({ fetch: (u, i) => fetch(u, i), apiKey: "sk-openfill-selftest-invalid", model: "gpt-image-2", image: { rgb: new Uint8Array(w * h * 3), width: w, height: h }, mask: new Uint8Array(w * h).fill(255), task: "test", n: 1, target: { width: 1024, height: 1024 } });
+      await openai.generate({ fetch: (u, i) => fetch(u, i), apiKey: "sk-fulla-selftest-invalid", model: "gpt-image-2", image: { rgb: new Uint8Array(w * h * 3), width: w, height: h }, mask: new Uint8Array(w * h).fill(255), task: "test", n: 1, target: { width: 1024, height: 1024 } });
     } catch (e) {
       expect(e.status === 401 && /rejected the API key/.test(e.message), `unexpected: ${e.status} ${e.message} ${e.detail || ""}`);
       return { status: e.status, message: e.message };
@@ -682,7 +682,7 @@ const SCENARIOS = {
     const w = 64, h = 64;
     const target = gemini.fitSize("gemini-nano-banana-2.1", 1024, 1024, "1K");
     try {
-      await gemini.generate({ fetch: (u, i) => fetch(u, i), apiKey: "openfill-selftest-invalid", model: "gemini-nano-banana-2.1", image: { rgb: new Uint8Array(w * h * 3), width: w, height: h }, mask: new Uint8Array(w * h).fill(255), task: "test", n: 1, target });
+      await gemini.generate({ fetch: (u, i) => fetch(u, i), apiKey: "fulla-selftest-invalid", model: "gemini-nano-banana-2.1", image: { rgb: new Uint8Array(w * h * 3), width: w, height: h }, mask: new Uint8Array(w * h).fill(255), task: "test", n: 1, target });
     } catch (e) {
       expect(/rejected the Gemini API key/.test(e.message), `unexpected: ${e.status} ${e.message} ${e.detail || ""}`);
       return { status: e.status, message: e.message };
@@ -746,23 +746,23 @@ async function runAll(opts = {}) {
     try {
       const notes = await fn();
       results.push({ name, ok: true, ms: Date.now() - t0, notes });
-      console.log(`[OpenFill self-test] PASS ${name}`);
+      console.log(`[Fulla self-test] PASS ${name}`);
     } catch (e) {
       results.push({ name, ok: false, ms: Date.now() - t0, error: String((e && e.message) || e), stack: String((e && e.stack) || "").split("\n").slice(0, 6).join(" | ") });
-      console.log(`[OpenFill self-test] FAIL ${name}: ${e && e.message}`);
+      console.log(`[Fulla self-test] FAIL ${name}: ${e && e.message}`);
     }
     // Throwaway documents are closed after each scenario.
     while (made.length) {
       const d = made.pop();
       try {
-        await ps.modal("OpenFill self-test: close", async () => d.closeWithoutSaving());
+        await ps.modal("Fulla self-test: close", async () => d.closeWithoutSaving());
       } catch (_) {
         /* already closed */
       }
     }
   }
   try {
-    if (original) await ps.modal("OpenFill self-test: restore", async () => (app.activeDocument = original));
+    if (original) await ps.modal("Fulla self-test: restore", async () => (app.activeDocument = original));
   } catch (_) {
     /* original was closed by the user */
   }
@@ -811,7 +811,7 @@ function watch() {
       await file.write(JSON.stringify(report, null, 2));
       await status.write(`done ${report.finishedAt}: ${report.passed} passed, ${report.failed} failed`);
     } catch (e) {
-      console.log(`[OpenFill self-test] harness error: ${e && e.message}`);
+      console.log(`[Fulla self-test] harness error: ${e && e.message}`);
       try {
         const data = await lfs.getDataFolder();
         const f = await data.createFile("selftest-harness-error.txt", { overwrite: true });

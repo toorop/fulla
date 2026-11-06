@@ -1,10 +1,10 @@
 <#
-Removes a manual OpenFill install: deletes the plugin folder and its PS.json entry (PS.json backed up first).
+Removes a manual Fulla install: deletes the plugin folder and its PS.json entry (PS.json backed up first).
 
 Usage:  powershell -ExecutionPolicy Bypass -File uninstall.ps1 [-Id <plugin id>] [-AppDataRoot <path>]
 #>
 param(
-  [string]$Id = "io.github.damanjz.openfill",
+  [string]$Id = "io.github.toorop.fulla",
   [string]$AppDataRoot = $env:APPDATA
 )
 
@@ -26,10 +26,10 @@ if (Test-Path $infoPath) {
   $kept = @(@($info.plugins) | Where-Object { $_ -and $_.pluginId -ne $Id })
   if ($kept.Count -ne @($info.plugins).Count) {
     $stamp = Get-Date -Format "yyyyMMdd-HHmmss-fff"
-    Copy-Item $infoPath "$infoPath.openfill-backup-$stamp"
+    Copy-Item $infoPath "$infoPath.fulla-backup-$stamp"
     $info.plugins = $kept
     [System.IO.File]::WriteAllText($infoPath, (ConvertTo-Json -InputObject $info -Depth 20), (New-Object System.Text.UTF8Encoding($false)))
-    Write-Host "Removed OpenFill from PS.json"
+    Write-Host "Removed Fulla from PS.json"
   }
 }
-Write-Host "OpenFill uninstalled." -ForegroundColor Green
+Write-Host "Fulla uninstalled." -ForegroundColor Green

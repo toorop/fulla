@@ -152,7 +152,7 @@ test("commit (fill): deselect, place and fit each result, group, restore exact s
   const { ps, calls, state } = loadWithFakes();
   const crop = { left: 100, top: 50, right: 868, bottom: 562 };
   const sel = { type: "pixels", data: new Uint8Array(768 * 512).fill(255), width: 768, height: 512, left: 100, top: 50 };
-  const placed = await ps.commit({ docId: 7, results: [png(10), png(20), png(30)], crop, name: "OpenFill: test", feather: 4, selection: sel });
+  const placed = await ps.commit({ docId: 7, results: [png(10), png(20), png(30)], crop, name: "Fulla: test", feather: 4, selection: sel });
   const ops = bpOps(calls);
   assert.equal(ops[0], "set", "deselect first");
   assert.equal(calls.find((c) => c[1] === "set")[2].to._value, "none");
@@ -161,7 +161,7 @@ test("commit (fill): deselect, place and fit each result, group, restore exact s
   assert.ok(calls.filter((c) => c[0] === "scale").every((c) => c[2] === "tl"), "scaled from the top-left");
   const group = state.layers[placed.groupId];
   assert.equal(group.kind, "group");
-  assert.equal(group.name, "OpenFill: test");
+  assert.equal(group.name, "Fulla: test");
   assert.equal(group.layerMaskFeather, 4);
   assert.deepEqual(state.putSelection.targetBounds, { left: 100, top: 50 });
   const created = calls.find((c) => c[0] === "createImageData");
@@ -180,7 +180,7 @@ test("commit (fill): deselect, place and fit each result, group, restore exact s
 test("commit (expand): resizes canvas, then selects the border for the mask", async () => {
   const { ps, calls, doc } = loadWithFakes();
   const plan = { newWidth: 3000, newHeight: 1000, anchor: "MIDDLECENTER", keep: { left: 524, top: 0, right: 2476, bottom: 1000 } };
-  await ps.commit({ docId: 7, results: [png(10)], crop: { left: 0, top: 0, right: 3000, bottom: 1000 }, name: "OpenFill: Expand", feather: 8, selection: { type: "expand", plan } });
+  await ps.commit({ docId: 7, results: [png(10)], crop: { left: 0, top: 0, right: 3000, bottom: 1000 }, name: "Fulla: Expand", feather: 8, selection: { type: "expand", plan } });
   assert.deepEqual(calls.find((c) => c[0] === "resizeCanvas"), ["resizeCanvas", 3000, 1000, "mc"]);
   assert.equal(doc.width, 3000);
   const ops = bpOps(calls);
@@ -203,12 +203,12 @@ test("commit refuses a closed document and cleans temp files on failure", async 
 
 test("modal commits history on success, rolls back on failure, skips history for reads", async () => {
   const { ps, state } = loadWithFakes();
-  assert.equal(await ps.modal("OpenFill fill", async () => 5, { historyDocId: 7 }), 5);
-  assert.deepEqual(state.history.slice(0, 2), [["suspend", 7, "OpenFill fill"], ["resume", 42, true]]);
-  await assert.rejects(ps.modal("OpenFill fill", async () => { throw new Error("boom"); }, { historyDocId: 7 }), /boom/);
+  assert.equal(await ps.modal("Fulla fill", async () => 5, { historyDocId: 7 }), 5);
+  assert.deepEqual(state.history.slice(0, 2), [["suspend", 7, "Fulla fill"], ["resume", 42, true]]);
+  await assert.rejects(ps.modal("Fulla fill", async () => { throw new Error("boom"); }, { historyDocId: 7 }), /boom/);
   assert.deepEqual(state.history.at(-1), ["resume", 42, false]);
   const before = state.history.length;
-  await ps.modal("OpenFill: read", async () => 1);
+  await ps.modal("Fulla: read", async () => 1);
   assert.equal(state.history.length, before, "reads make no history step");
 });
 

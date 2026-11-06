@@ -34,6 +34,9 @@ Also pending: a full code review (security, bugs, useful refactors).
 
 ## Recently done
 
+- 2026-11-06 — CI runs on `toorop/fulla` (green on `34bb16c`) after Stéphane unlocked Actions.
+- 2026-11-06 — New logo (`docs/brand/logo.png`, 1024 px original) and icons redrawn from it in
+  `scripts/icons.js`: dashed marquee filling up like a glass, plus a sparkle.
 - 2026-11-06 — `CLAUDE.md`: tests rule (regression-oriented, lean) and this `STATE.md`.
 - 2026-11-06 — CI enabled through the API; GitHub description updated; `main` pushed.
 - 2026-11-06 — GitHub repo renamed `toorop/fulla`; `upstream` remote removed.
@@ -58,7 +61,7 @@ Also pending: a full code review (security, bugs, useful refactors).
   Which GPU and how much VRAM? ComfyUI or another server? Decides step 4's design.
 - Does UXP allow `http://` to a local address, and a user-chosen address in the manifest? To
   check before step 3.
-- GitHub (Stéphane): no CI run yet; Actions are on through the API, but a fork may need the
-  "enable workflows" button in the Actions tab. "Forked from" label: leave the fork network in
-  Settings, or ask GitHub Support to detach.
+- GitHub (Stéphane): "Forked from" label, optional: leave the fork network in Settings, or ask
+  GitHub Support to detach.
+- New icons not yet seen inside Photoshop (panel tab and plugin list): check at the next install.
 - Local folder is still named `openfill`; Stéphane renames it to `fulla` later.

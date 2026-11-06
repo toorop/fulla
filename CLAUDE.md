@@ -3,7 +3,8 @@
 Photoshop UXP plugin: generative fill with the user's own AI service (OpenAI, Gemini; local models planned). MIT, open source. Maintainer: Stéphane (toorop). Started on 2026-11-06 from OpenFill by Daman Reddy (MIT, github.com/damanjz/openfill); no upstream tracking, the projects have parted. Spec: `docs/spec.md`.
 
 ## Working with Stéphane
-- Talk to him in French, one question at a time, with a recommendation.
+- Start every session by reading `STATE.md` and resume from its `## Next action`.
+- Talk to him in French, one question at a time, with a recommendation. Repository files stay in English.
 - Ideas and decisions live in his own notes, outside this repo (ask him where if you don't know). Read the ideas note before starting work; record decisions there.
 - Ask first: git commit/push, anything on GitHub, releases, installing into Photoshop, anything outside this folder.
 
@@ -30,5 +31,16 @@ Photoshop UXP plugin: generative fill with the user's own AI service (OpenAI, Ge
 - All Photoshop calls live in `plugin/src/photoshop.js`; `pipeline.js` stays host-free and tested with fakes.
 - One file per AI service in `plugin/src/providers/`, same interface as `openai.js`.
 
+## Tests
+- Every feature or fix ships with its tests, in the same change.
+- Their main job is to catch regressions when the code changes later, more than to prove the feature works once. Test what other code or the user relies on (inputs and outputs, error messages, the Photoshop calls seen through the fakes), not internals that a refactor may change.
+- Keep the suite lean: one test per behaviour, not per function; no test that only restates the code; merge or delete tests a change made redundant. The whole suite stays fast (under a few seconds).
+- Photoshop behaviour the fakes can't reproduce gets a self-test scenario in `plugin/src/selftest.js` instead.
+
+## STATE.md
+- `STATE.md` (repo root) is the hand-off, not a log: a new session must be able to resume from its first ~60 lines alone. Sections in this order: `## Next action` (always first), `## Current step`, `## Recently done` (dated one-liners), `## Decisions taken` (one line of rationale each), `## Open questions / blockers`. Under ~150 lines; older history goes to the git log.
+- Update it after every significant action, not only at the end of a task (a crash or power cut must not lose the thread), and never end a response without updating it if anything changed.
+- No private paths or personal data in it: the repo is public.
+
 ## Done means
-- `npm test` green, `npm run package` builds, and the in-Photoshop self-test passes.
+- Tests written, `npm test` green, `npm run package` builds, the in-Photoshop self-test passes, and `STATE.md` is up to date.

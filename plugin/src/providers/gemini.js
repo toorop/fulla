@@ -226,6 +226,7 @@ module.exports = {
   name: "Google Gemini",
   host: HOST,
   keyHelp: "aistudio.google.com/apikey",
+  keyPlaceholder: "AIza...",
   models: MODELS.map(({ id, label }) => ({ id, label })),
   defaultModel: MODELS[0].id,
   qualities: null,

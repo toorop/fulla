@@ -4,6 +4,8 @@ const zlib = require("node:zlib");
 
 const openai = require("../plugin/src/providers/openai");
 const gemini = require("../plugin/src/providers/gemini");
+const openrouter = require("../plugin/src/providers/openrouter");
+const { estimateCost } = require("../plugin/src/cost");
 const { encodePng } = require("../plugin/src/png");
 const { toBase64, fromBase64 } = require("../plugin/src/bytes");
 const { runGeneration, layerName, UserError } = require("../plugin/src/pipeline");
@@ -128,6 +130,69 @@ test("openai maps errors to plain messages and retries transient ones", async ()
   assert.equal(out.length, 1);
   assert.equal(fetch.calls.length, 2);
   await assert.rejects(openai.generate(req({ fetch, model: "x", apiKey: "" })), /Add your OpenAI API key/);
+});
+
+// ---------------- OpenRouter ----------------
+
+const orOk = (count = 1) => ({
+  json: { created: 1, data: Array.from({ length: count }, () => ({ b64_json: toBase64(tinyPng()), media_type: "image/png" })), usage: { prompt_tokens: 1300, completion_tokens: 1120, total_tokens: 2420, cost: 0.0371 } },
+});
+
+test("openrouter sends image + mask as references, sizes by ratio and tier, reports the billed cost", async () => {
+  assert.deepEqual(openrouter.fitSize("google/gemini-nano-banana-2.1", 3000, 1700, "2K"), { width: 2736, height: 1536, aspectRatio: "16:9", imageSize: "2K" });
+  assert.equal(openrouter.fitSize("qwen/qwen-image-3", 6000, 4000, "4K").imageSize, "2K", "Qwen tops out at 2K");
+  assert.equal(openrouter.fitSize("google/gemini-3-pro-image", 8000, 1000, "1K").aspectRatio, "21:9", "Pro has no 8:1");
+
+  // Nano Banana makes one image per request: variations go out in parallel.
+  const usages = [];
+  const fetch = fakeFetch(() => orOk(1));
+  const target = openrouter.fitSize("google/gemini-nano-banana-2.1", 1536, 768, "2K");
+  const out = await openrouter.generate(req({ fetch, model: "google/gemini-nano-banana-2.1", target, n: 2, onUsage: (u) => usages.push(u) }));
+  assert.equal(out.length, 2);
+  assert.equal(fetch.calls.length, 2);
+  const { url, init, body } = fetch.calls[0];
+  assert.equal(url, "https://openrouter.ai/api/v1/images");
+  assert.equal(init.headers.Authorization, "Bearer sk-test");
+  assert.equal(init.headers["X-Title"], "Fulla");
+  assert.deepEqual([body.model, body.n, body.resolution, body.aspect_ratio], ["google/gemini-nano-banana-2.1", 1, "1K", "16:9"]);
+  assert.ok(body.prompt.includes("a red door") && body.prompt.includes("white marks the area to change"));
+  assert.equal(body.input_references.length, 2, "picture, then mask");
+  for (const r of body.input_references) assert.ok(r.image_url.url.startsWith("data:image/png;base64,"));
+  assert.equal(usages.length, 2);
+  assert.equal(estimateCost(body.model, usages[0]), 0.0371, "the amount OpenRouter billed");
+
+  // Qwen returns several images from one request.
+  const q = fakeFetch(() => orOk(3));
+  const qOut = await openrouter.generate(req({ fetch: q, model: "qwen/qwen-image-3", target: openrouter.fitSize("qwen/qwen-image-3", 1024, 1024, "2K"), n: 3 }));
+  assert.equal(qOut.length, 3);
+  assert.equal(q.calls.length, 1);
+  assert.equal(q.calls[0].body.n, 3);
+  assert.equal(q.calls[0].body.resolution, "1K");
+
+  // OpenAI models: no resolution field (the service picks the pixels), PNG asked for.
+  const o = fakeFetch(() => orOk(2));
+  await openrouter.generate(req({ fetch: o, model: "openai/gpt-image-2.6-sunburst", target: openrouter.fitSize("openai/gpt-image-2.6-sunburst", 1500, 1000, "2K"), n: 2 }));
+  assert.equal(o.calls.length, 1);
+  assert.deepEqual([o.calls[0].body.aspect_ratio, o.calls[0].body.output_format, "resolution" in o.calls[0].body], ["3:2", "png", false]);
+});
+
+test("openrouter maps errors to plain messages; failed generations are retried", async () => {
+  const target = openrouter.fitSize("google/gemini-nano-banana-2.1", 1024, 1024, "1K");
+  const cases = [
+    [401, { error: { code: 401, message: "No auth credentials found" } }, /rejected the API key/],
+    [402, { error: { code: 402, message: "Insufficient credits" } }, /credits are used up.*openrouter\.ai\/settings\/credits/],
+    [403, { error: { code: 403, message: "Input was flagged", metadata: { reasons: ["violence"] } } }, /safety filter/],
+    [400, { error: { code: 400, message: "Invalid aspect_ratio" } }, /OpenRouter: Invalid aspect_ratio/],
+  ];
+  for (const [status, json, re] of cases) {
+    const fetch = fakeFetch(() => ({ status, json }));
+    await assert.rejects(openrouter.generate(req({ fetch, model: "google/gemini-nano-banana-2.1", target, n: 1 })), re);
+    assert.equal(fetch.calls.length, 1, `no retry for ${status}`);
+  }
+  const flaky = fakeFetch((u, i, n) => (n === 1 ? { status: 502, json: { error: { code: 502, message: "Provider returned error" } }, headers: { "retry-after": "0.01" } } : orOk(1)));
+  assert.equal((await openrouter.generate(req({ fetch: flaky, model: "google/gemini-nano-banana-2.1", target, n: 1 }))).length, 1);
+  assert.equal(flaky.calls.length, 2);
+  await assert.rejects(openrouter.generate(req({ fetch: flaky, model: "x", target, apiKey: "" })), /Add your OpenRouter API key/);
 });
 
 // ---------------- Gemini ----------------

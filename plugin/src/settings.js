@@ -3,9 +3,9 @@
 const PREFS_KEY = "fulla.prefs.v1";
 
 const DEFAULTS = {
-  provider: "openai",
-  models: { openai: "gpt-image-2.5-sunburst", gemini: "gemini-nano-banana-2.1" },
-  customModel: { openai: "", gemini: "" },
+  provider: "openrouter",
+  models: { openrouter: "google/gemini-nano-banana-2.1", openai: "gpt-image-2.5-sunburst", gemini: "gemini-nano-banana-2.1" },
+  customModel: { openrouter: "", openai: "", gemini: "" },
   n: 1,
   quality: "auto",
   maxTier: "2K",

@@ -6,100 +6,86 @@
 
 ## Next action
 
-- Step 2 (modes and Expand removed) is done: `npm test` green (48), package builds, self-test 20/22
-  on Photoshop Beta 28.0.1 (the 2 failures need API keys, none saved on purpose). Committed
-  `1350c2d`, not pushed.
-- Colour fix done, not committed: results placed in a non-sRGB document shifted colour (new
-  self-test scenario `adobeRgb`: [60,160,60] read [0,162,47]). `icc.js` builds an sRGB ICC profile,
-  `png.tagSrgb` embeds it (iCCP) in result PNGs before placing; a bare sRGB chunk is ignored by
-  Photoshop. Proven both ways (fails without, passes with). npm test 49 green, package builds,
-  self-test 21/23 (the 2 failures need API keys). Ask Stéphane to commit.
-- Known gaps: with Photoshop's RGB colour policy Off, embedded profiles are discarded and the shift
-  comes back (fixing that means writing pixels with imaging.putPixels from sRGB ImageData instead of
-  placing a file: bigger change, ask first). JPEG/WebP results are not tagged.
-- Stéphane's Photoshop was on "Monitor Color" (RGB policy Off); he switched to Adobe RGB working
-  space with "Preserve embedded profiles" on 2026-11-06.
+- Start Plan step 3 (panel redesign) with its first piece: **automatic resolution**. Pick the
+  smallest tier where the tile needs no upscaling (`computeCrop` softness ≤ 1), capped by what the
+  model supports; show it as "Auto · 2K · ≈ $0.04", user can override. Reason: on a real B&W photo
+  (Qwen, 1K) the pasted tile was softer than the photo and the feathered edge showed a texture
+  border; a tile at native detail should remove it. Agree the exact rule with Stéphane first, then
+  code + tests + self-test.
+- Then the rest of step 3 (see Plan), designing each piece with Stéphane before coding.
 - Blocked by: —
-- Then: finish agreeing the panel design with Stéphane (Plan step 3; model menu and catalogue
-  agreed; still open: the Providers tab and the rest of the Generate tab). He keeps the API keys
-  out on purpose, to test the first-run flow.
+- Working setup: Fulla runs from UXP Developer Tools on Photoshop (Beta) 28.0.1 (Load + Watch; a
+  manifest change needs Unload + Load). Self-test folder and commands: `CLAUDE.md`. Stéphane's
+  OpenRouter key is saved in the dev plugin; no Google/OpenAI keys (so `geminiRaw`/`openaiRaw` fail).
 
 ## Current step
 
-Step 2, removing the modes: done and committed (`1350c2d`). The self-test now assigns sRGB to its test
-documents (they took the user's working RGB, so pure colours shifted on read and 12 scenarios failed).
+Nothing in progress. Session of 2026-11-06 ended with everything committed and pushed.
 
-## Plan (revised 2026-11-06, design still being agreed with Stéphane: code nothing before)
+## Plan (revised 2026-11-06; design each piece with Stéphane before coding)
 
 1. Base: rename to Fulla, merge the cost estimate. Done.
-2. Remove the modes and Expand. Done (`1350c2d`). Then the colour-profile check (Next action).
-3. Panel redesign in the style of AI chat apps: Generate and Providers tabs; first-run onboarding
-   (no provider configured → open Providers, explain, add one with a key test; Generate shows
-   "add a provider" instead of a dead form); one model menu inside the prompt box, grouped by
-   provider, with a search field (UXP has no such control: build it); automatic resolution
-   ("Auto · 2K · ≈ $0.04", overridable); panel scrolls; prompt placeholder bug. "Service" becomes
-   "provider" everywhere. Absorbs the old "models configurable" step.
-4. OpenRouter provider, to try Qwen Image and others cheaply. Check first: which image models it
-   has, and whether its API takes a separate mask. fal.ai later.
-5. Local Qwen Image only if the OpenRouter trial is convincing (RGBA subject extraction, reference
-   images).
+2. Remove the modes and Expand. Done (`1350c2d`). Colour fix done (`ebd5829`).
+3. Panel redesign in the style of AI chat apps:
+   - automatic resolution (Next action);
+   - Generate and Providers tabs; "Service" becomes "provider" everywhere;
+   - first-run onboarding: no provider → Providers tab opens; big "Connect with OpenRouter" button
+     (OAuth PKCE headless: the user copies a code, no key to create or paste) with a plain
+     explanation and the price per image; a link naming the alternatives ("I already have a Google
+     or OpenAI key, fal.ai and others later"); Generate shows "add a provider" instead of a dead form;
+   - prompt box with a model chip (one searchable menu, grouped by provider, "model · provider",
+     Nano Banana 2.1 marked recommended; UXP has no such control: build it, check early that a
+     popover fits inside the panel) and an options chip ("Auto 2K · ×1": resolution, variations,
+     quality when the model has one); send button that turns into Cancel;
+   - results and cost above the prompt; panel scrolls; prompt placeholder bug;
+   - "Another model or provider? Open an issue" link to a new `model-request.yml` issue template
+     (`launchProcess` https permission in the manifest).
+   Mock-ups were proposed in the session, not formally agreed.
+4. OpenRouter provider. Done (this session), see Recently done. Next for it: OAuth connect (step 3).
+5. fal.ai provider (real masks) and/or local Qwen Image, decided after more real-photo trials.
 
-Also pending: a full code review (security, bugs, useful refactors).
+Also pending: a full code review (security, bugs, useful refactors); possible grain matching for
+the pasted tile (after automatic resolution); GPT Image 2.6 `markup` (mask-like overlay) to try.
 
 ## Recently done
 
-- 2026-11-06 — Fulla loaded in UXP Developer Tools (Photoshop Beta 28); `CLAUDE.md` now gives the
-  UDT workflow and the self-test folder (`PHSPBETA\28\Developer\…`).
-
-- 2026-11-06 — Modes and Expand removed (`1350c2d`): `pipeline.js` has one `read`, `taskFor(prompt)`
-  and `layerName(prompt)`; `planExpand`, `borderMask`, `borderBounds` and the expand commit path
-  are gone; spec and README updated.
-
-- 2026-11-06 — Development now goes through UXP Developer Tools (developer mode was already on):
-  the `install.ps1` copy of Fulla was uninstalled so only the UDT-loaded one runs.
-
-- 2026-11-06 — OpenFill uninstalled from Photoshop; Fulla dev build installed (`install.ps1 -Source
-  plugin`, from `5465a2b`). Not opened in Photoshop yet. Minor: `uninstall.ps1` always prints
-  "Fulla" in its messages, even with another `-Id`.
-- 2026-11-06 — CI runs on `toorop/fulla` (green on `34bb16c`) after Stéphane unlocked Actions.
-- 2026-11-06 — New logo (`docs/brand/logo.png`, 1024 px original) and icons redrawn from it in
-  `scripts/icons.js`: dashed marquee filling up like a glass, plus a sparkle.
-- 2026-11-06 — `CLAUDE.md`: tests rule (regression-oriented, lean) and this `STATE.md`.
-- 2026-11-06 — CI enabled through the API; GitHub description updated; `main` pushed.
-- 2026-11-06 — GitHub repo renamed `toorop/fulla`; `upstream` remote removed.
-- 2026-11-06 — Renamed OpenFill to Fulla (`db4ce3d`), cost estimate merged into `main` (`138b9c4`).
+- 2026-11-06 — OpenRouter provider (`providers/openrouter.js`): `POST /api/v1/images`, picture +
+  mask as `input_references` (no mask parameter exists), catalogue Nano Banana 2.1 (default,
+  recommended), Nano Banana Pro, Qwen Image 3, Qwen Image 2.1 Pro, GPT Image 2.6 and 2.5 Sunburst;
+  the run's cost is OpenRouter's billed `usage.cost`. First in the provider list and default.
+  Paid trials (synthetic doc, 1K): Nano Banana and GPT Image 2.6 clean; Qwen 3 fill ignored the
+  surroundings there, but on a real B&W photo Qwen 3 removed a boat behind posts perfectly (best of
+  all per Stéphane). The billed `usd` in the live report is not yet seen on a real reply.
+- 2026-11-06 — Colour fix (`ebd5829`): result PNGs get an embedded sRGB ICC profile (`icc.js`,
+  `png.tagSrgb`), so Photoshop converts them into the document's profile. Self-test `adobeRgb`.
+  Needs Photoshop's RGB colour policy to keep embedded profiles (README "Colours").
+- 2026-11-06 — Modes and Expand removed (`1350c2d`): one prompt, empty = remove what is selected.
+- 2026-11-06 — Development moved to UXP Developer Tools; the `install.ps1` copy was uninstalled.
+- 2026-11-06 — Renamed OpenFill to Fulla (`db4ce3d`), new logo and icons, CI on `toorop/fulla`.
 
 ## Decisions taken
 
-- Own project, not a fork to upstream: the changes are too deep for pull requests to OpenFill.
-  OpenFill's MIT copyright line stays in `LICENSE`; the README credits it.
-- Name Fulla (Norse goddess of plenty; sounds like "fill"). Plugin id `io.github.toorop.fulla`, so
-  it can sit next to OpenFill in Photoshop; storage keys `fulla.*` (keys must be entered again).
-- Keep the OpenFill code and history, no rewrite: clean layering, tested, and full of hard-won
-  Photoshop workarounds.
-- No modes and no Expand: to extend a picture, the user enlarges the canvas in Photoshop, selects
-  the new area plus a margin, and fills. This already works.
-- Vocabulary: a provider is who gets the request and bills (OpenAI, Google, OpenRouter, fal.ai,
-  local server); a model is what generates. One model can come from several providers.
-- One model menu (entries "model · provider"), searchable, in the prompt box, like AI chat apps;
-  Stéphane wants a clean, efficient UI, not a form with many selects.
-- The menu lists a catalogue of models Fulla knows and has tested (how to call them, price, what
-  they can do), only for configured providers, plus "custom model ID" on a known provider. Not every
-  model: fal.ai models each have their own API, and few OpenRouter models can edit images.
-- A "Want another model or provider? Open an issue" link to a dedicated GitHub issue template
-  (`model-request.yml`); opening a browser needs the `launchProcess` https permission.
-- Develop with UXP Developer Tools (Load + Watch, no Photoshop restart); `install.ps1` is for
-  release-like installs only, never both at once (same plugin id).
-- Models are data (Settings tab), API protocols are code. Each provider declares what it can do,
-  and the panel shows only what the chosen model supports.
+- Own project, not a fork to upstream; OpenFill's MIT copyright line stays in `LICENSE`.
+- No modes and no Expand: to extend, enlarge the canvas in Photoshop and fill the new area.
+- Vocabulary: a provider is who gets the request and bills; a model is what generates.
+- First run is the adoption make-or-break (most users have no AI account): OpenRouter put forward
+  (one account, every model, card payment, OAuth connect), Google and OpenAI keys offered from day
+  one to power users, fal.ai later, no questionnaire. One account per provider type in v1.
+- One model menu in the prompt box, listing a curated catalogue of tested models for configured
+  providers, plus "custom model ID"; never every model of an aggregator.
+- Clean, efficient UI close to everyday AI chat apps, not a form with many selects.
+- Colours: read and send sRGB, embed an sRGB profile in results. With policy Off Photoshop drops
+  it; handling that (putPixels instead of placing a file) is a bigger change, ask first.
+- Develop with UXP Developer Tools; never install with `install.ps1` at the same time.
+- Commit as we go, push once at the end of a session (spares the CI).
 
 ## Open questions / blockers
 
-- Local models: where does Qwen Image run (same PC in dual boot, Windows, WSL, another machine)?
-  Which GPU and how much VRAM? ComfyUI or another server? Decides step 4's design.
-- Does UXP allow `http://` to a local address, and a user-chosen address in the manifest? To
-  check before step 3.
-- GitHub (Stéphane): "Forked from" label, optional: leave the fork network in Settings, or ask
-  GitHub Support to detach.
-- New icons not yet seen inside Photoshop (panel tab and plugin list): check at the next install.
+- Local models: where would Qwen run, which GPU/VRAM, ComfyUI or not? Only if fal.ai/OpenRouter
+  trials call for it.
+- Does UXP allow `http://` to a local address? Check before any local provider.
+- JPEG/WebP results get no colour profile yet (OpenAI always PNG; Gemini/Qwen via OpenRouter: check
+  the `media_type` of real replies).
+- GitHub "Forked from" label (optional, Stéphane): leave the fork network or ask Support.
 - Local folder is still named `openfill`; Stéphane renames it to `fulla` later.
+- Minor: `uninstall.ps1` always prints "Fulla", even with another `-Id`.

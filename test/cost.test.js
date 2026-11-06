@@ -6,8 +6,11 @@ const { PROVIDERS } = require("../plugin/src/providers/index");
 
 const usage = (o) => ({ ...emptyUsage(), ...o });
 
-test("every listed model has a price", () => {
-  for (const p of PROVIDERS) for (const m of p.models) assert.ok(PRICES[m.id], `${p.id} ${m.id} missing from cost.js`);
+test("every listed model has a price, unless its service reports the billed amount", () => {
+  for (const p of PROVIDERS) if (!p.reportsCost) for (const m of p.models) assert.ok(PRICES[m.id], `${p.id} ${m.id} missing from cost.js`);
+  // A reported amount wins over any price table, for known and custom models alike.
+  assert.equal(estimateCost("my-custom-model", usage({ outputImage: 1000, cost: 0.0412 })), 0.0412);
+  assert.equal(estimateCost("gpt-image-2", usage({ outputImage: 1000, cost: 0 })), 0);
 });
 
 test("cost matches the services' own per-image figures", () => {

@@ -58,6 +58,11 @@
       <sp-action-button id="toggleSettings" quiet>API keys</sp-action-button>
       <section id="settings" hidden>
         <div class="key">
+          <sp-label>OpenRouter API key</sp-label>
+          <sp-textfield id="key-openrouter" type="password" placeholder="sk-or-..."></sp-textfield>
+          <div class="hint">One key for every model. Get one at openrouter.ai/settings/keys</div>
+        </div>
+        <div class="key">
           <sp-label>OpenAI API key</sp-label>
           <sp-textfield id="key-openai" type="password" placeholder="sk-..."></sp-textfield>
           <div class="hint">Get one at platform.openai.com/api-keys</div>

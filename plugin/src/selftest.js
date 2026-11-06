@@ -3,7 +3,7 @@
 // Trigger: drop selftest.json into the plugin's data folder
 //   (%APPDATA%\Adobe\UXP\PluginsStorage\<host>\<ver>\Developer|External\<id>\PluginData, see CLAUDE.md). The panel picks it up within
 //   a few seconds, runs every scenario on throwaway documents, and writes selftest\result.json plus PNG
-//   snapshots next to it. selftest.json may contain {"only": ["fill", ...]} or {"live": "openai"|"gemini"}.
+//   snapshots next to it. selftest.json may contain {"only": ["fill", ...]} or {"live": "openrouter"|"openai"|"gemini", "model": "<optional model id>"}.
 //
 // Scenarios use a stand-in AI service that returns a position-encoded gradient (R = x, G = y), so every
 // probe can check that the result landed exactly where it should, at any resolution or bit depth.
@@ -14,6 +14,8 @@ const ps = require("./photoshop");
 const { runGeneration, layerName } = require("./pipeline");
 const openai = require("./providers/openai");
 const gemini = require("./providers/gemini");
+const openrouter = require("./providers/openrouter");
+const { estimateCost } = require("./cost");
 const settings = require("./settings");
 const { encodePng } = require("./png");
 const { toRGB } = require("./image");
@@ -682,20 +684,36 @@ const SCENARIOS = {
     }
     throw new Error("Gemini accepted an invalid key?");
   },
+
+  async networkOpenRouter() {
+    const w = 64, h = 64;
+    const target = openrouter.fitSize(openrouter.defaultModel, 1024, 1024, "1K");
+    try {
+      await openrouter.generate({ fetch: (u, i) => fetch(u, i), apiKey: "sk-or-fulla-selftest-invalid", model: openrouter.defaultModel, image: { rgb: new Uint8Array(w * h * 3), width: w, height: h }, mask: new Uint8Array(w * h).fill(255), task: "test", n: 1, target });
+    } catch (e) {
+      expect(e.status === 401 && /rejected the API key/.test(e.message), `unexpected: ${e.status} ${e.message} ${e.detail || ""}`);
+      return { status: e.status, message: e.message };
+    }
+    throw new Error("OpenRouter accepted an invalid key?");
+  },
 };
 
 /** Opt-in, paid: a real fill and a real remove (empty prompt) with the saved key (1K, lowest quality). */
-async function live(providerId) {
-  const provider = providerId === "gemini" ? gemini : openai;
+async function live(providerId, model) {
+  const provider = { gemini, openai, openrouter }[providerId];
+  expect(provider, `unknown provider "${providerId}"`);
   const apiKey = await settings.getKey(provider.id);
   expect(apiKey, `no ${provider.name} key saved in the panel`);
-  const base = { ps, provider, fetch: (u, i) => fetch(u, i), apiKey, model: provider.defaultModel, n: 1, quality: "low", maxTier: "1K" };
-  const report = {};
+  let usages = [];
+  const base = { ps, provider, fetch: (u, i) => fetch(u, i), apiKey, model: model || provider.defaultModel, n: 1, quality: "low", maxTier: "1K", onUsage: (u) => usages.push(u) };
+  const report = { model: base.model };
   const step = async (name, fn) => {
     const t0 = Date.now();
+    usages = [];
     try {
       const out = await fn();
-      report[name] = { ok: true, seconds: Math.round((Date.now() - t0) / 1000), target: out.target, results: out.results.length, crop: out.crop };
+      const usd = usages.map((u) => estimateCost(base.model, u)).reduce((a, c) => (a == null || c == null ? null : a + c), 0);
+      report[name] = { ok: true, seconds: Math.round((Date.now() - t0) / 1000), usd, target: out.target, results: out.results.length, crop: out.crop };
     } catch (e) {
       report[name] = { ok: false, seconds: Math.round((Date.now() - t0) / 1000), error: String((e && e.message) || e), detail: e && e.detail };
     }
@@ -716,7 +734,7 @@ async function live(providerId) {
     await snapshot(doc, `live-${provider.id}-remove`);
     return out;
   });
-  const failed = Object.entries(report).filter(([, v]) => !v.ok);
+  const failed = Object.entries(report).filter(([k, v]) => k !== "model" && !v.ok);
   if (failed.length) throw new Error(`${failed.length} live step(s) failed: ${JSON.stringify(report)}`);
   return report;
 }
@@ -726,7 +744,7 @@ async function runAll(opts = {}) {
   const original = app.activeDocument;
   const results = [];
   const names = opts.live ? [] : opts.only && opts.only.length ? opts.only : Object.keys(SCENARIOS);
-  const all = opts.live ? [[`live-${opts.live}`, () => live(opts.live)]] : names.map((n) => [n, SCENARIOS[n]]);
+  const all = opts.live ? [[`live-${opts.live}`, () => live(opts.live, opts.model)]] : names.map((n) => [n, SCENARIOS[n]]);
   for (const [name, fn] of all) {
     const t0 = Date.now();
     try {

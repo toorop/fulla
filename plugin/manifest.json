@@ -28,7 +28,7 @@
   ],
   "requiredPermissions": {
     "network": {
-      "domains": ["https://api.openai.com", "https://generativelanguage.googleapis.com"]
+      "domains": ["https://openrouter.ai", "https://api.openai.com", "https://generativelanguage.googleapis.com"]
     },
     "localFileSystem": "plugin"
   }

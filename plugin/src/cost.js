@@ -1,4 +1,5 @@
-// Estimated cost of a generation, from the token counts the service sends back.
+// Estimated cost of a generation, from the token counts the service sends back (or the exact amount,
+// for services such as OpenRouter that report it).
 // Each provider turns its own usage reply into { inputText, inputImage, outputText, outputImage, total }.
 
 // USD per 1M tokens, standard paid tier. Update by hand when the services change their prices.
@@ -26,8 +27,12 @@ function addUsage(a, b) {
   return out;
 }
 
-/** USD for this usage, or null when the model has no known price (custom model IDs). */
+/**
+ * USD for this usage, or null when the model has no known price (custom model IDs). When the reply
+ * carried its own billed amount (OpenRouter's usage.cost), that amount is used as is.
+ */
 function estimateCost(model, usage) {
+  if (usage && typeof usage.cost === "number") return usage.cost;
   const p = PRICES[model];
   if (!p || !usage) return null;
   const outText = p.outputText != null ? p.outputText : p.outputImage;

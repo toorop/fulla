@@ -25,10 +25,11 @@ This only works if Photoshop keeps embedded profiles. Check **Edit > Color Setti
 
 | Service | Models | Get a key |
 |---|---|---|
+| OpenRouter (one key for every model, recommended) | Nano Banana 2.1 (default), Nano Banana Pro, Qwen Image 3, Qwen Image 2.1 Pro, GPT Image 2.6 and 2.5 Sunburst, or any model ID | [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys) |
 | OpenAI | GPT Image 2.5 Sunburst (default), GPT Image 2.5 Flare, GPT Image 2, or any model ID | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
 | Google Gemini | Nano Banana 2.1 (default), Nano Banana Pro, Nano Banana 2 Lite, or any model ID | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
 
-You pay the service directly, per image. Both need a funded account: OpenAI needs credits, and Gemini's free tier allows 0 image generations, so billing must be on. OpenAI image models may also need your organization verified. When one of these blocks a run, Fulla names it and links the page that fixes it.
+You pay the service directly, per image. Each needs a funded account: OpenRouter needs credits (it shows the exact amount billed for each run), OpenAI needs credits, and Gemini's free tier allows 0 image generations, so billing must be on. OpenAI image models may also need your organization verified. When one of these blocks a run, Fulla names it and links the page that fixes it.
 
 ## Install
 
@@ -65,7 +66,7 @@ Dev installs only; release packages leave it out. With the Fulla panel open, wri
 %APPDATA%\Adobe\UXP\PluginsStorage\<host>\<version>\<kind>\io.github.toorop.fulla\PluginData
 ```
 
-`<host>` is `PHSP` (or `PHSPBETA` for the Photoshop beta) and `<kind>` is `Developer` when loaded from UXP Developer Tools, `External` when installed. It runs every scenario on throwaway documents with a stand-in AI service and writes `selftest\result.json` plus PNG snapshots. Don't touch Photoshop while it runs. `{"only":["fill"]}` runs one scenario; `{"live":"openai"}` runs two real, paid generations (a fill and a remove) with your saved key. The colour scenario (`adobeRgb`) fails if Photoshop's RGB colour policy is Off (see [Colours](#colours)).
+`<host>` is `PHSP` (or `PHSPBETA` for the Photoshop beta) and `<kind>` is `Developer` when loaded from UXP Developer Tools, `External` when installed. It runs every scenario on throwaway documents with a stand-in AI service and writes `selftest\result.json` plus PNG snapshots. Don't touch Photoshop while it runs. `{"only":["fill"]}` runs one scenario; `{"live":"openrouter"}` (or `openai`, `gemini`) runs two real, paid generations (a fill and a remove) with your saved key; add `"model":"qwen/qwen-image-3"` to try another model. The colour scenario (`adobeRgb`) fails if Photoshop's RGB colour policy is Off (see [Colours](#colours)).
 
 </details>
 
@@ -78,7 +79,7 @@ plugin/
 └── src/
     ├── pipeline.js      # read, generate, place; host-free, tested with fakes
     ├── photoshop.js     # every Photoshop call
-    ├── providers/       # one file per service: openai.js, gemini.js
+    ├── providers/       # one file per service: openrouter.js, openai.js, gemini.js
     ├── cost.js          # estimated cost from the tokens each reply reports
     ├── image.js, png.js, geometry.js, bytes.js
     ├── icc.js           # sRGB profile embedded in results

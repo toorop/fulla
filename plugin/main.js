@@ -289,7 +289,7 @@ async function showSavedKeys() {
     const k = await settings.getKey(p.id);
     // Never put the real key back in the field; show a masked hint instead.
     $(`key-${p.id}`).value = "";
-    $(`key-${p.id}`).setAttribute("placeholder", k ? `Saved (...${k.slice(-4)})` : p.id === "openai" ? "sk-..." : "AIza...");
+    $(`key-${p.id}`).setAttribute("placeholder", k ? `Saved (...${k.slice(-4)})` : p.keyPlaceholder);
   }
 }
 

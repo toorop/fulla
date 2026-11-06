@@ -146,6 +146,7 @@ module.exports = {
   name: "OpenAI",
   host: HOST,
   keyHelp: "platform.openai.com/api-keys",
+  keyPlaceholder: "sk-...",
   models: MODELS,
   defaultModel: MODELS[0].id,
   qualities: QUALITIES,

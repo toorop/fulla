@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const zlib = require("node:zlib");
 
 const { toBase64, fromBase64, utf8Encode, crc32, adler32 } = require("../plugin/src/bytes");
-const { encodePng, deflateRaw, imageSize } = require("../plugin/src/png");
+const { encodePng, deflateRaw, imageSize, tagSrgb } = require("../plugin/src/png");
 const { computeCrop, inputSize } = require("../plugin/src/geometry");
 const { resample, toRGB, dilate, alphaEditMask, maskBounds, downsampleStrips } = require("../plugin/src/image");
 
@@ -117,6 +117,27 @@ test("PNG of a 1536x1024 mask stays small and encodes fast", () => {
   const ms = Date.now() - t;
   assert.ok(png.length < 200000, `mask png ${png.length} bytes`);
   assert.ok(ms < 3000, `took ${ms}ms`);
+});
+
+test("result PNGs get an embedded sRGB profile, once; other formats are left alone", () => {
+  const px = randomBytes(5 * 4 * 3, 3);
+  const tagged = tagSrgb(encodePng(px, 5, 4, 3));
+  const d = decodePng(tagged);
+  assert.deepEqual(d.types, ["IHDR", "iCCP", "IDAT", "IEND"]);
+  assert.deepEqual(d.px, px, "pixels untouched");
+  // iCCP: name, NUL, method 0, zlib(profile). The profile must be a well-formed ICC header.
+  const b = Buffer.from(tagged);
+  const body = b.subarray(41, 41 + b.readUInt32BE(33));
+  const nul = body.indexOf(0);
+  assert.equal(body.toString("latin1", 0, nul), "sRGB");
+  const icc = zlib.inflateSync(body.subarray(nul + 2));
+  assert.equal(icc.readUInt32BE(0), icc.length, "profile size field");
+  assert.equal(icc.toString("latin1", 12, 24), "mntrRGB XYZ ");
+  assert.equal(icc.toString("latin1", 36, 40), "acsp");
+  assert.ok(icc.includes(Buffer.from("sRGB IEC61966-2.1")));
+  assert.deepEqual(tagSrgb(tagged), tagged, "already tagged: unchanged");
+  const jpg = Uint8Array.of(0xff, 0xd8, 0xff, 0xd9);
+  assert.equal(tagSrgb(jpg), jpg);
 });
 
 test("imageSize reads JPEG dimensions", () => {

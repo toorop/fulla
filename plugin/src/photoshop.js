@@ -5,6 +5,7 @@
 const { app, core, action, imaging, constants } = require("photoshop");
 const uxp = require("uxp");
 const { to8bit, placeInto, toRGBA, resample, downsampleStrips } = require("./image");
+const { tagSrgb } = require("./png");
 
 const lfs = uxp.storage.localFileSystem;
 const formats = uxp.storage.formats;
@@ -320,7 +321,9 @@ async function commit(o) {
     for (let i = 0; i < o.results.length; i++) {
       const r = o.results[i];
       const ext = /jpe?g/.test(r.mime) ? "jpg" : /webp/.test(r.mime) ? "webp" : "png";
-      const file = await writeTemp(r.bytes, ext);
+      // Pixels were read and sent as sRGB, and come back as sRGB: say so, so Photoshop converts them
+      // into the document's profile instead of reading them as if they were already in it.
+      const file = await writeTemp(tagSrgb(r.bytes), ext);
       files.push(file);
       const layer = await placeFitted(doc, file, o.crop, o.trace);
       layer.name = o.results.length > 1 ? `Variation ${i + 1}` : o.name;

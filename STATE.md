@@ -7,13 +7,18 @@
 ## Next action
 
 - Step 2 (modes and Expand removed) is done: `npm test` green (48), package builds, self-test 20/22
-  on Photoshop Beta 28.0.1 (the 2 failures need API keys, none saved on purpose). Not committed:
-  ask Stéphane.
-- Then: colour-profile check. Fulla reads pixels converted to sRGB, but the result PNG carries no
-  profile: in a non-sRGB document (Adobe RGB, or a monitor profile), Photoshop may place it as if it
-  were in the document's space, shifting colours. Stéphane has seen a slight red/orange cast on
-  black-and-white images. Add a self-test scenario with an Adobe RGB document, then fix (e.g. embed
-  an sRGB profile in the PNG, or convert on placement).
+  on Photoshop Beta 28.0.1 (the 2 failures need API keys, none saved on purpose). Committed
+  `1350c2d`, not pushed.
+- Colour fix done, not committed: results placed in a non-sRGB document shifted colour (new
+  self-test scenario `adobeRgb`: [60,160,60] read [0,162,47]). `icc.js` builds an sRGB ICC profile,
+  `png.tagSrgb` embeds it (iCCP) in result PNGs before placing; a bare sRGB chunk is ignored by
+  Photoshop. Proven both ways (fails without, passes with). npm test 49 green, package builds,
+  self-test 21/23 (the 2 failures need API keys). Ask Stéphane to commit.
+- Known gaps: with Photoshop's RGB colour policy Off, embedded profiles are discarded and the shift
+  comes back (fixing that means writing pixels with imaging.putPixels from sRGB ImageData instead of
+  placing a file: bigger change, ask first). JPEG/WebP results are not tagged.
+- Stéphane's Photoshop was on "Monitor Color" (RGB policy Off); he switched to Adobe RGB working
+  space with "Preserve embedded profiles" on 2026-11-06.
 - Blocked by: —
 - Then: finish agreeing the panel design with Stéphane (Plan step 3; model menu and catalogue
   agreed; still open: the Providers tab and the rest of the Generate tab). He keeps the API keys
@@ -21,13 +26,13 @@
 
 ## Current step
 
-Step 2, removing the modes: done, awaiting commit. The self-test now assigns sRGB to its test
+Step 2, removing the modes: done and committed (`1350c2d`). The self-test now assigns sRGB to its test
 documents (they took the user's working RGB, so pure colours shifted on read and 12 scenarios failed).
 
 ## Plan (revised 2026-11-06, design still being agreed with Stéphane: code nothing before)
 
 1. Base: rename to Fulla, merge the cost estimate. Done.
-2. Remove the modes and Expand. Done (uncommitted). Then the colour-profile check (Next action).
+2. Remove the modes and Expand. Done (`1350c2d`). Then the colour-profile check (Next action).
 3. Panel redesign in the style of AI chat apps: Generate and Providers tabs; first-run onboarding
    (no provider configured → open Providers, explain, add one with a key test; Generate shows
    "add a provider" instead of a dead form); one model menu inside the prompt box, grouped by
@@ -46,7 +51,7 @@ Also pending: a full code review (security, bugs, useful refactors).
 - 2026-11-06 — Fulla loaded in UXP Developer Tools (Photoshop Beta 28); `CLAUDE.md` now gives the
   UDT workflow and the self-test folder (`PHSPBETA\28\Developer\…`).
 
-- 2026-11-06 — Modes and Expand removed (uncommitted): `pipeline.js` has one `read`, `taskFor(prompt)`
+- 2026-11-06 — Modes and Expand removed (`1350c2d`): `pipeline.js` has one `read`, `taskFor(prompt)`
   and `layerName(prompt)`; `planExpand`, `borderMask`, `borderBounds` and the expand commit path
   are gone; spec and README updated.
 

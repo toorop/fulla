@@ -15,6 +15,12 @@ Fulla brings generative fill to Photoshop 2023 (24.4+) to 2026, powered by your 
 
 Select an area and describe what goes there, or leave the prompt empty to remove what is selected. To extend a picture, enlarge the canvas in Photoshop, select the new area with a little overlap, and fill it. Ask for 1 to 4 variations and click a thumbnail to switch between them. The panel shows the estimated cost of each run.
 
+### Colours
+
+The services work in sRGB. Fulla sends them your pixels converted to sRGB and embeds an sRGB profile in what comes back, so Photoshop converts the result into your document's profile (Adobe RGB, ProPhoto, Display P3…) and the colours match the surroundings.
+
+This only works if Photoshop keeps embedded profiles. Check **Edit > Color Settings**: under **Color Management Policies**, **RGB** must be **Preserve Embedded Profiles** (or Convert to Working RGB), not **Off**. Presets such as **Monitor Color** turn it off: Photoshop then ignores every embedded profile, and results come back with a slight colour cast. With **Off**, your own photos lose their embedded profile when you open them too.
+
 ## Models
 
 | Service | Models | Get a key |
@@ -48,7 +54,7 @@ npm test          # unit tests, no dependencies
 npm run package   # builds dist/fulla-<version>.ccx and -windows.zip
 ```
 
-Load `plugin/` in Adobe's UXP Developer Tool, or install a dev copy with `installer/install.ps1 -Source plugin`. To add a service, write one file in `plugin/src/providers/` with the same shape as `openai.js` and list it in `providers/index.js`.
+Load `plugin/manifest.json` in Adobe's UXP Developer Tools (turn on **Watch** to reload on every save), or install a dev copy with `installer/install.ps1 -Source plugin`; not both, they share the plugin id. UXP Developer Tools needs Photoshop's developer mode on (**Preferences > Plugins > Enable Developer Mode**), otherwise Load fails with "Failed to load the devtools plugin". To add a service, write one file in `plugin/src/providers/` with the same shape as `openai.js` and list it in `providers/index.js`.
 
 <details>
 <summary>In-Photoshop self-test</summary>
@@ -56,10 +62,10 @@ Load `plugin/` in Adobe's UXP Developer Tool, or install a dev copy with `instal
 Dev installs only; release packages leave it out. With the Fulla panel open, write `{}` to `selftest.json` in the plugin's data folder:
 
 ```
-%APPDATA%\Adobe\UXP\PluginsStorage\PHSP\<version>\External\io.github.toorop.fulla\PluginData
+%APPDATA%\Adobe\UXP\PluginsStorage\<host>\<version>\<kind>\io.github.toorop.fulla\PluginData
 ```
 
-It runs every scenario on throwaway documents with a stand-in AI service and writes `selftest\result.json` plus PNG snapshots. Don't touch Photoshop while it runs. `{"only":["fill"]}` runs one scenario; `{"live":"openai"}` runs three real, paid generations with your saved key.
+`<host>` is `PHSP` (or `PHSPBETA` for the Photoshop beta) and `<kind>` is `Developer` when loaded from UXP Developer Tools, `External` when installed. It runs every scenario on throwaway documents with a stand-in AI service and writes `selftest\result.json` plus PNG snapshots. Don't touch Photoshop while it runs. `{"only":["fill"]}` runs one scenario; `{"live":"openai"}` runs two real, paid generations (a fill and a remove) with your saved key. The colour scenario (`adobeRgb`) fails if Photoshop's RGB colour policy is Off (see [Colours](#colours)).
 
 </details>
 
@@ -75,6 +81,7 @@ plugin/
     ├── providers/       # one file per service: openai.js, gemini.js
     ├── cost.js          # estimated cost from the tokens each reply reports
     ├── image.js, png.js, geometry.js, bytes.js
+    ├── icc.js           # sRGB profile embedded in results
     └── selftest.js      # in-Photoshop self-test, left out of release packages
 installer/               # Install / Uninstall Fulla.bat and their PowerShell scripts
 scripts/package.js       # builds the .ccx and the Windows zip
@@ -87,6 +94,7 @@ docs/spec.md             # spec and test plan
 - The services return at most about 4K pixels. Filling most of a large photo means upscaling, which looks softer; the panel tells you when that happens.
 - The services treat the mask as a guide, not a hard edge. Fulla clips their result to your selection.
 - Cancel stops Fulla from using a result, but the service may still bill the request it already received.
+- Colours are right only when Photoshop keeps embedded profiles (see [Colours](#colours)). A result that comes back as JPEG or WebP instead of PNG gets no profile yet.
 - The Windows installer is Windows only; on macOS use the `.ccx`.
 
 ## Contributing

@@ -2,6 +2,7 @@
 // Pure JS so it runs in UXP (no canvas, no zlib) and in Node tests.
 
 const { concat, crc32, adler32 } = require("./bytes");
+const { srgbProfile } = require("./icc");
 
 const LEN_BASE = [3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258];
 const LEN_EXTRA = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0];
@@ -226,4 +227,25 @@ function imageSize(bytes) {
   return null;
 }
 
-module.exports = { encodePng, deflateRaw, zlibCompress, imageSize };
+/**
+ * Embed an sRGB ICC profile (iCCP chunk after IHDR) in a PNG that does not say what colour space it
+ * is in. The services return sRGB without saying so, and Photoshop would read the pixels in the
+ * document's profile instead (it ignores the lighter sRGB chunk). Other formats come back unchanged.
+ */
+function tagSrgb(bytes) {
+  if (!(bytes.length > 33 && bytes[0] === 137 && bytes[1] === 80 && bytes[2] === 78 && bytes[3] === 71)) return bytes;
+  const r = (o) => ((bytes[o] << 24) | (bytes[o + 1] << 16) | (bytes[o + 2] << 8) | bytes[o + 3]) >>> 0;
+  for (let o = 8; o + 8 <= bytes.length; ) {
+    const type = String.fromCharCode(bytes[o + 4], bytes[o + 5], bytes[o + 6], bytes[o + 7]);
+    if (type === "sRGB" || type === "iCCP" || type === "IDAT") {
+      if (type !== "IDAT") return bytes;
+      break;
+    }
+    o += 12 + r(o);
+  }
+  const ihdrEnd = 8 + 12 + r(8);
+  const iccp = concat([Uint8Array.from("sRGB", (c) => c.charCodeAt(0)), Uint8Array.of(0, 0), zlibCompress(srgbProfile())]);
+  return concat([bytes.subarray(0, ihdrEnd), chunk("iCCP", iccp), bytes.subarray(ihdrEnd)]);
+}
+
+module.exports = { encodePng, deflateRaw, zlibCompress, imageSize, tagSrgb };

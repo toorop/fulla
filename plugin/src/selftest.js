@@ -1,7 +1,7 @@
 // Developer self-test, run inside real Photoshop. Not shipped: scripts/package.js leaves this file out.
 //
 // Trigger: drop selftest.json into the plugin's data folder
-//   (%APPDATA%\Adobe\UXP\PluginsStorage\PHSP\<ver>\External\<id>\PluginData). The panel picks it up within
+//   (%APPDATA%\Adobe\UXP\PluginsStorage\<host>\<ver>\Developer|External\<id>\PluginData, see CLAUDE.md). The panel picks it up within
 //   a few seconds, runs every scenario on throwaway documents, and writes selftest\result.json plus PNG
 //   snapshots next to it. selftest.json may contain {"only": ["fill", ...]} or {"live": "openai"|"gemini"}.
 //
@@ -88,7 +88,7 @@ function gradAt(x, y, crop, W, H) {
 const made = [];
 
 /** Pattern image, left half red, right half blue, written as a PNG and opened like a user would. */
-async function newDoc({ width = 1200, height = 800, resolution = 72, transparent = false, bits16 = false, opaque = null } = {}) {
+async function newDoc({ width = 1200, height = 800, resolution = 72, transparent = false, bits16 = false, opaque = null, profile = "sRGB IEC61966-2.1" } = {}) {
   const comps = transparent ? 4 : 3;
   const p = new Uint8Array(width * height * comps);
   for (let y = 0; y < height; y++) {
@@ -107,7 +107,7 @@ async function newDoc({ width = 1200, height = 800, resolution = 72, transparent
     made.push(d);
     // The PNG carries no profile, so Photoshop tags it with the user's working RGB; reads convert to
     // sRGB and pure colours would shift. Tag it sRGB so the expected colours hold on any setup.
-    await ps.bp([{ _obj: "assignProfile", _target: [{ _ref: "document", _id: d.id }], profile: "sRGB IEC61966-2.1" }]);
+    await ps.bp([{ _obj: "assignProfile", _target: [{ _ref: "document", _id: d.id }], profile }]);
     if (bits16) d.bitsPerChannel = constants.BitsPerChannelType.SIXTEEN;
     return d;
   });
@@ -580,6 +580,34 @@ const SCENARIOS = {
   async geminiSizesOddOutput() {
     // fixed-ratio sizing, and a service that returns a different size than asked
     return (await fillScenario("geminiSizesOddOutput", { width: 1600, height: 900 }, { left: 700, top: 300, right: 1000, bottom: 600 }, { base: gemini, scale: 0.75 })).notes;
+  },
+
+  async adobeRgb() {
+    // Results come back as sRGB; in a document with another profile they must keep their colours.
+    // These colours read about 20-30 levels apart if sRGB values are taken as Adobe RGB ones.
+    const GREEN = [60, 160, 60];
+    const BRICK = [180, 90, 60];
+    const doc = await newDoc({ profile: "Adobe RGB (1998)" });
+    const [p] = await ps.modal("Fulla self-test: profile", () => ps.bp([{ _obj: "get", _target: [{ _property: "profile" }, { _ref: "document", _id: doc.id }] }]));
+    expect(/Adobe RGB/.test(p && p.profile), `document profile is ${p && p.profile}, expected Adobe RGB`);
+    await select(doc, "rect", { left: 450, top: 250, right: 750, bottom: 550 });
+    const prov = mockProvider({ colors: [null, GREEN, BRICK] });
+    const out = await run(prov, { prompt: "selftest adobeRgb", n: 3 });
+    const got = { profile: p.profile };
+    try {
+      const [cs] = await ps.modal("Fulla self-test: colour settings", () => ps.bp([{ _obj: "get", _target: [{ _property: "colorSettings" }, { _ref: "application", _enum: "ordinal", _value: "targetEnum" }] }]));
+      got.colorSettings = cs && cs.colorSettings;
+    } catch (e) {
+      got.colorSettings = `unreadable: ${e.message}`;
+    }
+    await ps.showVariation(out.placed, 1);
+    got.green = { got: (await probe(doc, 600, 400)).slice(0, 3), want: GREEN };
+    await ps.showVariation(out.placed, 2);
+    got.brick = { got: (await probe(doc, 600, 400)).slice(0, 3), want: BRICK };
+    await snapshot(doc, "adobeRgb");
+    const bad = [got.green, got.brick].filter((v) => v.got.some((c, k) => Math.abs(c - v.want[k]) > 6));
+    expect(!bad.length, `colours shifted in an Adobe RGB document: ${JSON.stringify(got)}`);
+    return got;
   },
 
   async rollbackOnBadImage() {

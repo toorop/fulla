@@ -127,7 +127,7 @@ function to8bit(data) {
 /**
  * Map a buffer that covers document rect `src` onto an output of size tw x th that covers document rect `dst`.
  * Areas of dst not covered by src are transparent (RGB gets an alpha channel) or 0 (masks).
- * Nearest-neighbour: used where scales already match closely (trimmed reads, expand padding).
+ * Nearest-neighbour: used where scales already match closely (trimmed reads).
  */
 function placeInto(data, sw, sh, comps, src, dst, tw, th) {
   const outComps = comps === 1 ? 1 : 4;
@@ -156,22 +156,6 @@ function placeInto(data, sw, sh, comps, src, dst, tw, th) {
     }
   }
   return { data: out, width: tw, height: th, components: outComps };
-}
-
-/** Mask of size w x h over document rect `area`: 255 outside `keep`, 0 inside (used for expand). */
-function borderMask(area, keep, w, h) {
-  const out = new Uint8Array(w * h);
-  const dx = (area.right - area.left) / w;
-  const dy = (area.bottom - area.top) / h;
-  for (let y = 0; y < h; y++) {
-    const docY = area.top + (y + 0.5) * dy;
-    const insideY = docY >= keep.top && docY < keep.bottom;
-    for (let x = 0; x < w; x++) {
-      const docX = area.left + (x + 0.5) * dx;
-      out[y * w + x] = insideY && docX >= keep.left && docX < keep.right ? 0 : 255;
-    }
-  }
-  return out;
 }
 
 /**
@@ -230,4 +214,4 @@ function toRGBA(data, w, h, comps) {
   return out;
 }
 
-module.exports = { resample, toRGB, toRGBA, dilate, binarize, alphaEditMask, coverage, maskBounds, to8bit, placeInto, borderMask, downsampleStrips };
+module.exports = { resample, toRGB, toRGBA, dilate, binarize, alphaEditMask, coverage, maskBounds, to8bit, placeInto, downsampleStrips };

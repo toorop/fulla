@@ -35,7 +35,7 @@ function req(extra = {}) {
     apiKey: "sk-test",
     image: { rgb: new Uint8Array(w * h * 3).fill(120), width: w, height: h },
     mask,
-    task: taskFor("fill", "a red door"),
+    task: taskFor("a red door"),
     n: 2,
     target: { width: 1536, height: 768 },
     ...extra,
@@ -199,8 +199,6 @@ test("gemini surfaces blocks, bad keys and partial variation failures", async ()
 
 // ---------------- Pipeline ----------------
 
-const { borderBounds } = require("../plugin/src/pipeline");
-
 function fakePs({ doc = { id: 1, width: 4000, height: 3000, resolution: 300 }, selection = { left: 1000, top: 1000, right: 1400, bottom: 1300 } } = {}) {
   const log = [];
   return {
@@ -227,11 +225,11 @@ const fakeProvider = (out = 2) => ({
   async generate(r) { this.seen = r; return Array.from({ length: out }, () => ({ bytes: tinyPng(), mime: "image/png" })); },
 });
 
-test("pipeline fill: read in one modal, network outside, commit as one undo step", async () => {
+test("pipeline: read in one modal, network outside, commit as one undo step", async () => {
   const ps = fakePs();
   const provider = fakeProvider(2);
   const stages = [];
-  const r = await runGeneration({ ps, provider, apiKey: "k", model: "m", mode: "fill", prompt: "a cat", n: 2, progress: (s) => stages.push(s) });
+  const r = await runGeneration({ ps, provider, apiKey: "k", model: "m", prompt: "a cat", n: 2, progress: (s) => stages.push(s) });
   const seen = provider.seen;
   assert.equal(seen.n, 2);
   assert.equal(seen.image.rgb.length, seen.image.width * seen.image.height * 3, "resampled to exact input size, RGB");
@@ -244,58 +242,35 @@ test("pipeline fill: read in one modal, network outside, commit as one undo step
   assert.equal(modals[1][2].historyDocId, 1, "commit is one undo step on the right document");
   const commit = ps.log.find((l) => l[0] === "commit")[1];
   assert.equal(commit.results.length, 2);
-  assert.equal(commit.selection.type, "pixels");
   assert.equal(commit.selection.width, r.crop.right - r.crop.left, "full-resolution selection kept for the mask");
   assert.equal(commit.selection.left, r.crop.left);
   assert.ok(commit.feather >= 2);
   assert.deepEqual(stages, ["Reading the image", "Generating with Fake", "Placing the result"]);
 });
 
-test("pipeline expand reads only the original image and commits a canvas plan", async () => {
-  const ps = fakePs();
-  const provider = fakeProvider(1);
-  await runGeneration({ ps, provider, apiKey: "k", model: "m", mode: "expand", expand: { percent: 20, sides: { right: true } } });
-  const read = ps.log.find((l) => l[0] === "read");
-  const b = read[1];
-  assert.ok(b.left >= 0 && b.top >= 0 && b.right <= 4000 && b.bottom <= 3000, `reads inside the original document: ${JSON.stringify(b)}`);
-  assert.ok(!ps.log.some((l) => l[0] === "readSelection"), "expand needs no selection");
-  const commit = ps.log.find((l) => l[0] === "commit")[1];
-  assert.equal(commit.selection.type, "expand");
-  assert.equal(commit.selection.plan.newWidth, 4800);
-  assert.ok(commit.crop.right === 4800, "result reaches the new right edge");
-  // mask: new area selected, original mostly kept
-  const m = provider.seen.mask;
-  const w = provider.seen.image.width;
-  assert.equal(m[w - 1], 255);
-  assert.equal(m[0], 0);
-});
-
-test("borderBounds covers exactly the new area", () => {
-  assert.deepEqual(borderBounds(1500, 800, { left: 0, top: 0, right: 976, bottom: 800 }), { left: 976, right: 1500, top: 0, bottom: 800 });
-  assert.deepEqual(borderBounds(1000, 1200, { left: 0, top: 224, right: 1000, bottom: 1200 }), { left: 0, right: 1000, top: 0, bottom: 224 });
-  assert.deepEqual(borderBounds(1500, 1200, { left: 274, top: 224, right: 1226, bottom: 976 }), { left: 0, right: 1500, top: 0, bottom: 1200 });
-});
-
 test("pipeline errors are user-friendly and leave the document alone", async () => {
   const provider = fakeProvider(1);
   const none = fakePs({ selection: null });
-  await assert.rejects(runGeneration({ ps: none, provider, apiKey: "k", model: "m", mode: "remove" }), (e) => e instanceof UserError && /object to remove/.test(e.message));
+  await assert.rejects(runGeneration({ ps: none, provider, apiKey: "k", model: "m" }), (e) => e instanceof UserError && /Make a selection first/.test(e.message));
   const c = fakePs();
-  await assert.rejects(runGeneration({ ps: c, provider, apiKey: "k", model: "m", mode: "fill", cancelled: () => true }), /Cancelled/);
+  await assert.rejects(runGeneration({ ps: c, provider, apiKey: "k", model: "m", cancelled: () => true }), /Cancelled/);
   assert.ok(!c.log.some((l) => l[0] === "commit"), "cancel never touches the document");
-  await assert.rejects(runGeneration({ ps: fakePs(), provider, apiKey: "k", model: "m", mode: "expand", expand: { percent: 10, sides: {} } }), (e) => e instanceof UserError && /at least one side/.test(e.message));
   const old = { ...fakePs(), ensureSupported() { throw new Error("needs 24.4"); } };
-  await assert.rejects(runGeneration({ ps: old, provider, apiKey: "k", model: "m", mode: "fill" }), (e) => e instanceof UserError && /24.4/.test(e.message));
+  await assert.rejects(runGeneration({ ps: old, provider, apiKey: "k", model: "m" }), (e) => e instanceof UserError && /24.4/.test(e.message));
   const failing = { ...fakeProvider(1), async generate() { throw new Error("network down"); } };
   const f = fakePs();
-  await assert.rejects(runGeneration({ ps: f, provider: failing, apiKey: "k", model: "m", mode: "fill" }), /network down/);
+  await assert.rejects(runGeneration({ ps: f, provider: failing, apiKey: "k", model: "m" }), /network down/);
   assert.ok(!f.log.some((l) => l[0] === "commit"));
 });
 
-test("layer names are short and readable", () => {
-  assert.equal(layerName("remove", "x"), "Fulla: Remove");
-  assert.equal(layerName("expand", ""), "Fulla: Expand");
-  assert.equal(layerName("fill", "  a   very long prompt that keeps going and going forever "), "Fulla: a very long prompt that keeps going and…");
+test("an empty prompt removes what is selected; a prompt is painted and names the layer", async () => {
+  const provider = fakeProvider(1);
+  const ps = fakePs();
+  await runGeneration({ ps, provider, apiKey: "k", model: "m", prompt: "   " });
+  assert.match(provider.seen.task, /^Remove everything inside the area to change/);
+  assert.equal(ps.log.find((l) => l[0] === "commit")[1].name, "Fulla: Remove");
+  assert.match(taskFor("a red door"), /paint: a red door./);
+  assert.equal(layerName("  a   very long prompt that keeps going and going forever "), "Fulla: a very long prompt that keeps going and…");
 });
 
 test("gemini quota refusals: free tier says so and never retries; long waits are reported; short waits retry", async () => {

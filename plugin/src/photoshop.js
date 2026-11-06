@@ -281,10 +281,6 @@ async function placeFitted(doc, file, crop, trace) {
   return layer;
 }
 
-async function selectRect(r) {
-  await bp([{ _obj: "set", _target: [SELECTION], to: { _obj: "rectangle", top: px(r.top), left: px(r.left), bottom: px(r.bottom), right: px(r.right) } }]);
-}
-
 async function putSelectionPixels(docId, s) {
   const imageData = await imaging.createImageDataFromBuffer(s.data, {
     width: s.width,
@@ -306,22 +302,14 @@ async function putSelectionPixels(docId, s) {
  * @param {object} o
  * @param {number} o.docId
  * @param {Array<{bytes, mime}>} o.results
- * @param {{left,top,right,bottom}} o.crop   where the results go (document px, after any expand)
+ * @param {{left,top,right,bottom}} o.crop   where the results go (document px)
  * @param {string} o.name                    group name
  * @param {number} o.feather                 mask feather in px
- * @param {object} o.selection               {type:"pixels", data,width,height,left,top} or {type:"expand", plan}
+ * @param {object} o.selection               {data, width, height, left, top}: the selection read before generating
  */
 async function commit(o) {
   const doc = findDoc(o.docId);
   if (app.activeDocument.id !== doc.id) app.activeDocument = doc;
-
-  if (o.selection.type === "expand") {
-    const plan = o.selection.plan;
-    await doc.resizeCanvas(plan.newWidth, plan.newHeight, constants.AnchorPosition[plan.anchor]);
-    if (Math.round(num(doc.width)) !== plan.newWidth || Math.round(num(doc.height)) !== plan.newHeight) {
-      throw new HostError(`Canvas resize gave ${num(doc.width)}x${num(doc.height)}, expected ${plan.newWidth}x${plan.newHeight}.`);
-    }
-  }
 
   // Transforms with an active selection only move the selected pixels, so place with nothing selected.
   await bp([{ _obj: "set", _target: [SELECTION], to: { _enum: "ordinal", _value: "none" } }]);
@@ -353,12 +341,7 @@ async function commit(o) {
     group.name = o.name;
 
     // Recreate the exact selection, then turn it into the group's mask.
-    if (o.selection.type === "expand") {
-      await selectRect(o.selection.plan.keep);
-      await bp([{ _obj: "inverse" }]);
-    } else {
-      await putSelectionPixels(doc.id, o.selection);
-    }
+    await putSelectionPixels(doc.id, o.selection);
     await bp([{ _obj: "make", new: { _class: "channel" }, at: { _ref: "channel", _enum: "channel", _value: "mask" }, using: { _enum: "userMaskEnabled", _value: "revealSelection" } }]);
     try {
       group.layerMaskFeather = o.feather;

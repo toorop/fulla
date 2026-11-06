@@ -4,7 +4,7 @@ const zlib = require("node:zlib");
 
 const { toBase64, fromBase64, utf8Encode, crc32, adler32 } = require("../plugin/src/bytes");
 const { encodePng, deflateRaw, imageSize } = require("../plugin/src/png");
-const { computeCrop, inputSize, planExpand } = require("../plugin/src/geometry");
+const { computeCrop, inputSize } = require("../plugin/src/geometry");
 const { resample, toRGB, dilate, alphaEditMask, maskBounds, downsampleStrips } = require("../plugin/src/image");
 
 function randomBytes(n, seed = 1) {
@@ -180,26 +180,6 @@ test("computeCrop on a tiny document never exceeds it", () => {
 test("computeCrop reports softness for huge areas", () => {
   const r = computeCrop({ docWidth: 6000, docHeight: 4000, selection: { left: 0, top: 0, right: 6000, bottom: 4000 }, fit });
   assert.ok(r.softness > 3.5);
-});
-
-test("planExpand anchors and sizes correctly", () => {
-  const all = planExpand({ docWidth: 1000, docHeight: 800, percent: 25, sides: { left: true, right: true, top: true, bottom: true } });
-  assert.equal(all.newWidth, 1500);
-  assert.equal(all.newHeight, 1200);
-  assert.equal(all.anchor, "MIDDLECENTER");
-  assert.deepEqual(all.original, { left: 250, top: 200, right: 1250, bottom: 1000 });
-  assert.deepEqual(all.keep, { left: 274, top: 224, right: 1226, bottom: 976 });
-
-  const right = planExpand({ docWidth: 1000, docHeight: 800, percent: 50, sides: { right: true } });
-  assert.equal(right.newWidth, 1500);
-  assert.equal(right.newHeight, 800);
-  assert.equal(right.anchor, "MIDDLELEFT");
-  assert.deepEqual(right.keep, { left: 0, top: 0, right: 976, bottom: 800 });
-
-  const top = planExpand({ docWidth: 1000, docHeight: 800, percent: 10, sides: { top: true } });
-  assert.equal(top.anchor, "BOTTOMCENTER");
-  assert.throws(() => planExpand({ docWidth: 10, docHeight: 10, percent: 0, sides: { top: true } }));
-  assert.throws(() => planExpand({ docWidth: 10, docHeight: 10, percent: 5, sides: {} }));
 });
 
 test("resample keeps flat colours and exact sizes", () => {

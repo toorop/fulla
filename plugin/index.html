@@ -6,31 +6,9 @@
   </head>
   <body>
     <main id="app">
-      <div class="modes" role="tablist">
-        <sp-action-button class="mode" data-mode="fill">Fill</sp-action-button>
-        <sp-action-button class="mode" data-mode="remove">Remove</sp-action-button>
-        <sp-action-button class="mode" data-mode="expand">Expand</sp-action-button>
-      </div>
-
       <section id="promptRow">
-        <sp-label for="prompt" id="promptLabel">Prompt</sp-label>
-        <sp-textarea id="prompt" placeholder="Describe what to add, or leave empty to blend"></sp-textarea>
-      </section>
-
-      <section id="removeHint" class="hint" hidden>Select the object, then Generate. No prompt needed.</section>
-
-      <section id="expandRow" hidden>
-        <div class="row">
-          <sp-label>Add</sp-label>
-          <sp-textfield id="expandPercent" type="number" min="1" max="200" class="num"></sp-textfield>
-          <sp-label>% on</sp-label>
-        </div>
-        <div class="row sides">
-          <sp-checkbox data-side="left">Left</sp-checkbox>
-          <sp-checkbox data-side="right">Right</sp-checkbox>
-          <sp-checkbox data-side="top">Top</sp-checkbox>
-          <sp-checkbox data-side="bottom">Bottom</sp-checkbox>
-        </div>
+        <sp-label for="prompt">Prompt</sp-label>
+        <sp-textarea id="prompt" placeholder="Describe what to add, or leave empty to remove"></sp-textarea>
       </section>
 
       <section class="grid2">

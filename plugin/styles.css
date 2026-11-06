@@ -20,18 +20,6 @@ body {
   display: none !important;
 }
 
-.modes {
-  display: flex;
-}
-
-.mode {
-  flex: 1 1 0;
-}
-
-.mode + .mode {
-  margin-left: 4px;
-}
-
 section {
   display: flex;
   flex-direction: column;
@@ -45,14 +33,6 @@ section {
 
 .row > * + * {
   margin-left: 6px;
-}
-
-.sides sp-checkbox {
-  margin-right: 8px;
-}
-
-.num {
-  width: 64px;
 }
 
 .grid2,

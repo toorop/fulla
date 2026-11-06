@@ -1,4 +1,4 @@
-// Pure geometry: which part of the document to send, at what size, and how to expand the canvas.
+// Pure geometry: which part of the document to send, and at what size.
 // Rects are {left, top, right, bottom} in document pixels (right/bottom exclusive).
 
 const width = (r) => r.right - r.left;
@@ -76,42 +76,4 @@ function inputSize(target, maxSide = 2048) {
   return { width: Math.max(1, Math.round(target.width * k)), height: Math.max(1, Math.round(target.height * k)) };
 }
 
-const ANCHORS = {
-  "-1,-1": "TOPLEFT", "0,-1": "TOPCENTER", "1,-1": "TOPRIGHT",
-  "-1,0": "MIDDLELEFT", "0,0": "MIDDLECENTER", "1,0": "MIDDLERIGHT",
-  "-1,1": "BOTTOMLEFT", "0,1": "BOTTOMCENTER", "1,1": "BOTTOMRIGHT",
-};
-
-/**
- * Plan a generative expand.
- * @param {object} p
- * @param {number} p.docWidth
- * @param {number} p.docHeight
- * @param {number} p.percent              how much to add, as % of the current size on each chosen side
- * @param {{left,right,top,bottom}} p.sides booleans
- * @param {number} [p.overlap=24]          px the fill reaches back into the original image for blending
- * @returns {{newWidth, newHeight, anchor, original, keep}} keep = rect left untouched (inset original)
- */
-function planExpand({ docWidth, docHeight, percent, sides, overlap = 24 }) {
-  if (!(percent > 0)) throw new Error("Expand amount must be more than 0%");
-  if (!sides.left && !sides.right && !sides.top && !sides.bottom) throw new Error("Pick at least one side to expand");
-  const addX = Math.round((docWidth * percent) / 100);
-  const addY = Math.round((docHeight * percent) / 100);
-  const l = sides.left ? addX : 0;
-  const r = sides.right ? addX : 0;
-  const t = sides.top ? addY : 0;
-  const b = sides.bottom ? addY : 0;
-  // Anchor: where the old image sits. Expanding only right => anchor left.
-  const hx = sides.left && sides.right ? 0 : sides.left ? 1 : sides.right ? -1 : 0;
-  const vy = sides.top && sides.bottom ? 0 : sides.top ? 1 : sides.bottom ? -1 : 0;
-  const original = { left: l, top: t, right: l + docWidth, bottom: t + docHeight };
-  const keep = {
-    left: original.left + (l ? overlap : 0),
-    top: original.top + (t ? overlap : 0),
-    right: original.right - (r ? overlap : 0),
-    bottom: original.bottom - (b ? overlap : 0),
-  };
-  return { newWidth: docWidth + l + r, newHeight: docHeight + t + b, anchor: ANCHORS[`${hx},${vy}`], original, keep };
-}
-
-module.exports = { computeCrop, inputSize, planExpand, clampRect, width, height };
+module.exports = { computeCrop, inputSize, clampRect, width, height };

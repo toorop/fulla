@@ -104,25 +104,6 @@ function buildServicePickers() {
 
 // ---------- render ----------
 
-function renderMode() {
-  document.querySelectorAll(".mode").forEach((b) => {
-    if (b.dataset.mode === prefs.mode) b.setAttribute("selected", "");
-    else b.removeAttribute("selected");
-  });
-  $("promptRow").hidden = prefs.mode === "remove";
-  $("removeHint").hidden = prefs.mode !== "remove";
-  $("expandRow").hidden = prefs.mode !== "expand";
-  $("promptLabel").textContent = prefs.mode === "expand" ? "Prompt (optional)" : "Prompt";
-  if (!busy) $("generate").textContent = { fill: "Generate", remove: "Remove", expand: "Expand" }[prefs.mode];
-}
-
-function renderExpand() {
-  $("expandPercent").value = String(prefs.expandPercent);
-  document.querySelectorAll("[data-side]").forEach((c) => {
-    c.checked = !!prefs.expandSides[c.dataset.side];
-  });
-}
-
 function setStatus(text, kind) {
   const el = $("status");
   el.textContent = text || "";
@@ -132,9 +113,8 @@ function setStatus(text, kind) {
 function setBusy(b) {
   busy = b;
   const g = $("generate");
-  g.textContent = b ? "Cancel" : { fill: "Generate", remove: "Remove", expand: "Expand" }[prefs.mode];
+  g.textContent = b ? "Cancel" : "Generate";
   g.setAttribute("variant", b ? "secondary" : "cta");
-  document.querySelectorAll(".mode").forEach((m) => (b ? m.setAttribute("disabled", "") : m.removeAttribute("disabled")));
 }
 
 function persist() {
@@ -247,12 +227,10 @@ async function generate() {
       fetch: (url, init) => fetch(url, init),
       apiKey,
       model,
-      mode: prefs.mode,
       prompt,
       n: prefs.n,
       quality: prefs.quality,
       maxTier: prefs.maxTier,
-      expand: { percent: prefs.expandPercent, sides: prefs.expandSides },
       progress: (label) => {
         stage = label;
         tick();
@@ -279,31 +257,10 @@ async function generate() {
 // ---------- events ----------
 
 function bind() {
-  document.querySelectorAll(".mode").forEach((b) =>
-    b.addEventListener("click", () => {
-      if (busy) return;
-      prefs.mode = b.dataset.mode;
-      persist();
-      renderMode();
-    })
-  );
   $("customModel").addEventListener("input", () => {
     prefs.customModel[prefs.provider] = $("customModel").value;
     persist();
   });
-  $("expandPercent").addEventListener("input", () => {
-    const v = Number($("expandPercent").value);
-    if (v > 0 && v <= 200) {
-      prefs.expandPercent = v;
-      persist();
-    }
-  });
-  document.querySelectorAll("[data-side]").forEach((c) =>
-    c.addEventListener("change", () => {
-      prefs.expandSides[c.dataset.side] = !!c.checked;
-      persist();
-    })
-  );
   $("generate").addEventListener("click", generate);
   $("toggleSettings").addEventListener("click", () => {
     $("settings").hidden = !$("settings").hidden;
@@ -339,8 +296,6 @@ async function showSavedKeys() {
 buildStaticPickers();
 buildServicePickers();
 bind();
-renderMode();
-renderExpand();
 showSavedKeys();
 
 // Developer self-test hook. selftest.js is left out of release builds, so this is a no-op for users.

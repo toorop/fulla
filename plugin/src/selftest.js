@@ -105,6 +105,9 @@ async function newDoc({ width = 1200, height = 800, resolution = 72, transparent
   return ps.modal("Fulla self-test: open", async () => {
     const d = await app.open(file);
     made.push(d);
+    // The PNG carries no profile, so Photoshop tags it with the user's working RGB; reads convert to
+    // sRGB and pure colours would shift. Tag it sRGB so the expected colours hold on any setup.
+    await ps.bp([{ _obj: "assignProfile", _target: [{ _ref: "document", _id: d.id }], profile: "sRGB IEC61966-2.1" }]);
     if (bits16) d.bitsPerChannel = constants.BitsPerChannelType.SIXTEEN;
     return d;
   });
@@ -184,13 +187,13 @@ function run(provider, extra) {
 // ---------- scenarios ----------
 
 /** Standard fill check on a painted doc: input sent, placement accuracy, mask, history, undo. */
-async function fillScenario(name, docOpts, sel, { shape = "rect", base = openai, scale = 1, n = 1, mode = "fill" } = {}) {
+async function fillScenario(name, docOpts, sel, { shape = "rect", base = openai, scale = 1, n = 1, prompt = `selftest ${name}` } = {}) {
   const doc = await newDoc(docOpts);
   await select(doc, shape, sel);
   const h0 = historyCount(doc);
   const prov = mockProvider({ base, scale });
   const trace = [];
-  const out = await run(prov, { mode, prompt: `selftest ${name}`, n, trace });
+  const out = await run(prov, { prompt, n, trace });
   await snapshot(doc, name);
   const req = prov.requests[0];
   const crop = out.crop;
@@ -217,7 +220,7 @@ async function fillScenario(name, docOpts, sel, { shape = "rect", base = openai,
     near(s.rgb, RED, 12, "image sent to service (left of selection)");
     expect(s.mask === 0, "mask sent to service marks an unselected pixel");
   }
-  if (mode === "remove") expect(/Remove everything/.test(req.task), "remove mode did not send the remove instruction");
+  if (!prompt) expect(/Remove everything/.test(req.task), "an empty prompt did not send the remove instruction");
 
   // Result placed exactly over the crop, clipped to the selection.
   const W = prov.outSize.W;
@@ -239,7 +242,7 @@ async function fillScenario(name, docOpts, sel, { shape = "rect", base = openai,
 
   const g = await groupInfo(doc, out.placed.groupId);
   expect(g.hasMask, "group has no layer mask");
-  expect(g.name === layerName(mode, `selftest ${name}`), `group name is "${g.name}"`);
+  expect(g.name === layerName(prompt), `group name is "${g.name}"`);
   expect(g.children.length === n, `group has ${g.children.length} layers, expected ${n}`);
   expect(historyCount(doc) === h0 + 1, `history grew by ${historyCount(doc) - h0}, expected exactly 1`);
   notes.feather = g.feather;
@@ -375,7 +378,7 @@ const SCENARIOS = {
     await select(doc, "rect", sel);
     const h0 = historyCount(doc);
     const prov = mockProvider();
-    const out = await run(prov, { mode: "fill", prompt: "selftest variations", n: 3 });
+    const out = await run(prov, { prompt: "selftest variations", n: 3 });
     await snapshot(doc, "variations-1");
     const g = await groupInfo(doc, out.placed.groupId);
     expect(g.children.length === 3, `${g.children.length} variation layers`);
@@ -398,7 +401,7 @@ const SCENARIOS = {
   },
 
   async remove() {
-    return (await fillScenario("remove", {}, { left: 520, top: 320, right: 680, bottom: 480 }, { mode: "remove" })).notes;
+    return (await fillScenario("remove", {}, { left: 520, top: 320, right: 680, bottom: 480 }, { prompt: "" })).notes;
   },
 
   async edge() {
@@ -426,7 +429,7 @@ const SCENARIOS = {
     await select(doc, "rect", sel);
     const prov = mockProvider();
     const trace = [];
-    const out = await run(prov, { mode: "fill", prompt: "selftest bigDiag", trace });
+    const out = await run(prov, { prompt: "selftest bigDiag", trace });
     const { W, H } = prov.outSize;
     const crop = out.crop;
     const whole = await readWhole(doc);
@@ -553,7 +556,7 @@ const SCENARIOS = {
     const sel = { left: 40, top: 40, right: 240, bottom: 200 };
     await select(doc, "rect", sel);
     const prov = mockProvider();
-    const out = await run(prov, { mode: "fill", prompt: "selftest transparent" });
+    const out = await run(prov, { prompt: "selftest transparent" });
     await snapshot(doc, "transparentEmptyArea");
     const req = prov.requests[0];
     // the empty area is sent as neutral grey
@@ -579,44 +582,6 @@ const SCENARIOS = {
     return (await fillScenario("geminiSizesOddOutput", { width: 1600, height: 900 }, { left: 700, top: 300, right: 1000, bottom: 600 }, { base: gemini, scale: 0.75 })).notes;
   },
 
-  async expandRight() {
-    const doc = await newDoc();
-      const h0 = historyCount(doc);
-    const prov = mockProvider();
-    const trace = [];
-    const out = await run(prov, { mode: "expand", prompt: "", expand: { percent: 25, sides: { right: true } }, trace });
-    await snapshot(doc, "expandRight-raw");
-    expect(Math.round(doc.width) === 1500 && Math.round(doc.height) === 800, `canvas is ${doc.width}x${doc.height}, expected 1500x800`);
-    const req = prov.requests[0];
-    const crop = out.crop;
-    const ix = Math.floor(((1450 - crop.left) * req.image.width) / (crop.right - crop.left));
-    const iy = Math.floor(((400 - crop.top) * req.image.height) / (crop.bottom - crop.top));
-    const o = iy * req.image.width + ix;
-    expect(req.mask[o] === 255, "new canvas area not marked in mask");
-    near([req.image.rgb[o * 3], req.image.rgb[o * 3 + 1], req.image.rgb[o * 3 + 2]], [128, 128, 128], 2, "new area sent as neutral grey");
-    near(await probe(doc, 300, 400), RED, 12, "original left untouched");
-    near(await probe(doc, 1100, 400), BLUE, 12, "original right untouched");
-    near(await probe(doc, 1400, 400), gradAt(1400, 400, crop, prov.outSize.W, prov.outSize.H), 12, "new area filled");
-    expect(historyCount(doc) === h0 + 1, `history grew by ${historyCount(doc) - h0}, expected 1`);
-    await snapshot(doc, "expandRight");
-    await undoTo(doc, h0);
-    expect(Math.round(doc.width) === 1200, `undo left canvas at ${doc.width}`);
-    return { crop };
-  },
-
-  async expandAllTransparent() {
-    const doc = await newDoc({ transparent: true });
-      const prov = mockProvider();
-    const out = await run(prov, { mode: "expand", prompt: "", expand: { percent: 20, sides: { left: true, right: true, top: true, bottom: true } } });
-    expect(Math.round(doc.width) === 1680 && Math.round(doc.height) === 1120, `canvas is ${doc.width}x${doc.height}, expected 1680x1120`);
-    // original now sits at (240,160)-(1440,960); its red/blue split is at x=840
-    near(await probe(doc, 700, 560), RED, 12, "original left half untouched");
-    near(await probe(doc, 1000, 560), BLUE, 12, "original right half untouched");
-    for (const [x, y] of [[60, 60], [1620, 1060], [840, 40]]) near(await probe(doc, x, y), gradAt(x, y, out.crop, prov.outSize.W, prov.outSize.H), 12, `new border at (${x},${y})`);
-    await snapshot(doc, "expandAllTransparent");
-    return { crop: out.crop };
-  },
-
   async rollbackOnBadImage() {
     const doc = await newDoc();
       const sel = { left: 500, top: 300, right: 700, bottom: 500 };
@@ -625,7 +590,7 @@ const SCENARIOS = {
     const layers0 = Array.from(doc.layers).length;
     let failed = false;
     try {
-      await run(mockProvider({ garbage: true }), { mode: "fill", prompt: "x" });
+      await run(mockProvider({ garbage: true }), { prompt: "x" });
     } catch (e) {
       failed = e.message;
     }
@@ -644,7 +609,7 @@ const SCENARIOS = {
     const prov = mockProvider();
     let msg = "";
     try {
-      await run(prov, { mode: "fill", prompt: "x", cancelled: () => prov.requests.length > 0 });
+      await run(prov, { prompt: "x", cancelled: () => prov.requests.length > 0 });
     } catch (e) {
       msg = e.message;
     }
@@ -658,7 +623,7 @@ const SCENARIOS = {
     await select(doc, "none");
     let msg = "";
     try {
-      await run(mockProvider(), { mode: "fill", prompt: "x" });
+      await run(mockProvider(), { prompt: "x" });
     } catch (e) {
       msg = e.message;
     }
@@ -691,7 +656,7 @@ const SCENARIOS = {
   },
 };
 
-/** Opt-in, paid: real Fill, Remove and Expand with the saved key (1K, lowest quality). */
+/** Opt-in, paid: a real fill and a real remove (empty prompt) with the saved key (1K, lowest quality). */
 async function live(providerId) {
   const provider = providerId === "gemini" ? gemini : openai;
   const apiKey = await settings.getKey(provider.id);
@@ -711,7 +676,7 @@ async function live(providerId) {
     const doc = await newDoc();
     await select(doc, "rect", { left: 450, top: 250, right: 750, bottom: 550 });
     const h0 = historyCount(doc);
-    const out = await runGeneration({ ...base, mode: "fill", prompt: "a small green potted plant" });
+    const out = await runGeneration({ ...base, prompt: "a small green potted plant" });
     expect(historyCount(doc) === h0 + 1, "fill did not add exactly one undo step");
     await snapshot(doc, `live-${provider.id}-fill`);
     return out;
@@ -719,15 +684,8 @@ async function live(providerId) {
   await step("remove", async () => {
     const doc = await newDoc();
     await select(doc, "rect", { left: 560, top: 300, right: 640, bottom: 500 });
-    const out = await runGeneration({ ...base, mode: "remove" });
+    const out = await runGeneration({ ...base, prompt: "" });
     await snapshot(doc, `live-${provider.id}-remove`);
-    return out;
-  });
-  await step("expand", async () => {
-    const doc = await newDoc();
-    const out = await runGeneration({ ...base, mode: "expand", prompt: "", expand: { percent: 25, sides: { left: true, right: true } } });
-    expect(Math.round(doc.width) === 1800, `canvas ${doc.width} wide, expected 1800`);
-    await snapshot(doc, `live-${provider.id}-expand`);
     return out;
   });
   const failed = Object.entries(report).filter(([, v]) => !v.ok);

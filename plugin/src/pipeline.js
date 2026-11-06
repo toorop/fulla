@@ -1,20 +1,20 @@
 // One generation, start to finish, in three phases:
 //   1. read   (short modal scope): selection, pixels and masks; the document is not changed
 //   2. generate (no modal scope): the network call; Photoshop stays usable
-//   3. commit (one modal scope, one undo step): expand canvas if needed, place, group, mask
+//   3. commit (one modal scope, one undo step): place, group, mask
 // Photoshop access goes through `ps` (photoshop.js, or a fake in tests), so this file has no host dependencies.
 
-const { computeCrop, inputSize, planExpand } = require("./geometry");
-const { resample, toRGB, dilate, coverage, placeInto, borderMask } = require("./image");
+const { computeCrop, inputSize } = require("./geometry");
+const { resample, toRGB, dilate, coverage } = require("./image");
 const { taskFor } = require("./prompts");
 
 class UserError extends Error {}
 
-function layerName(mode, prompt) {
-  if (mode === "remove") return "Fulla: Remove";
+/** Group name: the prompt, shortened; an empty prompt removes what is selected. */
+function layerName(prompt) {
   const p = (prompt || "").trim().replace(/\s+/g, " ");
-  const label = mode === "expand" ? "Expand" : "Fill";
-  return p ? `Fulla: ${p.length > 40 ? p.slice(0, 39) + "…" : p}` : `Fulla: ${label}`;
+  if (!p) return "Fulla: Remove";
+  return `Fulla: ${p.length > 40 ? p.slice(0, 39) + "…" : p}`;
 }
 
 const asUserError = (fn) => {
@@ -25,28 +25,10 @@ const asUserError = (fn) => {
   }
 };
 
-/** Bounding box of (canvas minus keep). */
-function borderBounds(w, h, keep) {
-  const hasL = keep.left > 0, hasR = keep.right < w, hasT = keep.top > 0, hasB = keep.bottom < h;
-  return {
-    left: hasL || hasT || hasB ? 0 : keep.right,
-    right: hasR || hasT || hasB ? w : keep.left,
-    top: hasT || hasL || hasR ? 0 : keep.bottom,
-    bottom: hasB || hasL || hasR ? h : keep.top,
-  };
-}
-
-function intersect(a, b) {
-  const r = { left: Math.max(a.left, b.left), top: Math.max(a.top, b.top), right: Math.min(a.right, b.right), bottom: Math.min(a.bottom, b.bottom) };
-  return r.right > r.left && r.bottom > r.top ? r : null;
-}
-
-/** Phase 1 for fill/remove: read inside the current document. */
-async function readFill(ps, doc, fit, mode) {
+/** Phase 1: read the selection and the pixels around it. */
+async function read(ps, doc, fit) {
   const selection = await ps.getSelectionBounds(doc.id);
-  if (!selection) {
-    throw new UserError(mode === "remove" ? "Select the object to remove first." : "Make a selection first (any selection tool).");
-  }
+  if (!selection) throw new UserError("Make a selection first (any selection tool).");
   const geo = asUserError(() => computeCrop({ docWidth: doc.width, docHeight: doc.height, selection, fit }));
   const inp = inputSize(geo.target);
   const px = await ps.readComposite(doc.id, geo.crop, inp);
@@ -59,30 +41,7 @@ async function readFill(ps, doc, fit, mode) {
   // Full-resolution copy of the selection, so the final layer mask is exact even if the user
   // changes the selection while the service is working.
   const full = await ps.readSelection(doc.id, geo.crop, null);
-  return { geo, inp, rgb, mask, restore: { type: "pixels", data: full.data, width: full.width, height: full.height, left: geo.crop.left, top: geo.crop.top } };
-}
-
-/** Phase 1 for expand: work on a virtual, larger canvas; the real canvas changes only at commit. */
-async function readExpand(ps, doc, fit, expand) {
-  const plan = asUserError(() => planExpand({ docWidth: doc.width, docHeight: doc.height, percent: expand.percent, sides: expand.sides }));
-  const selection = borderBounds(plan.newWidth, plan.newHeight, plan.keep);
-  const geo = asUserError(() => computeCrop({ docWidth: plan.newWidth, docHeight: plan.newHeight, selection, fit }));
-  const inp = inputSize(geo.target);
-  const inter = intersect(geo.crop, plan.original);
-  const cw = geo.crop.right - geo.crop.left;
-  const ch = geo.crop.bottom - geo.crop.top;
-  let padded;
-  if (inter) {
-    const src = { left: inter.left - plan.original.left, top: inter.top - plan.original.top, right: inter.right - plan.original.left, bottom: inter.bottom - plan.original.top };
-    const size = { width: Math.max(1, Math.round(((inter.right - inter.left) * inp.width) / cw)), height: Math.max(1, Math.round(((inter.bottom - inter.top) * inp.height) / ch)) };
-    const px = await ps.readComposite(doc.id, src, size);
-    padded = placeInto(px.data, px.width, px.height, px.components, inter, geo.crop, inp.width, inp.height);
-  } else {
-    padded = { data: new Uint8Array(inp.width * inp.height * 4), width: inp.width, height: inp.height, components: 4 };
-  }
-  const rgb = toRGB(padded.data, padded.width, padded.height, padded.components);
-  const mask = borderMask(geo.crop, plan.keep, inp.width, inp.height);
-  return { geo, inp, rgb, mask, restore: { type: "expand", plan } };
+  return { geo, inp, rgb, mask, selection: { data: full.data, width: full.width, height: full.height, left: geo.crop.left, top: geo.crop.top } };
 }
 
 /**
@@ -92,18 +51,16 @@ async function readExpand(ps, doc, fit, expand) {
  * @param {Function} o.fetch
  * @param {string} o.apiKey
  * @param {string} o.model
- * @param {"fill"|"remove"|"expand"} o.mode
- * @param {string} [o.prompt]
+ * @param {string} [o.prompt]    what to paint in the selection; empty removes what is selected
  * @param {number} [o.n=1]
  * @param {string} [o.quality]
  * @param {string} [o.maxTier="2K"]
- * @param {{percent: number, sides: object}} [o.expand]
  * @param {(label: string) => void} [o.progress]
  * @param {() => boolean} [o.cancelled]
  * @param {(usage: object) => void} [o.onUsage]  token counts of each service reply, even if the run then fails
  */
 async function runGeneration(o) {
-  const { ps, provider, mode } = o;
+  const { ps, provider } = o;
   const progress = o.progress || (() => {});
   const cancelled = o.cancelled || (() => false);
   const checkCancel = () => {
@@ -116,7 +73,7 @@ async function runGeneration(o) {
   const fit = (w, h) => provider.fitSize(o.model, w, h, o.maxTier || "2K");
 
   progress("Reading the image");
-  const job = await ps.modal("Fulla: read", () => (mode === "expand" ? readExpand(ps, doc, fit, o.expand) : readFill(ps, doc, fit, mode)));
+  const job = await ps.modal("Fulla: read", () => read(ps, doc, fit));
   checkCancel();
 
   // A little extra room so the model can blend; the Photoshop layer mask still uses the exact selection.
@@ -129,7 +86,7 @@ async function runGeneration(o) {
     model: o.model,
     image: { rgb: job.rgb, width: job.inp.width, height: job.inp.height },
     mask: modelMask,
-    task: taskFor(mode, o.prompt),
+    task: taskFor(o.prompt),
     n: Math.max(1, Math.min(4, o.n || 1)),
     target: job.geo.target,
     quality: o.quality,
@@ -140,9 +97,9 @@ async function runGeneration(o) {
   progress("Placing the result");
   const crop = job.geo.crop;
   const feather = Math.max(2, Math.min(24, Math.round(Math.max(crop.right - crop.left, crop.bottom - crop.top) * 0.004)));
-  const name = layerName(mode, o.prompt);
-  const placed = await ps.modal(name, () => ps.commit({ docId: doc.id, results, crop, name, feather, selection: job.restore, trace: o.trace }), { historyDocId: doc.id });
+  const name = layerName(o.prompt);
+  const placed = await ps.modal(name, () => ps.commit({ docId: doc.id, results, crop, name, feather, selection: job.selection, trace: o.trace }), { historyDocId: doc.id });
   return { results, placed, crop, target: job.geo.target, softness: job.geo.softness };
 }
 
-module.exports = { runGeneration, layerName, borderBounds, UserError };
+module.exports = { runGeneration, layerName, UserError };

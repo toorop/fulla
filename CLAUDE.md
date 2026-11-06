@@ -14,8 +14,8 @@ Photoshop UXP plugin: generative fill with the user's own AI service (OpenAI, Ge
 - `node scripts/icons.js`: regenerates panel icons.
 
 ## In-Photoshop self-test (dev builds only; release packages leave out `src/selftest.js`)
-- Install the dev build: `installer/install.ps1 -Source plugin` (Stéphane runs it). Open the Fulla panel in Photoshop.
-- Write `{}` (or `{"only":["fill"]}`, or `{"live":"openai"}` for one paid real generation) to `%APPDATA%\Adobe\UXP\PluginsStorage\PHSP\<n>\External\io.github.toorop.fulla\PluginData\selftest.json` (`<n>` depends on the Photoshop version; look for the folder).
+- Development runs through UXP Developer Tools: Stéphane loads `plugin/manifest.json` (Load, then Watch to reload on save). Photoshop's own developer mode (Preferences > Plugins) must be on, or Load fails with "Failed to load the devtools plugin". Never install with `installer/install.ps1` at the same time (same plugin id).
+- Write `{}` (or `{"only":["fill"]}`, or `{"live":"openai"}` for one paid real generation) to `%APPDATA%\Adobe\UXP\PluginsStorage\<host>\<n>\Developer\io.github.toorop.fulla\PluginData\selftest.json`. Photoshop Beta 28 is `PHSPBETA\28`; release builds use `PHSP\<n>`, and `External` instead of `Developer` when installed with `install.ps1`. Look for the folder.
 - Results: `PluginData\selftest\result.json`, `status.txt` and PNG snapshots. Nobody may touch Photoshop while it runs.
 - Photoshop on Stéphane's PC: `C:\Program Files\Adobe\Adobe Photoshop 2026` and `Adobe Photoshop (Beta)` (28.0.1, the one he uses).
 

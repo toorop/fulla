@@ -33,13 +33,12 @@ function loadWithFakes({ imagingMissing = false, fail8bit = false, trim = null, 
   const doc = {
     id: 7, width: 2000, height: 1000, resolution: 300,
     get activeLayers() { return [state.active]; },
-    async resizeCanvas(w, h, anchor) { calls.push(["resizeCanvas", w, h, anchor]); doc.width = w; doc.height = h; },
   };
   const app = { documents: [doc], activeDocument: doc };
 
   const photoshop = {
     app,
-    constants: { AnchorPosition: { MIDDLECENTER: "mc", MIDDLELEFT: "ml", TOPLEFT: "tl" } },
+    constants: { AnchorPosition: { TOPLEFT: "tl" } },
     core: {
       async executeAsModal(fn, opts) {
         calls.push(["modal", opts.commandName]);
@@ -148,10 +147,10 @@ test("getSelectionBounds unwraps unit values; null when nothing selected", async
   assert.equal(await ps.getSelectionBounds(7), null);
 });
 
-test("commit (fill): deselect, place and fit each result, group, restore exact selection, mask", async () => {
+test("commit: deselect, place and fit each result, group, restore exact selection, mask", async () => {
   const { ps, calls, state } = loadWithFakes();
   const crop = { left: 100, top: 50, right: 868, bottom: 562 };
-  const sel = { type: "pixels", data: new Uint8Array(768 * 512).fill(255), width: 768, height: 512, left: 100, top: 50 };
+  const sel = { data: new Uint8Array(768 * 512).fill(255), width: 768, height: 512, left: 100, top: 50 };
   const placed = await ps.commit({ docId: 7, results: [png(10), png(20), png(30)], crop, name: "Fulla: test", feather: 4, selection: sel });
   const ops = bpOps(calls);
   assert.equal(ops[0], "set", "deselect first");
@@ -177,27 +176,13 @@ test("commit (fill): deselect, place and fit each result, group, restore exact s
   assert.equal(placed.docId, 7);
 });
 
-test("commit (expand): resizes canvas, then selects the border for the mask", async () => {
-  const { ps, calls, doc } = loadWithFakes();
-  const plan = { newWidth: 3000, newHeight: 1000, anchor: "MIDDLECENTER", keep: { left: 524, top: 0, right: 2476, bottom: 1000 } };
-  await ps.commit({ docId: 7, results: [png(10)], crop: { left: 0, top: 0, right: 3000, bottom: 1000 }, name: "Fulla: Expand", feather: 8, selection: { type: "expand", plan } });
-  assert.deepEqual(calls.find((c) => c[0] === "resizeCanvas"), ["resizeCanvas", 3000, 1000, "mc"]);
-  assert.equal(doc.width, 3000);
-  const ops = bpOps(calls);
-  const rect = calls.filter((c) => c[1] === "set" && c[2].to && c[2].to._obj === "rectangle")[0][2].to;
-  assert.equal(rect.left._value, 524);
-  assert.equal(rect.right._value, 2476);
-  assert.ok(ops.indexOf("inverse") > ops.lastIndexOf("placeEvent"), "border selected after placing");
-  assert.ok(!calls.some((c) => c[0] === "putSelection"));
-});
-
 test("commit refuses a closed document and cleans temp files on failure", async () => {
   const { ps, app, state } = loadWithFakes();
   app.documents = [];
-  await assert.rejects(ps.commit({ docId: 7, results: [png(1)], crop: { left: 0, top: 0, right: 1, bottom: 1 }, name: "x", feather: 2, selection: { type: "pixels" } }), /closed/);
+  await assert.rejects(ps.commit({ docId: 7, results: [png(1)], crop: { left: 0, top: 0, right: 1, bottom: 1 }, name: "x", feather: 2, selection: {} }), /closed/);
   const f = loadWithFakes();
   const bad = { bytes: { buffer: null }, mime: "image/png" };
-  await assert.rejects(f.ps.commit({ docId: 7, results: [png(5), bad], crop: { left: 0, top: 0, right: 10, bottom: 10 }, name: "x", feather: 2, selection: { type: "pixels" } }));
+  await assert.rejects(f.ps.commit({ docId: 7, results: [png(5), bad], crop: { left: 0, top: 0, right: 10, bottom: 10 }, name: "x", feather: 2, selection: {} }));
   assert.equal(f.state.deleted.length, 1);
 });
 
@@ -254,7 +239,7 @@ test("showVariation shows one layer and hides the rest as one undo step", async 
 
 test("refused commands become errors, never Photoshop dialogs", async () => {
   const { ps, calls, state } = loadWithFakes({ refuse: "placeEvent" });
-  const sel = { type: "pixels", data: new Uint8Array(4), width: 2, height: 2, left: 0, top: 0 };
+  const sel = { data: new Uint8Array(4), width: 2, height: 2, left: 0, top: 0 };
   await assert.rejects(
     ps.commit({ docId: 7, results: [png(10)], crop: { left: 0, top: 0, right: 2, bottom: 2 }, name: "x", feather: 2, selection: sel }),
     (e) => e.name === "HostError" && /Photoshop refused "placeEvent": The command/.test(e.message)

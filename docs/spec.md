@@ -5,14 +5,14 @@ Fulla started on 2026-11-06 from OpenFill v0.1.0 by Daman Reddy (MIT). This spec
 Date: 2026-10-12. Status: v0.1.0 beta. Verified in Photoshop 27.10 by the in-Photoshop self-test (23 scenarios); a paid end-to-end generation is still pending.
 
 ## Goal
-Free, open-source (MIT) Photoshop plugin: Generative Fill, Remove, Expand and Variations using the user's own OpenAI or Google Gemini API key. No server, no Creative Cloud app required.
+Free, open-source (MIT) Photoshop plugin: generative fill (a prompt paints the selection, an empty prompt removes what is selected) and variations, using the user's own OpenAI or Google Gemini API key. No server, no Creative Cloud app required.
 
 ## Decisions inherited from Fulla (2026-10-12)
 | Topic | Decision |
 |---|---|
 | Audience | Public, open source, MIT |
 | Models | OpenAI GPT Image and Google Gemini (Nano Banana) only |
-| v1 features | Fill, Remove, Expand, Variations (1-4) |
+| v1 features | Fill, Remove, Expand, Variations (1-4). Fulla (2026-11-06): one prompt, no modes; Expand dropped (enlarge the canvas in Photoshop, then fill) |
 | Billing | Bring your own key; no backend |
 | Photoshop | 2023 to 2026 (v24.4 to v27.x), one build. 24.4 is the first release with the Imaging API |
 | Install | .ccx for Creative Cloud users; `-windows.zip` with Install Fulla.bat (per-user `%APPDATA%\Adobe\UXP`, PS.json merged and backed up) for installs without the Creative Cloud app |
@@ -20,9 +20,9 @@ Free, open-source (MIT) Photoshop plugin: Generative Fill, Remove, Expand and Va
 
 ## How a generation works
 Three phases, so Photoshop is never locked during the network call:
-1. **Read** (short modal scope, no document change): selection bounds; crop = selection + 35% context, at least 512px a side, grown to the model's output aspect, clamped to the document; composite pixels and selection at upload size (long edge max 2048), read at full resolution in strips of at most 4 MP and shrunk in JS (Photoshop's own scaled reads come back shifted); a full-resolution copy of the selection. Expand works on a virtual larger canvas: the original is read and padded, the mask is the new border plus a 24px overlap.
-2. **Generate** (no modal scope): image + mask (grown about 1% so the model can blend) to the provider. Cancel discards the result.
-3. **Commit** (one modal scope, one undo step, rolled back on error): expand canvas if needed, deselect, place each result as a smart object fitted to the crop, group, restore the exact selection (Imaging `putSelection`, or keep-rect + inverse for expand), make it the group's mask, feather, show the first variation.
+1. **Read** (short modal scope, no document change): selection bounds; crop = selection + 35% context, at least 512px a side, grown to the model's output aspect, clamped to the document; composite pixels and selection at upload size (long edge max 2048), read at full resolution in strips of at most 4 MP and shrunk in JS (Photoshop's own scaled reads come back shifted); a full-resolution copy of the selection.
+2. **Generate** (no modal scope): image + mask (grown about 1% so the model can blend) to the provider. With a prompt the model paints it in the selection; with an empty prompt it removes what is selected and rebuilds the background (`prompts.js`). Cancel discards the result.
+3. **Commit** (one modal scope, one undo step, rolled back on error): deselect, place each result as a smart object fitted to the crop, group, restore the exact selection (Imaging `putSelection`), make it the group's mask, feather, show the first variation.
 
 ## Providers
 | | OpenAI | Gemini |
@@ -44,7 +44,7 @@ Neither service follows the mask pixel-exactly, so the Photoshop layer mask does
 | `plugin/src/pipeline.js` | One generation end to end (host-independent) |
 | `plugin/src/photoshop.js` | All Photoshop calls (imaging API, batchPlay, DOM) |
 | `plugin/src/providers/*.js` | One file per AI service, same interface |
-| `plugin/src/geometry.js` | Crop and expand maths |
+| `plugin/src/geometry.js` | Crop maths |
 | `plugin/src/png.js`, `image.js`, `bytes.js` | PNG encoder, resize/mask helpers, base64 |
 | `plugin/src/settings.js` | Keys in UXP secure storage, prefs in localStorage |
 | `plugin/src/selftest.js` | In-Photoshop self-test (dev only, left out of releases) |
@@ -59,6 +59,6 @@ Neither service follows the mask pixel-exactly, so the Photoshop layer mask does
 - Verified live against both APIs: requests reach them and their error replies are mapped (Gemini accepts `imageConfig`; `responseFormat.image` wants enum values). Not yet verified: a paid image coming back.
 
 ## Test plan
-- `npm test` (43 tests): geometry, PNG encoder (checked against zlib), base64, strip downsampling, provider requests and error mapping (with real captured error bodies), pipeline and Photoshop layer with fakes, require paths.
-- In-Photoshop self-test (dev only): fill, variations + switching, ellipse, remove, corner, select-all, 24 MP photo, transparent area, 300 ppi, 16-bit, odd output sizes, expand right / all sides, rollback, cancel, no selection, panel pickers, live network checks. 23/23 on Photoshop 27.10.
+- `npm test` (48 tests): geometry, PNG encoder (checked against zlib), base64, strip downsampling, provider requests and error mapping (with real captured error bodies), pipeline and Photoshop layer with fakes, require paths.
+- In-Photoshop self-test (dev only): fill, variations + switching, ellipse, remove, corner, select-all, 24 MP photo, transparent area, 300 ppi, 16-bit, odd output sizes, rollback, cancel, no selection, panel pickers, live network checks. 23/23 on Photoshop 27.10 before the Expand scenarios were removed (21 now).
 - Still to do: a paid generation per service; Photoshop 2023 (24.4+) to 2025.

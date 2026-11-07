@@ -14,7 +14,7 @@
   that a generation is running; results like Adobe's (1 variation → 1 layer, no group; several →
   thumbnails, click to try, validate to create the layer); prompt placeholder bug; "Open an
   issue" link + `model-request.yml` template; check early that a popover fits in the panel.
-- **Push**: the session's commits are local only (`5352132` to `fb40cb1`). Ask Stéphane before
+- **Push**: every commit after `63384be` is local only. Ask Stéphane before
   pushing (he pushes once per session to spare the CI).
 - The detailed roadmap with checkboxes lives in Stéphane's notes (not in the repo); tick it as
   sub-steps finish, and record decisions in his ideas note.

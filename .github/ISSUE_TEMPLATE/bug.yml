@@ -21,7 +21,7 @@ body:
     attributes:
       label: Provider and area
       multiple: true
-      options: [OpenRouter, OpenAI, Google Gemini, Fill (prompt), Remove (empty prompt), Variations, Install / panel]
+      options: [OpenRouter, OpenAI, Google, Generate with a prompt, Generate with no prompt (remove or fill), Variations, Providers tab / connect, Install / panel]
   - type: textarea
     id: steps
     attributes:
@@ -33,6 +33,6 @@ body:
     id: result
     attributes:
       label: What happened
-      description: The exact message under the Generate button, and a screenshot if useful. Never paste your API key.
+      description: The exact message the panel shows, and a screenshot if useful. Never paste your API key.
     validations:
       required: true

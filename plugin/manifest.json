@@ -13,10 +13,10 @@
       "type": "panel",
       "id": "fullaPanel",
       "label": { "default": "Fulla" },
-      "minimumSize": { "width": 240, "height": 360 },
+      "minimumSize": { "width": 310, "height": 360 },
       "maximumSize": { "width": 2000, "height": 3000 },
-      "preferredDockedSize": { "width": 300, "height": 620 },
-      "preferredFloatingSize": { "width": 300, "height": 620 },
+      "preferredDockedSize": { "width": 320, "height": 620 },
+      "preferredFloatingSize": { "width": 320, "height": 620 },
       "icons": [
         { "width": 23, "height": 23, "path": "icons/icon-dark.png", "scale": [1, 2], "theme": ["darkest", "dark", "medium"], "species": ["chrome"] },
         { "width": 23, "height": 23, "path": "icons/icon-light.png", "scale": [1, 2], "theme": ["lightest", "light"], "species": ["chrome"] }

@@ -8,6 +8,7 @@ const { toBase64 } = require("./src/bytes");
 const { addUsage, estimateCost, formatCost, formatUsd } = require("./src/cost");
 const connect = require("./src/connect");
 const { filterItems, modelMenuItems } = require("./src/menu");
+const { helpMenu } = require("./src/help");
 
 const $ = (id) => document.getElementById(id);
 let prefs = settings.loadPrefs();
@@ -855,6 +856,40 @@ async function endConnect(connected) {
   await renderProviders();
 }
 
+// The panel's ≡ menu (Photoshop's place for help): docs, bug report, model request, about.
+// Set up once, when the plugin loads. The outcome is kept for the self-test.
+const panelMenu = { ok: false, error: "" };
+function setupPanelMenu() {
+  let version = "";
+  try {
+    version = require("uxp").versions.plugin || ""; // empty in development builds
+  } catch (_) {
+    /* the About entry then shows no version */
+  }
+  const items = helpMenu(version);
+  try {
+    require("uxp").entrypoints.setup({
+      panels: {
+        fullaPanel: {
+          // UXP refuses a panel entry without create or show (found 2026-11-07); the panel's page
+          // is index.html itself, so there is nothing to do here.
+          show() {},
+          menuItems: items.map((it) => ({ id: it.id, label: it.label })),
+          invokeMenu(id) {
+            const it = items.find((x) => x.id === id);
+            if (it) openBrowser(it.url, "Fulla opens its page on github.com.");
+          },
+        },
+      },
+    });
+    panelMenu.ok = true;
+  } catch (e) {
+    panelMenu.error = String((e && e.message) || e);
+    console.error("Fulla: panel menu not set up", e);
+  }
+}
+
+setupPanelMenu();
 renderChips();
 buildProviderRows();
 bind();
@@ -865,7 +900,7 @@ renderProviders().then((any) => {
 
 // Developer self-test hook. selftest.js is left out of release builds, so this is a no-op for users.
 try {
-  require("./src/selftest").watch({ generationNet, openMenu, closeMenu });
+  require("./src/selftest").watch({ generationNet, openMenu, closeMenu, panelMenu });
 } catch (_) {
   /* release build */
 }

@@ -550,6 +550,51 @@ const SCENARIOS = {
     return log;
   },
 
+  async panelMenu() {
+    // The panel's ≡ menu is declared through uxp.entrypoints.setup; Photoshop draws it, so only the
+    // declaration's outcome can be checked here.
+    const m = panelHooks.panelMenu;
+    expect(m, "main.js did not pass panelMenu to the self-test");
+    let entry = {};
+    try {
+      const e = require("uxp").entrypoints;
+      entry = { hasSetup: typeof (e && e.setup), keys: e ? Object.keys(e).join(",") : "none" };
+    } catch (x) {
+      entry = { error: String(x) };
+    }
+    expect(m.ok, `entrypoints.setup failed: ${m.error} | ${JSON.stringify(entry)}`);
+    return { ok: m.ok };
+  },
+
+  async panelWidths() {
+    // How wide the panel must be for the button row (model, settings, Generate) to stay on one line,
+    // with each catalogue model's name on the model button. Measures, then puts the label back.
+    const $ = (id) => document.getElementById(id);
+    const tick = (ms = 120) => new Promise((r) => setTimeout(r, ms));
+    const badge = $("modelBadge").textContent;
+    const name = $("modelName").textContent;
+    const app = $("app").getBoundingClientRect();
+    const row = $("generate").parentNode.getBoundingClientRect();
+    const sideGap = app.width - row.width; // panel padding around the row
+    const widths = {};
+    try {
+      for (const p of PROVIDERS) {
+        for (const m of p.models) {
+          $("modelBadge").textContent = p.badge;
+          $("modelName").textContent = m.label;
+          await tick();
+          const need = $("modelChip").getBoundingClientRect().width + $("optionsChip").getBoundingClientRect().width + $("generate").getBoundingClientRect().width + 2 * 6;
+          widths[`${p.badge} ${m.label}`] = Math.ceil(need + sideGap);
+        }
+      }
+    } finally {
+      $("modelBadge").textContent = badge;
+      $("modelName").textContent = name;
+    }
+    const max = Math.max(...Object.values(widths));
+    return { panelWidthNeeded: max, widest: Object.keys(widths).find((k) => widths[k] === max), widths };
+  },
+
   async panelTabs() {
     // Tabs switch pages; Generate with no key for the chosen provider opens Providers and says why.
     const $ = (id) => document.getElementById(id);
@@ -600,10 +645,27 @@ const SCENARIOS = {
     expect(pinned(), `prompt box at ${span(rect("promptBox"))}, page top ${Math.round(pageTop)}`);
     const scrollIdle = $("genScroll");
     expect(scrollIdle.scrollHeight <= scrollIdle.clientHeight + 1, `the area under the prompt overflows with nothing in it (${scrollIdle.scrollHeight}/${scrollIdle.clientHeight}): a needless scroll bar`);
-    // The model button and the settings button sit on one row with Generate.
-    const row = [rect("modelChip"), rect("optionsChip"), rect("generate")].map((b) => Math.round(b.top));
-    info.buttonRow = row;
-    expect(Math.max(...row) - Math.min(...row) <= 8, `model, settings and Generate are not on one row (tops ${row})`);
+    // The model button and the settings button sit on one row with Generate, even at the minimum
+    // panel width (310 px) with the longest model name: the name is shortened instead.
+    const oneRow = (label) => {
+      const tops = [rect("modelChip"), rect("optionsChip"), rect("generate")].map((b) => Math.round(b.top));
+      expect(Math.max(...tops) - Math.min(...tops) <= 8, `${label}: model, settings and Generate are not on one row (tops ${tops})`);
+      expect(rect("modelChip").right <= rect("optionsChip").left + 1 && rect("generate").right <= rect("promptBox").right + 1, `${label}: the row overflows`);
+    };
+    oneRow("panel as it is");
+    const nameEl = $("modelName");
+    const name0 = nameEl.textContent;
+    const box = $("promptBox");
+    try {
+      nameEl.textContent = "GPT Image 2.6 Sunburst";
+      box.style.width = `${310 - 24}px`; // the box's width in a 310 px panel
+      await tick();
+      oneRow("310 px panel, longest name");
+    } finally {
+      box.style.width = "";
+      nameEl.textContent = name0;
+      await tick();
+    }
 
     // Overfill the scrolling area: the box must not move, and the area must scroll.
     const scroll = $("genScroll");

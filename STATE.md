@@ -6,11 +6,21 @@
 
 ## Next action
 
-- **Step 2 next: the "Open an issue" link** (discuss first; GitHub files: ask). Proposal to make:
-  "Another model? Open an issue ↗" at the bottom of the model menu, opening
-  `issues/new?template=model-request.yml`; new `.github/ISSUE_TEMPLATE/model-request.yml`; also
-  bring `bug.yml` up to date (it still says "Google Gemini", "Remove (empty prompt)", "the message
-  under the Generate button"). Then end of step 2 (README captures, his walk-through).
+- **Step 2, help links: agreed and coded, not committed.** Not in the model menu (hidden at the
+  bottom of a scrolling list): in the panel's ≡ menu, Photoshop's place for help
+  (`entrypoints.setup`, `src/help.js`): Documentation (README; the website later), Report a bug,
+  Request a model or provider, About Fulla <version>, each opening github.com. New
+  `.github/ISSUE_TEMPLATE/model-request.yml`; `bug.yml` and `feature.yml` brought up to date.
+  The links work only once pushed. 63/63, package builds. First try: no entries; self-test
+  `panelMenu` showed why: UXP refuses a panel entry without `create` or `show` (added a no-op
+  `show`); setup now passes; he sees the entries. Min panel width: he wants the button row on
+  one line; `panelWidths` measured the panel width needed: 296-310 for the Nano Banana models
+  (default OR Nano Banana 2.1: 303), 343 for "GPT Image 2.x Sunburst". Asked: min 310 with long
+  names shortened ("…"), or min 345: he chose 310 + "…" (coded: manifest min 310, preferred 320;
+  row never wraps, `#modelName` ellipsis; `panelLayout` checks one row at 310 px with the
+  longest name). Reloaded; panel scenarios 6/6 pass. Remind: issue templates reach GitHub with the push.
+  Left: his look (if the menu doesn't
+  show, Unload + Load in UXP Developer Tools), commit (ask), then end of step 2.
 - Prompt sub-step done (`16d37cc`): placeholder = Photoshop's "Describe what you want to generate
   (optional)" (his rule: familiar ground); `prompts.js` (English) covers add/change and, with no
   prompt, remove or extend; "Fulla: Fill" layers. His real tries work; slight colour shift and a

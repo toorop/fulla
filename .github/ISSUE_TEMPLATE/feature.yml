@@ -1,5 +1,5 @@
 name: Feature request
-description: Suggest a new provider, model or improvement
+description: Suggest an improvement (for a model or provider, use "Model or provider request")
 labels: [enhancement]
 body:
   - type: textarea

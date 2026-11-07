@@ -1,0 +1,35 @@
+name: Model or provider request
+description: Ask for a model or a provider Fulla doesn't offer yet
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Fulla offers a short list of tested models. Tell us which one you'd like and why; we try it on real photos before adding it.
+  - type: input
+    id: model
+    attributes:
+      label: Model
+      placeholder: e.g. FLUX.2 Fill, Qwen Image Edit
+    validations:
+      required: true
+  - type: input
+    id: provider
+    attributes:
+      label: Provider that offers it
+      description: Where you would use it (OpenRouter, fal.ai, OpenAI, Google, a local tool...).
+    validations:
+      required: true
+  - type: dropdown
+    id: why
+    attributes:
+      label: Why this model
+      multiple: true
+      options: [Better results, Cheaper, Faster, Edits with a real mask, Runs locally, Other]
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: What you tried it on, a link to its page, examples. Never paste an API key.

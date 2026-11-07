@@ -31,3 +31,16 @@ test("model menu lists only providers with a key, in registry order, and checks 
   const badges = PROVIDERS.map((p) => p.badge);
   assert.ok(badges.every((b) => typeof b === "string" && b.length >= 1 && b.length <= 2) && new Set(badges).size === badges.length, `badges ${badges}`);
 });
+
+test("the panel menu links the docs, a bug report and a model request; each issue template exists", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const { helpMenu } = require("../plugin/src/help");
+  const items = helpMenu("0.1.0");
+  assert.deepEqual(items.map((it) => it.label), ["Documentation", "Report a bug", "Request a model or provider", "About Fulla 0.1.0"]);
+  for (const it of items) assert.match(it.url, /^https:\/\/github\.com\/toorop\/fulla/);
+  for (const it of items) {
+    const t = /template=([\w.-]+)/.exec(it.url);
+    if (t) assert.ok(fs.existsSync(path.join(__dirname, "..", ".github", "ISSUE_TEMPLATE", t[1])), `${t[1]} missing`);
+  }
+});

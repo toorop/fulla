@@ -86,9 +86,26 @@ body {
   cursor: ns-resize;
 }
 
+/* The row never wraps: at the minimum panel width (310 px, manifest) a long model name is
+   shortened with "…" instead (the full name is in the menu). */
 .promptbox > .chips {
   margin-top: 2px;
-  flex-wrap: wrap;
+}
+
+#modelChip {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+#modelChip .obtn-in {
+  min-width: 0;
+}
+
+#modelName {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 /* Outlined buttons, like Adobe's Generative Fill bar. The outline is the outer box's background

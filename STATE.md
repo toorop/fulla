@@ -30,7 +30,9 @@ Sub-steps 1.0 to 1.4 done (2026-11-07); Stéphane connected OpenRouter for real 
    1.5 self-test, README, Stéphane runs the whole path from zero keys.
 2. Chat-style prompt box: model chip (searchable menu built by hand), options chip, Send → Cancel,
    results above the prompt, scrolling, placeholder bug, "Open an issue" link + issue template.
-3. Automatic resolution (rule to agree first), then grain matching only if still needed.
+3. Automatic resolution (rule to agree first), then tone matching (GPT Image 2.6 shifts tones: visible
+   border and darker tile on a B&W photo, Nano Banana seamless; fit a correction on the ring around
+   the selection where the model had to keep the original), grain matching only if still needed.
 4. Full code review.
 5. Website before the first public release (presentation + all user docs; GitHub docs suit
    developers only). SEO and GEO worked hard. Domain considered: fulla.photo.

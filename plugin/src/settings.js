@@ -5,7 +5,6 @@ const PREFS_KEY = "fulla.prefs.v1";
 const DEFAULTS = {
   provider: "openrouter",
   models: { openrouter: "google/gemini-nano-banana-2.1", openai: "gpt-image-2.5-sunburst", gemini: "gemini-nano-banana-2.1" },
-  customModel: { openrouter: "", openai: "", gemini: "" },
   n: 1,
   quality: "auto",
   maxTier: "2K",
@@ -70,12 +69,9 @@ async function setKey(providerId, value) {
 function loadPrefs() {
   try {
     const raw = JSON.parse(localStorage.getItem(PREFS_KEY) || "{}");
-    return {
-      ...DEFAULTS,
-      ...raw,
-      models: { ...DEFAULTS.models, ...(raw.models || {}) },
-      customModel: { ...DEFAULTS.customModel, ...(raw.customModel || {}) },
-    };
+    const prefs = { ...DEFAULTS, ...raw, models: { ...DEFAULTS.models, ...(raw.models || {}) } };
+    delete prefs.customModel; // custom model IDs are gone (2026-11-07); such a choice falls back to the default model
+    return prefs;
   } catch (_) {
     return JSON.parse(JSON.stringify(DEFAULTS));
   }

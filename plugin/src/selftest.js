@@ -453,9 +453,10 @@ const SCENARIOS = {
   },
 
   async panelPickers() {
-    // Drive the panel's own pickers the way a change from the UI does, and check they keep working.
+    // The model chip (roadmap 2.3) and the provisional Variations / Resolution pickers, driven the way
+    // the UI does. Only providers with a key are listed; nothing here makes a network call.
     const $ = (id) => document.getElementById(id);
-    const tick = () => new Promise((r) => setTimeout(r, 120));
+    const tick = (ms = 150) => new Promise((r) => setTimeout(r, ms));
     const labels = (id) => Array.from($(id).querySelectorAll("sp-menu-item")).map((m) => m.textContent);
     const choose = async (id, label) => {
       const items = labels(id);
@@ -467,36 +468,62 @@ const SCENARIOS = {
       await tick();
     };
     const prefs = () => JSON.parse(localStorage.getItem("fulla.prefs.v1") || "{}");
-    const before = prefs().provider || "openai";
-    const log = [];
-    await choose("provider", "Google Gemini");
-    expect(prefs().provider === "gemini", "provider not saved");
-    expect(labels("model").includes("Nano Banana 2.1 (best)"), `model list after Gemini: ${labels("model").join(" | ")}`);
-    expect($("qualityCell").hidden, "quality should hide for Gemini");
-    log.push({ gemini: labels("model") });
-    await choose("model", "Nano Banana Pro");
-    expect(prefs().models.gemini === "gemini-3-pro-image", "model choice not saved");
-    await choose("model", "Custom model ID...");
-    expect(!$("customModelRow").hidden, "custom model field not shown");
-    await choose("model", "Nano Banana 2.1 (best)");
-    expect($("customModelRow").hidden, "custom model field still shown");
+    const rows = () => Array.from($("menuList").querySelectorAll(".menu-item"));
+    const text = (row) => row.querySelector(".grow").textContent;
+    const groups = () => Array.from($("menuList").querySelectorAll(".menu-group")).map((g) => g.textContent);
+    const search = async (q) => {
+      $("menuSearch").value = q;
+      $("menuSearch").dispatchEvent(new Event("input"));
+      await tick();
+    };
+    const log = {};
+    expect(!$("provider") && !$("model") && !$("customModelRow"), "the old Provider / Model pickers or the custom model row are still there");
+    const keyed = [];
+    for (const p of PROVIDERS) if (await settings.getKey(p.id)) keyed.push(p);
+    if (keyed.length) {
+      const chip = $("modelChip");
+      const before = { provider: prefs().provider, model: (prefs().models || {})[prefs().provider] };
+      const beforeLabel = chip.textContent;
+      chip.dispatchEvent(new Event("click"));
+      await tick(400);
+      expect($("menu"), "the model chip did not open its menu");
+      log.groups = groups();
+      expect(groups().join() === keyed.map((p) => p.name).join(), `groups ${groups()} but keys for ${keyed.map((p) => p.name)}`);
+      const checked = rows().filter((r) => r.querySelector(".check").textContent === "✓").map(text);
+      expect(checked.length === 1 && beforeLabel.startsWith(checked[0]), `checked ${checked}, chip "${beforeLabel}"`);
+      expect(rows().every((r) => !/\(/.test(text(r))), "a model name still carries a (...) note");
+      await search("banana");
+      expect(rows().length > 0 && rows().every((r) => /banana/i.test(text(r))), `"banana" kept ${rows().map(text)}`);
+      expect(groups().length > 0, "searching hid the provider headers");
+      await search(keyed[0].name.toLowerCase());
+      expect(rows().length === keyed[0].models.length, `a provider name should keep its whole group, kept ${rows().length}`);
+      // Pick another model by clicking it: saved, shown on the chip, menu closed.
+      const target = rows().find((r) => r.querySelector(".check").textContent !== "✓");
+      const targetName = text(target);
+      target.dispatchEvent(new Event("click"));
+      await tick();
+      expect(!$("menu"), "picking a model did not close the menu");
+      expect(chip.textContent.startsWith(targetName), `chip "${chip.textContent}" after picking ${targetName}`);
+      expect(prefs().provider === keyed[0].id && prefs().models[keyed[0].id] !== before.model, "the picked model was not saved");
+      log.picked = targetName;
+      // Back to the original model with Enter on a search (Enter picks the first match).
+      chip.dispatchEvent(new Event("click"));
+      await tick(400);
+      await search(beforeLabel.replace(" ▾", ""));
+      const enter = new Event("keydown");
+      Object.defineProperty(enter, "key", { value: "Enter" });
+      $("menuSearch").dispatchEvent(enter);
+      await tick();
+      expect(!$("menu") && chip.textContent === beforeLabel, `Enter did not pick back "${beforeLabel}" (chip "${chip.textContent}")`);
+      expect(prefs().provider === before.provider && prefs().models[before.provider] === before.model, "the original model was not restored");
+    } else log.skipped = "no provider has a key";
+    const n0 = String(prefs().n || 1);
+    const t0 = prefs().maxTier || "2K";
     await choose("n", "3");
     await choose("maxTier", "1K (fast)");
-    await choose("provider", "OpenAI");
-    expect(labels("model").some((l) => /GPT Image/.test(l)), `model list after OpenAI: ${labels("model").join(" | ")}`);
-    expect(!$("qualityCell").hidden, "quality should show for OpenAI");
-    await choose("quality", "High");
-    await choose("model", "GPT Image 2.5 Flare (fast)");
-    expect(prefs().models.openai === "gpt-image-2.5-flare", "OpenAI model choice not saved");
-    await choose("provider", "Google Gemini");
-    await choose("provider", "OpenAI");
-    log.push({ openai: labels("model"), n: prefs().n, maxTier: prefs().maxTier, quality: prefs().quality });
-    // put the user's choices back
-    await choose("model", "GPT Image 2.5 Sunburst (best edits)");
-    await choose("quality", "Auto");
-    await choose("n", "1");
-    await choose("maxTier", "2K");
-    await choose("provider", { gemini: "Google Gemini", openrouter: "OpenRouter" }[before] || "OpenAI");
+    expect(prefs().n === 3 && prefs().maxTier === "1K", "Variations / Resolution choices not saved");
+    await choose("n", n0);
+    await choose("maxTier", { "1K": "1K (fast)", "4K": "4K (slow, costly)" }[t0] || "2K");
     return log;
   },
 
@@ -565,9 +592,16 @@ const SCENARIOS = {
       scroll.removeChild(filler);
     }
 
-    const chip = $("testChip");
-    await click(chip);
-    expect($("menu"), "the chip did not open the menu");
+    // A list longer than any panel, opened through main.js's own menu code, anchored to the model chip.
+    const chip = $("modelChip");
+    const long = [];
+    for (let i = 1; i <= 40; i++) long.push({ group: i <= 20 ? "Banana group" : "Other group", label: i % 2 ? `Banana ${i}` : `Item ${i}` });
+    const openLong = async () => {
+      panelHooks.openMenu(chip, long, () => {}, "Search");
+      await tick();
+    };
+    await openLong();
+    expect($("menu"), "the menu did not open");
     try {
       const m = rect("menu");
       const box = rect("promptBox");
@@ -589,14 +623,21 @@ const SCENARIOS = {
       expect(found > 0 && found < total, `search "banana" kept ${found} of ${total}`);
       await click(list.querySelector(".menu-item"));
       expect(!$("menu"), "picking an item did not close the menu");
-      await click(chip);
+      await openLong();
       await click(scroll, true);
       expect(!$("menu"), "a click elsewhere in the panel did not close the menu");
-      await click(chip);
-      await click(chip);
-      expect(!$("menu"), "clicking the chip again did not close the menu");
+      // The chip's own menu needs a provider with a key (without one, the chip opens Providers).
+      let keyed = false;
+      for (const p of PROVIDERS) if (await settings.getKey(p.id)) keyed = true;
+      if (keyed) {
+        await click(chip);
+        await tick(300);
+        expect($("menu"), "the model chip did not open its menu");
+        await click(chip);
+        expect(!$("menu"), "clicking the chip again did not close the menu");
+      }
     } finally {
-      if ($("menu")) await click(chip);
+      panelHooks.closeMenu();
     }
     return info;
   },
@@ -637,7 +678,7 @@ const SCENARIOS = {
       expect(!$("runCard").hidden && $("idleHint").hidden && !$("runProgress").hidden, "running: card or progress not shown");
       expect(/^Generating with /.test($("runStage").textContent) && !$("runStage").textContent.includes($("runTitle").textContent), `running: title "${$("runTitle").textContent}", stage "${$("runStage").textContent}" (provider on top, model in the stage)`);
       expect($("generate").textContent === "Cancel", `running: button "${$("generate").textContent}"`);
-      expect($("prompt").hasAttribute("disabled") && $("testChip").hasAttribute("disabled"), "running: prompt or chip not locked");
+      expect($("prompt").hasAttribute("disabled") && $("modelChip").hasAttribute("disabled"), "running: prompt or model chip not locked");
       const bar = $("runBarFill").style.marginLeft;
       const time = $("runTime").textContent;
       await tick(1200);
@@ -1026,7 +1067,10 @@ async function getOrCreateFolder(parent, name) {
 let running = false;
 
 /** Poll the data folder for selftest.json; run once per file. */
-/** @param {object} [hooks] from main.js: `generationNet` ({ fetch }) carries the panel's generation requests. */
+/**
+ * @param {object} [hooks] from main.js: `generationNet` ({ fetch }) carries the panel's generation
+ *   requests; `openMenu` / `closeMenu` are the panel's floating menu.
+ */
 function watch(hooks = {}) {
   panelHooks = hooks;
   setInterval(async () => {

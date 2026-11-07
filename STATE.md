@@ -6,12 +6,20 @@
 
 ## Next action
 
-- **Roadmap 2.2 done, waiting for Stéphane's OK to commit.** Then propose sub-step 2.3 (model
-  chip: one searchable menu grouped by provider, "model · provider" entries, Nano Banana 2.1
-  "Recommended", "Custom model ID..." at the bottom, only configured providers; replaces the
-  provisional "Test menu" chip and the old Provider/Model pickers; the menu's search field showed
-  no "Search" placeholder, look at it). Discuss first, no code before he agrees.
-- Remaining step 2 sub-steps, in order: model chip; options chip; results like Adobe's (open
+- **Roadmap 2.3 (model chip) coded, not committed.** `#modelChip` in the prompt box opens the
+  floating menu built by `modelMenuItems` (`src/menu.js`): providers with a key, registry order,
+  ✓ on the model in use, Enter picks the first match. Catalogue labels lost their "(...)"; a
+  `note` field carries "Recommended" (Nano Banana 2.1 via OpenRouter) or "Fast". Old Provider /
+  Model pickers, custom model row, `CUSTOM` and `prefs.customModel` removed (a saved custom ID
+  falls back to the default). Self-test: `panelPickers` drives the chip; `panelLayout` uses a
+  40-item list through the `openMenu` hook. 61/61, package builds, self-test 26/28 (only
+  `geminiRaw`/`openaiRaw`). Stéphane checked it (works); he is adding a Google key to see a
+  model offered by two providers. Careful: with a working Google key, a full self-test's
+  `geminiRaw` sends 5 real 1K generations (billed): run with `only` lists, or ask first.
+  Checked by him with OpenRouter + Google keys: fine. Left: commit (ask). Then (agreed 2026-11-07): in the Providers tab's
+  "Add a key" form, a button that opens the provider's key page (`keyHelp`; today plain text).
+- Roadmap 2.2 done and committed (`c133b51`).
+- Remaining step 2 sub-steps, in order: options chip; results like Adobe's (open
   point: Adobe creates the layer at once and a thumbnail click swaps its content, no "validate";
   recommended); prompt placeholder bug + wording and `prompts.js` (must cover add, modify, e.g. a
   face's expression, remove, and with no prompt fill an empty area); "Open an issue" link +

@@ -20,22 +20,7 @@
         <div class="row"><sp-action-button id="setupProvider" size="s">Set up a provider</sp-action-button></div>
       </section>
 
-      <!-- Provisional: these pickers move into the model and options chips (roadmap 2.3, 2.4). -->
-      <section class="grid2">
-        <div>
-          <sp-label>Provider</sp-label>
-          <sp-picker id="provider" size="s"><sp-menu slot="options"></sp-menu></sp-picker>
-        </div>
-        <div>
-          <sp-label>Model</sp-label>
-          <sp-picker id="model" size="s"><sp-menu slot="options"></sp-menu></sp-picker>
-        </div>
-      </section>
-      <section id="customModelRow" hidden>
-        <sp-label>Model ID</sp-label>
-        <sp-textfield id="customModel" placeholder="exact model ID"></sp-textfield>
-      </section>
-
+      <!-- Provisional: these pickers move into the options chip (roadmap 2.4). -->
       <section class="grid3">
         <div>
           <sp-label>Variations</sp-label>
@@ -76,8 +61,8 @@
       <div id="promptBox" class="promptbox">
         <sp-textarea id="prompt" placeholder="Describe what to add, or leave empty to remove"></sp-textarea>
         <div class="row chips">
-          <!-- Provisional chip: opens a test menu (roadmap 2.1); becomes the model chip in 2.3. -->
-          <sp-action-button id="testChip" size="s" quiet>Test menu ▾</sp-action-button>
+          <!-- Model chip: one menu with every model of every provider that has a key (main.js). -->
+          <sp-action-button id="modelChip" size="s" quiet>Model ▾</sp-action-button>
           <div class="grow"></div>
           <sp-button id="generate" variant="cta" size="s">Generate</sp-button>
         </div>

@@ -19,7 +19,7 @@ const OPENAI_RATIOS = ["1:1", "3:2", "2:3", "4:3", "3:4", "16:9", "9:16", "21:9"
 // Catalogue: models Fulla offers through OpenRouter. maxN = variations per request (1 = one request
 // each). OpenAI models take no `resolution` (the provider picks the pixels) but can be asked for PNG.
 const MODELS = [
-  { id: "google/gemini-nano-banana-2.1", label: "Nano Banana 2.1 (recommended)", ratios: GEMINI_RATIOS, tiers: ["1K", "2K", "4K"], maxN: 1 },
+  { id: "google/gemini-nano-banana-2.1", label: "Nano Banana 2.1", note: "Recommended", ratios: GEMINI_RATIOS, tiers: ["1K", "2K", "4K"], maxN: 1 },
   { id: "google/gemini-3-pro-image", label: "Nano Banana Pro", ratios: GEMINI_PRO_RATIOS, tiers: ["1K", "2K", "4K"], maxN: 1 },
   { id: "qwen/qwen-image-3", label: "Qwen Image 3", ratios: QWEN_RATIOS, tiers: ["1K", "2K"], maxN: 6 },
   { id: "qwen/qwen-image-2.1-pro", label: "Qwen Image 2.1 Pro", ratios: QWEN_RATIOS, tiers: ["1K", "2K"], maxN: 6 },
@@ -30,7 +30,7 @@ const TIER_ORDER = ["1K", "2K", "4K"];
 const TIER_SIDE = { "1K": 1024, "2K": 2048, "4K": 4096 }; // about this many pixels squared per tier
 
 function modelInfo(model) {
-  // Custom model IDs: common ratios, 1K and 2K, one image per request.
+  // Not in the catalogue (a model saved by an older version): common ratios, 1K and 2K, one image per request.
   return MODELS.find((m) => m.id === model) || { id: model, ratios: GEMINI_PRO_RATIOS, tiers: ["1K", "2K"], maxN: 1 };
 }
 
@@ -193,7 +193,7 @@ module.exports = {
   host: HOST,
   keyHelp: "openrouter.ai/settings/keys",
   tagline: "One key for every model.",
-  models: MODELS.map(({ id, label }) => ({ id, label })),
+  models: MODELS.map(({ id, label, note }) => ({ id, label, note })),
   defaultModel: MODELS[0].id,
   qualities: null,
   reportsCost: true,

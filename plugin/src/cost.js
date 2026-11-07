@@ -28,7 +28,7 @@ function addUsage(a, b) {
 }
 
 /**
- * USD for this usage, or null when the model has no known price (custom model IDs). When the reply
+ * USD for this usage, or null when the model has no known price (not in the catalogue). When the reply
  * carried its own billed amount (OpenRouter's usage.cost), that amount is used as is.
  */
 function estimateCost(model, usage) {

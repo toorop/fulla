@@ -25,15 +25,15 @@ const R14 = Object.keys(RATIOS_1K);
 const R10 = R14.filter((r) => !WIDE.includes(r));
 
 const MODELS = [
-  { id: "gemini-nano-banana-2.1", label: "Nano Banana 2.1 (best)", ratios: R14, tiers: ["1K", "2K", "4K"] },
+  { id: "gemini-nano-banana-2.1", label: "Nano Banana 2.1", ratios: R14, tiers: ["1K", "2K", "4K"] },
   { id: "gemini-3-pro-image", label: "Nano Banana Pro", ratios: R10, tiers: ["1K", "2K", "4K"] },
-  { id: "gemini-3.1-flash-lite-image", label: "Nano Banana 2 Lite (fast)", ratios: R14, tiers: ["1K"] },
+  { id: "gemini-3.1-flash-lite-image", label: "Nano Banana 2 Lite", note: "Fast", ratios: R14, tiers: ["1K"] },
 ];
 const TIER_MULT = { "1K": 1, "2K": 2, "4K": 4 };
 const TIER_ORDER = ["1K", "2K", "4K"];
 
 function modelInfo(model) {
-  // Unknown (custom) models get the widest common set.
+  // A model not in the catalogue (saved by an older version) gets the widest common set.
   return MODELS.find((m) => m.id === model) || { id: model, ratios: R10, tiers: ["1K", "2K", "4K"] };
 }
 
@@ -233,7 +233,7 @@ module.exports = {
   name: "Google Gemini",
   host: HOST,
   keyHelp: "aistudio.google.com/apikey",
-  models: MODELS.map(({ id, label }) => ({ id, label })),
+  models: MODELS.map(({ id, label, note }) => ({ id, label, note })),
   defaultModel: MODELS[0].id,
   qualities: null,
   fitSize,

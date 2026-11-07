@@ -7,10 +7,9 @@ const settings = require("./src/settings");
 const { toBase64 } = require("./src/bytes");
 const { addUsage, estimateCost, formatCost, formatUsd } = require("./src/cost");
 const connect = require("./src/connect");
-const { filterItems } = require("./src/menu");
+const { filterItems, modelMenuItems } = require("./src/menu");
 
 const $ = (id) => document.getElementById(id);
-const CUSTOM = "__custom__";
 const TIERS = [
   { id: "1K", label: "1K (fast)" },
   { id: "2K", label: "2K" },
@@ -54,23 +53,14 @@ function makePicker(id, items, selected, onChange) {
   return picker;
 }
 
-function modelItems(provider) {
-  return [...provider.models.map((m) => ({ id: m.id, label: m.label })), { id: CUSTOM, label: "Custom model ID..." }];
-}
-
+/** The model in use: the provider's saved choice, or its default when that is no longer in the catalogue. */
 function currentModel() {
-  const id = prefs.models[prefs.provider];
-  if (id === CUSTOM) return (prefs.customModel[prefs.provider] || "").trim();
-  return id;
+  const provider = getProvider(prefs.provider);
+  if (!provider.models.some((m) => m.id === prefs.models[provider.id])) prefs.models[provider.id] = provider.defaultModel;
+  return prefs.models[provider.id];
 }
 
 function buildStaticPickers() {
-  makePicker("provider", PROVIDERS.map((p) => ({ id: p.id, label: p.name })), prefs.provider, (id) => {
-    if (id === prefs.provider) return;
-    prefs.provider = id;
-    persist();
-    setTimeout(buildProviderPickers, 0); // after the provider picker has closed
-  });
   makePicker("n", N_ITEMS, prefs.n, (n) => {
     prefs.n = n;
     persist();
@@ -81,19 +71,10 @@ function buildStaticPickers() {
   });
 }
 
-/** Model and quality lists depend on the provider. */
+/** The model chip's label, and the quality list, which depends on the provider. */
 function buildProviderPickers() {
   const provider = getProvider(prefs.provider);
-  if (!provider.models.some((m) => m.id === prefs.models[provider.id]) && prefs.models[provider.id] !== CUSTOM) {
-    prefs.models[provider.id] = provider.defaultModel;
-  }
-  makePicker("model", modelItems(provider), prefs.models[provider.id], (id) => {
-    prefs.models[provider.id] = id;
-    persist();
-    $("customModelRow").hidden = id !== CUSTOM;
-  });
-  $("customModelRow").hidden = prefs.models[provider.id] !== CUSTOM;
-  $("customModel").value = prefs.customModel[provider.id] || "";
+  $("modelChip").textContent = `${modelLabel(provider, currentModel())} ▾`;
   $("qualityCell").hidden = !provider.qualities;
   if (provider.qualities) {
     if (!provider.qualities.includes(prefs.quality)) prefs.quality = provider.qualities[0];
@@ -156,14 +137,14 @@ function animateBar(on) {
   }, 40);
 }
 
-/** "Nano Banana 2.1": the catalogue label without its "(recommended)"-style note; a custom ID as is. */
+/** "Nano Banana 2.1": the catalogue name. */
 function modelLabel(provider, id) {
   const m = provider.models.find((x) => x.id === id);
-  return m ? m.label.replace(/\s*\(.*\)\s*$/, "") : id;
+  return m ? m.label : id;
 }
 
 // Locked while a run is going: what was sent is what the card shows.
-const LOCKED = ["prompt", "testChip", "provider", "model", "customModel", "n", "maxTier", "quality"];
+const LOCKED = ["prompt", "modelChip", "n", "maxTier", "quality"];
 
 function setBusy(b) {
   busy = b;
@@ -213,7 +194,7 @@ function addSpend(spend, usage, cost) {
 
 function spendText(spend) {
   const text = formatCost(spend.priced ? spend.cost : null, spend.usage);
-  return spend.priced && spend.unpriced ? `${text} (custom models not priced)` : text;
+  return spend.priced && spend.unpriced ? `${text} (some replies not priced)` : text;
 }
 
 /** "≈ $0.041 · 4,011 tokens · session ≈ $0.120": this run, then since the panel opened. */
@@ -272,7 +253,6 @@ async function generate() {
   const provider = getProvider(prefs.provider);
   const model = currentModel();
   resetCard(provider.name); // the model is named in the stage line: "Generating with Nano Banana 2.1"
-  if (!model) return setStatus("Enter a model ID first.", "error");
   const apiKey = await settings.getKey(provider.id);
   if (!apiKey) {
     const msg = `Add your ${provider.name} API key first.`;
@@ -374,19 +354,22 @@ function openMenu(chip, items, onPick, searchHint) {
   menu.style.bottom = `${Math.round(app.bottom - box.top + 4)}px`;
   const search = el("sp-textfield", { id: "menuSearch", size: "s", placeholder: searchHint });
   const list = el("div", { id: "menuList", class: "menu-list" });
+  let shown = [];
+  const pick = (it) => {
+    closeMenu();
+    onPick(it);
+  };
   const render = () => {
     list.innerHTML = "";
-    const shown = filterItems(items, search.value);
+    shown = filterItems(items, search.value);
     let group = null;
     for (const it of shown) {
       if (it.group && it.group !== group) list.appendChild(el("div", { class: "menu-group" }, (group = it.group)));
       const row = el("div", { class: "menu-item" });
-      row.appendChild(el("span", {}, it.label));
+      row.appendChild(el("span", { class: "check" }, it.checked ? "✓" : ""));
+      row.appendChild(el("span", { class: "grow" }, it.label));
       if (it.note) row.appendChild(el("span", { class: "note" }, it.note));
-      row.addEventListener("click", () => {
-        closeMenu();
-        onPick(it);
-      });
+      row.addEventListener("click", () => pick(it));
       list.appendChild(row);
     }
     if (!shown.length) list.appendChild(el("div", { class: "menu-empty" }, "No match"));
@@ -394,6 +377,7 @@ function openMenu(chip, items, onPick, searchHint) {
   search.addEventListener("input", render);
   search.addEventListener("keydown", (e) => {
     if (e.key === "Escape") closeMenu();
+    if (e.key === "Enter" && shown.length) pick(shown[0]);
   });
   menu.appendChild(search);
   menu.appendChild(list);
@@ -416,32 +400,31 @@ function openMenu(chip, items, onPick, searchHint) {
   }
 }
 
-/** Roadmap 2.1 only: real catalogue names plus filler, to try the menu. Replaced by the model chip in 2.3. */
-function testMenuItems() {
-  const items = [];
-  for (const p of PROVIDERS) for (const m of p.models) items.push({ group: p.name, label: m.label });
-  for (let i = 1; i <= 30; i++) items.push({ group: "Filler (makes the list scroll)", label: `Test item ${i}` });
-  return items;
-}
-
-function toggleTestMenu() {
-  const chip = $("testChip");
+/** The model chip: one menu for every model of every provider that has a key. */
+async function toggleModelMenu() {
+  const chip = $("modelChip");
   if (menuChip === chip) return closeMenu();
-  openMenu(chip, testMenuItems(), (it) => setStatus(`Test menu: picked "${it.label}". Nothing changes yet.`), "Search");
+  const keys = await savedKeys();
+  const keyed = {};
+  for (const id of Object.keys(keys)) keyed[id] = !!keys[id];
+  const items = modelMenuItems(PROVIDERS, keyed, { provider: prefs.provider, model: currentModel() });
+  if (!items.length) return showTab("providers");
+  openMenu(chip, items, (it) => {
+    prefs.provider = it.providerId;
+    prefs.models[it.providerId] = it.modelId;
+    persist();
+    buildProviderPickers();
+  }, "Search models");
 }
 
 // ---------- events ----------
 
 function bind() {
-  $("testChip").addEventListener("click", toggleTestMenu);
+  $("modelChip").addEventListener("click", toggleModelMenu);
   // A click anywhere else in the panel closes the menu (the chip toggles it itself).
   $("app").addEventListener("click", (e) => {
     const m = $("menu");
     if (m && !m.contains(e.target) && !(menuChip && menuChip.contains(e.target))) closeMenu();
-  });
-  $("customModel").addEventListener("input", () => {
-    prefs.customModel[prefs.provider] = $("customModel").value;
-    persist();
   });
   $("generate").addEventListener("click", generate);
   for (const t of TABS) $(`tab-${t}`).addEventListener("click", () => showTab(t));
@@ -748,7 +731,7 @@ renderProviders().then((any) => {
 
 // Developer self-test hook. selftest.js is left out of release builds, so this is a no-op for users.
 try {
-  require("./src/selftest").watch({ generationNet });
+  require("./src/selftest").watch({ generationNet, openMenu, closeMenu });
 } catch (_) {
   /* release build */
 }

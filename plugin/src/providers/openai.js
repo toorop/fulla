@@ -9,8 +9,8 @@ const HOST = "api.openai.com";
 const URL = `https://${HOST}/v1/images/edits`;
 
 const MODELS = [
-  { id: "gpt-image-2.5-sunburst", label: "GPT Image 2.5 Sunburst (best edits)" },
-  { id: "gpt-image-2.5-flare", label: "GPT Image 2.5 Flare (fast)" },
+  { id: "gpt-image-2.5-sunburst", label: "GPT Image 2.5 Sunburst" },
+  { id: "gpt-image-2.5-flare", label: "GPT Image 2.5 Flare", note: "Fast" },
   { id: "gpt-image-2", label: "GPT Image 2" },
 ];
 

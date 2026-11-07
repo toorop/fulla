@@ -104,6 +104,11 @@ body {
   background-color: var(--uxp-host-widget-hover-background-color);
 }
 
+.menu-item .check {
+  width: 16px;
+  flex: 0 0 auto;
+}
+
 .menu-item .note {
   color: var(--uxp-host-text-color-secondary);
   margin-left: 8px;

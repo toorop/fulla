@@ -8,8 +8,8 @@ const usage = (o) => ({ ...emptyUsage(), ...o });
 
 test("every listed model has a price, unless its provider reports the billed amount", () => {
   for (const p of PROVIDERS) if (!p.reportsCost) for (const m of p.models) assert.ok(PRICES[m.id], `${p.id} ${m.id} missing from cost.js`);
-  // A reported amount wins over any price table, for known and custom models alike.
-  assert.equal(estimateCost("my-custom-model", usage({ outputImage: 1000, cost: 0.0412 })), 0.0412);
+  // A reported amount wins over any price table, for known and unknown models alike.
+  assert.equal(estimateCost("unknown-model", usage({ outputImage: 1000, cost: 0.0412 })), 0.0412);
   assert.equal(estimateCost("gpt-image-2", usage({ outputImage: 1000, cost: 0 })), 0);
 });
 
@@ -26,7 +26,7 @@ test("cost matches the providers' own per-image figures", () => {
 });
 
 test("unknown models and missing usage have no price", () => {
-  assert.equal(estimateCost("my-custom-model", usage({ outputImage: 1000 })), null);
+  assert.equal(estimateCost("unknown-model", usage({ outputImage: 1000 })), null);
   assert.equal(estimateCost("gpt-image-2", null), null);
 });
 

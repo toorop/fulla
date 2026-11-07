@@ -12,16 +12,15 @@
       </nav>
       <sp-divider class="tabs-line" size="small"></sp-divider>
 
+      <!-- Chat-style layout: a scrolling area, and the prompt box pinned at the bottom. -->
       <section id="page-generate" class="page">
+      <div id="genScroll" class="scroll">
       <section id="noProvider" class="stack" hidden>
         <div>Connect a provider to start.</div>
         <div class="row"><sp-action-button id="setupProvider" size="s">Set up a provider</sp-action-button></div>
       </section>
-      <section id="promptRow">
-        <sp-label for="prompt">Prompt</sp-label>
-        <sp-textarea id="prompt" placeholder="Describe what to add, or leave empty to remove"></sp-textarea>
-      </section>
 
+      <!-- Provisional: these pickers move into the model and options chips (roadmap 2.3, 2.4). -->
       <section class="grid2">
         <div>
           <sp-label>Provider</sp-label>
@@ -52,7 +51,6 @@
         </div>
       </section>
 
-      <sp-button id="generate" variant="cta">Generate</sp-button>
       <div id="status" class="status" aria-live="polite"></div>
       <div id="cost" class="hint" hidden>
         <div id="costRun"></div>
@@ -63,10 +61,20 @@
         <sp-label>Variations</sp-label>
         <div id="thumbs" class="thumbs"></div>
       </section>
+      </div>
 
+      <div id="promptBox" class="promptbox">
+        <sp-textarea id="prompt" placeholder="Describe what to add, or leave empty to remove"></sp-textarea>
+        <div class="row chips">
+          <!-- Provisional chip: opens a test menu (roadmap 2.1); becomes the model chip in 2.3. -->
+          <sp-action-button id="testChip" size="s" quiet>Test menu ▾</sp-action-button>
+          <div class="grow"></div>
+          <sp-button id="generate" variant="cta" size="s">Generate</sp-button>
+        </div>
+      </div>
       </section>
 
-      <section id="page-providers" class="page" hidden>
+      <section id="page-providers" class="page scroll" hidden>
         <!-- First run, shown while no provider has a key. -->
         <section id="welcome" class="stack" hidden>
           <sp-heading size="XS">Connect a provider</sp-heading>

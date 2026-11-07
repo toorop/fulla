@@ -6,15 +6,112 @@ body {
   font-size: var(--uxp-host-font-size);
 }
 
+/* The app fills the panel exactly, so a page can pin the prompt box at the bottom and scroll the
+   rest (positioned rather than height: 100%, which UXP panels don't always resolve). */
 #app {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   display: flex;
   flex-direction: column;
   padding: 12px;
 }
 
 #app > * + *,
-.page > * + * {
+.scroll > * + *,
+.promptbox > * + * {
   margin-top: 10px;
+}
+
+/* A page takes the height left under the tabs. */
+.page {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Scrolls when the panel is smaller than its content; never pushes the prompt box out. */
+.scroll {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Children keep their height and overflow, instead of being squeezed to fit. */
+.scroll > * {
+  flex-shrink: 0;
+}
+
+.promptbox {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  padding: 8px;
+  border: 1px solid var(--uxp-host-text-color-secondary);
+  border-radius: 6px;
+}
+
+.page > .promptbox {
+  margin-top: 10px;
+}
+
+.chips {
+  align-items: center;
+}
+
+.grow {
+  flex: 1 1 auto;
+}
+
+/* Hand-built floating menu (UXP has no searchable picker): opens over the scrolling area, above
+   the prompt box, and its list scrolls. Built on open and removed on close. */
+.menu {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  border: 1px solid var(--uxp-host-text-color-secondary);
+  border-radius: 6px;
+  background-color: var(--uxp-host-background-color);
+}
+
+.menu-list {
+  overflow-y: auto;
+  margin-top: 6px;
+}
+
+.menu-group {
+  padding: 6px 6px 2px;
+  font-size: 11px;
+  color: var(--uxp-host-text-color-secondary);
+}
+
+.menu-item {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  padding: 4px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.menu-item:hover {
+  background-color: var(--uxp-host-widget-hover-background-color);
+}
+
+.menu-item .note {
+  color: var(--uxp-host-text-color-secondary);
+  margin-left: 8px;
+}
+
+.menu-empty {
+  padding: 6px;
+  color: var(--uxp-host-text-color-secondary);
 }
 
 /* Tabs in the style of Photoshop's own panel tabs: plain labels, the active one underlined.

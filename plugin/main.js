@@ -7,6 +7,7 @@ const settings = require("./src/settings");
 const { toBase64 } = require("./src/bytes");
 const { addUsage, estimateCost, formatCost } = require("./src/cost");
 const connect = require("./src/connect");
+const { filterItems } = require("./src/menu");
 
 const $ = (id) => document.getElementById(id);
 const CUSTOM = "__custom__";
@@ -113,6 +114,7 @@ function setStatus(text, kind) {
 
 function setBusy(b) {
   busy = b;
+  closeMenu();
   const g = $("generate");
   g.textContent = b ? "Cancel" : "Generate";
   g.setAttribute("variant", b ? "secondary" : "cta");
@@ -122,6 +124,7 @@ const TABS = ["generate", "providers"];
 
 /** Show one tab's page. A generation keeps running while another tab is shown. */
 function showTab(name) {
+  closeMenu();
   for (const t of TABS) {
     $(`page-${t}`).hidden = t !== name;
     $(`tab-${t}`).className = t === name ? "tab active" : "tab";
@@ -268,9 +271,98 @@ async function generate() {
   }
 }
 
+// ---------- floating menu ----------
+// Built on open and removed on close (UXP keeps a hidden element's height). It covers the scrolling
+// area and stops above the prompt box: the box holds a text field, which UXP may draw over any page
+// content. One menu at a time; a click elsewhere in the panel closes it.
+
+let menuChip = null;
+
+function closeMenu() {
+  const m = $("menu");
+  if (m) m.parentNode.removeChild(m);
+  menuChip = null;
+}
+
+/**
+ * @param {Element} chip   the chip that opened it (clicking it again closes the menu)
+ * @param {Array<{label: string, group?: string, note?: string}>} items  in display order, grouped
+ * @param {(item: object) => void} onPick
+ * @param {string} searchHint
+ */
+function openMenu(chip, items, onPick, searchHint) {
+  closeMenu();
+  const app = $("app").getBoundingClientRect();
+  const box = $("promptBox").getBoundingClientRect();
+  const menu = el("div", { id: "menu", class: "menu" });
+  menu.style.bottom = `${Math.round(app.bottom - box.top + 4)}px`;
+  const search = el("sp-textfield", { id: "menuSearch", size: "s", placeholder: searchHint });
+  const list = el("div", { id: "menuList", class: "menu-list" });
+  const render = () => {
+    list.innerHTML = "";
+    const shown = filterItems(items, search.value);
+    let group = null;
+    for (const it of shown) {
+      if (it.group && it.group !== group) list.appendChild(el("div", { class: "menu-group" }, (group = it.group)));
+      const row = el("div", { class: "menu-item" });
+      row.appendChild(el("span", {}, it.label));
+      if (it.note) row.appendChild(el("span", { class: "note" }, it.note));
+      row.addEventListener("click", () => {
+        closeMenu();
+        onPick(it);
+      });
+      list.appendChild(row);
+    }
+    if (!shown.length) list.appendChild(el("div", { class: "menu-empty" }, "No match"));
+  };
+  search.addEventListener("input", render);
+  search.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeMenu();
+  });
+  menu.appendChild(search);
+  menu.appendChild(list);
+  render();
+  // The list takes the height above the box that the search field leaves, up to 12 px under the
+  // top of the panel. UXP lays the menu out only after this function returns, so the fit is
+  // corrected once it has (a measurement taken here reads zero heights).
+  list.style.maxHeight = `${Math.max(60, Math.round(box.top - app.top - 70))}px`;
+  $("app").appendChild(menu);
+  setTimeout(() => {
+    if ($("menu") !== menu) return;
+    const over = app.top + 12 - menu.getBoundingClientRect().top;
+    if (over > 0) list.style.maxHeight = `${Math.max(60, Math.round(list.getBoundingClientRect().height - over))}px`;
+  }, 50);
+  menuChip = chip;
+  try {
+    search.focus();
+  } catch (_) {
+    /* focus is a convenience */
+  }
+}
+
+/** Roadmap 2.1 only: real catalogue names plus filler, to try the menu. Replaced by the model chip in 2.3. */
+function testMenuItems() {
+  const items = [];
+  for (const p of PROVIDERS) for (const m of p.models) items.push({ group: p.name, label: m.label });
+  for (let i = 1; i <= 30; i++) items.push({ group: "Filler (makes the list scroll)", label: `Test item ${i}` });
+  return items;
+}
+
+function toggleTestMenu() {
+  const chip = $("testChip");
+  if (menuChip === chip) return closeMenu();
+  openMenu(chip, testMenuItems(), (it) => setStatus(`Test menu: picked "${it.label}". Nothing changes yet.`), "Search");
+}
+
 // ---------- events ----------
 
 function bind() {
+  $("testChip").addEventListener("click", toggleTestMenu);
+  // A click anywhere else in the panel closes the menu (the chip toggles it itself).
+  $("app").addEventListener("click", (e) => {
+    const m = $("menu");
+    if (m && !m.contains(e.target) && !(menuChip && menuChip.contains(e.target))) closeMenu();
+  });
   $("customModel").addEventListener("input", () => {
     prefs.customModel[prefs.provider] = $("customModel").value;
     persist();

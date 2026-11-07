@@ -529,6 +529,77 @@ const SCENARIOS = {
     return { noKeyCheck: `ran with ${current}` };
   },
 
+  async panelLayout() {
+    // Roadmap 2.1. The prompt box stays at the bottom of the panel and the area above scrolls; the
+    // chip's floating menu opens above the box, inside the panel, and its list scrolls and filters.
+    // Whether UXP draws a native text field over the menu can't be measured: checked by eye.
+    const $ = (id) => document.getElementById(id);
+    const tick = () => new Promise((r) => setTimeout(r, 150));
+    const click = async (node, bubbles = false) => {
+      node.dispatchEvent(new Event("click", { bubbles }));
+      await tick();
+    };
+    const rect = (id) => $(id).getBoundingClientRect();
+    const span = (b) => `${Math.round(b.top)}..${Math.round(b.bottom)}`;
+    await click($("tab-generate"));
+    const app = rect("app");
+    const pinned = () => Math.abs(rect("promptBox").bottom - (app.bottom - 12)) <= 2;
+    const info = { panel: `${Math.round(app.width)}x${Math.round(app.height)}` };
+    expect(pinned(), `prompt box at ${span(rect("promptBox"))}, panel bottom ${Math.round(app.bottom)}`);
+
+    // Overfill the scrolling area: the box must not move, and the area must scroll.
+    const scroll = $("genScroll");
+    const filler = document.createElement("div");
+    filler.style.height = "3000px";
+    scroll.appendChild(filler);
+    await tick();
+    try {
+      expect(pinned(), `with tall content the prompt box moved to ${span(rect("promptBox"))}`);
+      expect(scroll.scrollHeight > scroll.clientHeight, `the area does not overflow (${scroll.scrollHeight}/${scroll.clientHeight})`);
+      scroll.scrollTop = 200;
+      await tick();
+      expect(scroll.scrollTop > 0, "the area above the prompt box does not scroll");
+    } finally {
+      scroll.scrollTop = 0;
+      scroll.removeChild(filler);
+    }
+
+    const chip = $("testChip");
+    await click(chip);
+    expect($("menu"), "the chip did not open the menu");
+    try {
+      const m = rect("menu");
+      const box = rect("promptBox");
+      info.menu = span(m);
+      expect(m.top >= app.top - 1 && m.left >= app.left - 1 && m.right <= app.right + 1, `menu ${span(m)} leaves the panel`);
+      expect(m.bottom <= box.top + 1, `menu ${span(m)} covers the prompt box ${span(box)}`);
+      // The test list is longer than any panel: the menu should use the height above the box.
+      expect(m.top <= app.top + 40, `menu ${span(m)} uses too little of the height above the box ${span(box)}`);
+      const list = $("menuList");
+      const total = list.querySelectorAll(".menu-item").length;
+      expect(list.scrollHeight > list.clientHeight, `menu list does not overflow (${list.scrollHeight}/${list.clientHeight})`);
+      list.scrollTop = 100;
+      await tick();
+      expect(list.scrollTop > 0, "menu list does not scroll");
+      $("menuSearch").value = "banana";
+      $("menuSearch").dispatchEvent(new Event("input"));
+      await tick();
+      const found = list.querySelectorAll(".menu-item").length;
+      expect(found > 0 && found < total, `search "banana" kept ${found} of ${total}`);
+      await click(list.querySelector(".menu-item"));
+      expect(!$("menu"), "picking an item did not close the menu");
+      await click(chip);
+      await click(scroll, true);
+      expect(!$("menu"), "a click elsewhere in the panel did not close the menu");
+      await click(chip);
+      await click(chip);
+      expect(!$("menu"), "clicking the chip again did not close the menu");
+    } finally {
+      if ($("menu")) await click(chip);
+    }
+    return info;
+  },
+
   async panelProviders() {
     // The Providers tab with a provider that has no key: a refused key is not saved, Cancel closes
     // the form, a saved key shows as "Connected · ...last 4", Remove deletes it. Free: the only

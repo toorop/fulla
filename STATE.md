@@ -40,6 +40,9 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Recently done
 
+- 2026-11-07 — Target narrowed to current Photoshop + beta: manifest `minVersion` 24.4.0 → 27.11.0,
+  `ensureSupported` message, `CLAUDE.md`, `CONTRIBUTING.md`, README, spec. 51/51 tests, package
+  builds. Not yet checked: the plugin still loads in UXP Developer Tools (Unload + Load).
 - 2026-11-07 — Roadmap 1.1: OpenRouter **headless** OAuth PKCE tested end to end, outside the
   plugin (Node) and in UXP (console snippet on Photoshop Beta 28.0.1): `crypto.getRandomValues`
   exists, a pure-JS SHA-256 gives a challenge OpenRouter accepts, `shell.openExternal` opens the
@@ -73,7 +76,7 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 ## Decisions taken
 
 - Only current Photoshop and the beta matter (2026-11-07): with the subscription everyone can
-  update. The "v24 to v28" rule in `CLAUDE.md` and the manifest's `minVersion` are not updated yet.
+  update. Manifest `minVersion` 27.11.0 (Photoshop 2026 on Stéphane's PC); raise it as releases come.
 - OpenRouter connect uses headless OAuth PKCE (S256): nothing hosted by us, the user only sees
   openrouter.ai and pastes a code that is useless without the plugin's verifier (trust).
 - Own project, not a fork to upstream; OpenFill's MIT copyright line stays in `LICENSE`.

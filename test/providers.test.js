@@ -320,8 +320,8 @@ test("pipeline errors are user-friendly and leave the document alone", async () 
   const c = fakePs();
   await assert.rejects(runGeneration({ ps: c, provider, apiKey: "k", model: "m", cancelled: () => true }), /Cancelled/);
   assert.ok(!c.log.some((l) => l[0] === "commit"), "cancel never touches the document");
-  const old = { ...fakePs(), ensureSupported() { throw new Error("needs 24.4"); } };
-  await assert.rejects(runGeneration({ ps: old, provider, apiKey: "k", model: "m" }), (e) => e instanceof UserError && /24.4/.test(e.message));
+  const old = { ...fakePs(), ensureSupported() { throw new Error("needs 27.11"); } };
+  await assert.rejects(runGeneration({ ps: old, provider, apiKey: "k", model: "m" }), (e) => e instanceof UserError && /27\.11/.test(e.message));
   const failing = { ...fakeProvider(1), async generate() { throw new Error("network down"); } };
   const f = fakePs();
   await assert.rejects(runGeneration({ ps: f, provider: failing, apiKey: "k", model: "m" }), /network down/);

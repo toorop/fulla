@@ -14,7 +14,7 @@ Free, open-source (MIT) Photoshop plugin: generative fill (a prompt paints the s
 | Models | OpenAI GPT Image and Google Gemini (Nano Banana) only |
 | v1 features | Fill, Remove, Expand, Variations (1-4). Fulla (2026-11-06): one prompt, no modes; Expand dropped (enlarge the canvas in Photoshop, then fill) |
 | Billing | Bring your own key; no backend |
-| Photoshop | 2023 to 2026 (v24.4 to v27.x), one build. 24.4 is the first release with the Imaging API |
+| Photoshop | The current release and the beta only (27.11+ on 2026-11-07), one build. With the subscription everyone can update, so older versions are not supported |
 | Install | .ccx for Creative Cloud users; `-windows.zip` with Install Fulla.bat (per-user `%APPDATA%\Adobe\UXP`, PS.json merged and backed up) for installs without the Creative Cloud app |
 | Store | GitHub releases |
 
@@ -39,7 +39,7 @@ Neither service follows the mask pixel-exactly, so the Photoshop layer mask does
 ## Code map
 | File | Job |
 |---|---|
-| `plugin/manifest.json` | UXP manifest v5, host PS min 24.4.0, network domains |
+| `plugin/manifest.json` | UXP manifest v5, host PS min 27.11.0, network domains |
 | `plugin/main.js` | Panel UI and wiring |
 | `plugin/src/pipeline.js` | One generation end to end (host-independent) |
 | `plugin/src/photoshop.js` | All Photoshop calls (imaging API, batchPlay, DOM) |
@@ -62,4 +62,4 @@ Neither service follows the mask pixel-exactly, so the Photoshop layer mask does
 ## Test plan
 - `npm test` (49 tests): geometry, PNG encoder (checked against zlib), base64, strip downsampling, provider requests and error mapping (with real captured error bodies), pipeline and Photoshop layer with fakes, require paths.
 - In-Photoshop self-test (dev only): fill, variations + switching, ellipse, remove, corner, select-all, 24 MP photo, transparent area, 300 ppi, 16-bit, odd output sizes, Adobe RGB document colours, rollback, cancel, no selection, panel pickers, live network checks. 23/23 on Photoshop 27.10 before the Expand scenarios were removed (21 now).
-- Still to do: a paid generation per service; Photoshop 2023 (24.4+) to 2025.
+- Still to do: a paid generation per service.

@@ -1,6 +1,6 @@
 # Fulla
 
-Fulla brings generative fill to Photoshop 2023 (24.4+) to 2026, powered by your own OpenAI or Google Gemini key. It is a UXP plugin that talks to the service directly: no server, no subscription, and it works without the Creative Cloud app. MIT licensed.
+Fulla brings generative fill to Photoshop 2026 (27.11 or newer), powered by your own OpenAI or Google Gemini key. It is a UXP plugin that talks to the service directly: no server, no subscription, and it works without the Creative Cloud app. MIT licensed.
 
 [Releases](../../releases) · [![CI](https://github.com/toorop/fulla/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/toorop/fulla/actions/workflows/ci.yml)
 

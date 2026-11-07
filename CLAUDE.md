@@ -27,7 +27,7 @@ Photoshop UXP plugin: generative fill with the user's own AI service (OpenAI, Ge
 - sp-picker locks if its menu is rebuilt while closing: pickers are replaced, never edited (`main.js`).
 
 ## Rules
-- Zero runtime dependencies. Plugin code is CommonJS and must run in UXP on Photoshop v24 to v28: no `btoa`, `TextEncoder`, `FormData`, canvas or ES modules.
+- Zero runtime dependencies. Plugin code is CommonJS for UXP. Target: the current Photoshop release and the beta only (manifest `minVersion`, 27.11 as of 2026-11-07; with the subscription everyone can update, so no work for older versions). Keep avoiding `btoa`, `TextEncoder`, `FormData`, canvas and ES modules until checked in UXP.
 - All Photoshop calls live in `plugin/src/photoshop.js`; `pipeline.js` stays host-free and tested with fakes.
 - One file per AI service in `plugin/src/providers/`, same interface as `openai.js`.
 

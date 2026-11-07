@@ -136,7 +136,7 @@ const png = (n) => ({ bytes: new Uint8Array(n), mime: "image/png" });
 const bpOps = (calls) => calls.filter((c) => c[0] === "bp").map((c) => c[1]);
 
 test("ensureSupported refuses hosts without the Imaging API", () => {
-  assert.throws(() => loadWithFakes({ imagingMissing: true }).ps.ensureSupported(), /24\.4/);
+  assert.throws(() => loadWithFakes({ imagingMissing: true }).ps.ensureSupported(), /27\.11/);
   assert.doesNotThrow(() => loadWithFakes().ps.ensureSupported());
 });
 

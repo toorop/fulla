@@ -1,5 +1,5 @@
 // Everything that touches Photoshop. The pipeline calls these; nothing else imports "photoshop".
-// Needs Photoshop 24.4+ (the Imaging API). Network calls never happen inside a modal scope, so
+// Targets the current Photoshop and the beta (manifest minVersion). Network calls never happen inside a modal scope, so
 // Photoshop stays usable while a service is generating.
 
 const { app, core, action, imaging, constants } = require("photoshop");
@@ -39,7 +39,7 @@ async function bp(descriptors) {
 
 function ensureSupported() {
   if (!imaging || typeof imaging.getPixels !== "function") {
-    throw new HostError("Fulla needs Photoshop 2023 version 24.4 or newer. Update Photoshop and try again.");
+    throw new HostError("Fulla needs Photoshop 2026 version 27.11 or newer. Update Photoshop and try again.");
   }
 }
 

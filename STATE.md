@@ -6,21 +6,13 @@
 
 ## Next action
 
-- **Step 2, help links: agreed and coded, not committed.** Not in the model menu (hidden at the
-  bottom of a scrolling list): in the panel's ≡ menu, Photoshop's place for help
-  (`entrypoints.setup`, `src/help.js`): Documentation (README; the website later), Report a bug,
-  Request a model or provider, About Fulla <version>, each opening github.com. New
-  `.github/ISSUE_TEMPLATE/model-request.yml`; `bug.yml` and `feature.yml` brought up to date.
-  The links work only once pushed. 63/63, package builds. First try: no entries; self-test
-  `panelMenu` showed why: UXP refuses a panel entry without `create` or `show` (added a no-op
-  `show`); setup now passes; he sees the entries. Min panel width: he wants the button row on
-  one line; `panelWidths` measured the panel width needed: 296-310 for the Nano Banana models
-  (default OR Nano Banana 2.1: 303), 343 for "GPT Image 2.x Sunburst". Asked: min 310 with long
-  names shortened ("…"), or min 345: he chose 310 + "…" (coded: manifest min 310, preferred 320;
-  row never wraps, `#modelName` ellipsis; `panelLayout` checks one row at 310 px with the
-  longest name). Reloaded; panel scenarios 6/6 pass. Remind: issue templates reach GitHub with the push.
-  Left: his look (if the menu doesn't
-  show, Unload + Load in UXP Developer Tools), commit (ask), then end of step 2.
+- **Step 2: only the end of step is left.** README brought up to date for the new panel with
+  one or two panel captures (Stéphane provides them; panel only, nothing private, the repo is
+  public), his full walk-through, then push (ask; the issue templates and the ≡ menu links only
+  work once pushed). Then step 3 (automatic resolution, tone matching: cases in his notes).
+- Help links done (`1cf4bcf`): in the panel's ≡ menu (`src/help.js`, `entrypoints.setup` with a
+  no-op `show`, which UXP requires); model-request template; bug/feature templates updated;
+  minimum panel width 310 px (320 when opened), long model names shortened with "…".
 - Prompt sub-step done (`16d37cc`): placeholder = Photoshop's "Describe what you want to generate
   (optional)" (his rule: familiar ground); `prompts.js` (English) covers add/change and, with no
   prompt, remove or extend; "Fulla: Fill" layers. His real tries work; slight colour shift and a

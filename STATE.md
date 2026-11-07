@@ -6,21 +6,11 @@
 
 ## Next action
 
-- **Step 2: only the end of step is left.** README brought up to date for the new panel with
-  one or two panel captures (Stéphane provides them; panel only, nothing private, the repo is
-  public), his full walk-through, then push (ask; the issue templates and the ≡ menu links only
-  work once pushed). Then step 3 (automatic resolution, tone matching: cases in his notes).
-- Help links done (`1cf4bcf`): in the panel's ≡ menu (`src/help.js`, `entrypoints.setup` with a
-  no-op `show`, which UXP requires); model-request template; bug/feature templates updated;
-  minimum panel width 310 px (320 when opened), long model names shortened with "…".
-- Prompt sub-step done (`16d37cc`): placeholder = Photoshop's "Describe what you want to generate
-  (optional)" (his rule: familiar ground); `prompts.js` (English) covers add/change and, with no
-  prompt, remove or extend; "Fulla: Fill" layers. His real tries work; slight colour shift and a
-  visible seam noted for step 3 (captures in his notes). The old placeholder bug is gone.
-- Roadmap 2.5 done (`54f1c90`): one top-level layer per run (smart object named after the
-  prompt, selection as its mask, no group); thumbnails in the run card swap its content
-  (`placedLayerReplaceContents`, one undo step); card head "model · size · time" + Done (clears
-  card, thumbnails and prompt; the layer stays). Later: Adobe's "generate more" into the layer.
+- **Resume here: end of step 2** (only that is left of step 2). (1) README brought up to date
+  for the new panel (prompt on top, model button, settings popup, thumbnails + Done, ≡ menu),
+  with one or two captures of the panel that Stéphane provides (panel only, no private photo: the
+  repo is public); (2) his full walk-through from a fresh start; (3) commit, push (ask). Then
+  propose step 3 (discuss first).
 - Generate tab as of `1bd710d` (agreed with Stéphane on 2026-11-07): prompt box at the top with
   a resize grip (`prefs.promptHeight`), one row under it: model button (provider `badge` OR/G/OA
   + model name, searchable menu), settings button (icons/sliders.svg) opening one popup
@@ -41,8 +31,8 @@
   earlier test layers (hidden) seem to matter. Nothing in the pixel path changed since `63384be`.
   Plan: reproduce, save sent/received images (dev only), measure; then fix the cause, or register
   the tile onto the original in the ring around the selection (roadmap step 3).
-- **Push**: every commit after `63384be` is local only. Ask Stéphane before
-  pushing (he pushes once per session to spare the CI).
+- **Push**: everything up to the end of 2026-11-07 is pushed (he pushes once per session to
+  spare the CI; ask before pushing).
 - The detailed roadmap with checkboxes lives in Stéphane's notes (not in the repo); tick it as
   sub-steps finish, and record decisions in his ideas note.
 - Blocked by: —
@@ -58,22 +48,24 @@ Step 2 (prompt box) in progress: 2.1 to 2.5 done (layout, run card, model button
 popup, Adobe-like results); next the prompt wording and `prompts.js`. Step 1 left to test some day, not blocking:
 sign-up with a fresh OpenRouter account; a real OpenAI key (a Google key works since 2026-11-07).
 
-## Roadmap (order agreed 2026-11-07; details and checkboxes in Stéphane's notes)
+## Roadmap (order agreed 2026-11-07, revised that evening; details and checkboxes in Stéphane's notes)
 
 1. Onboarding. Done.
-2. Chat-style prompt box: model chip (searchable menu built by hand), options chip, Send → Cancel,
-   results above the prompt, Adobe-like results and "generation running" feedback, scrolling,
-   placeholder bug, "Open an issue" link + issue template.
-3. Automatic resolution (rule to agree first), then tone matching (GPT Image 2.6 shifts tones: visible
-   border and darker tile on a B&W photo, Nano Banana seamless; fit a correction on the ring around
-   the selection where the model had to keep the original), grain matching only if still needed.
+2. Prompt box (layout, run card, model button and menu, settings popup, Adobe-like results, help
+   in the panel menu). Code done; end of step left: README + panel captures, his walk-through.
+3. Automatic resolution (rule to agree first; idea: when two sizes cost the same, ask the bigger),
+   then tone matching (GPT Image shifts tones; his pier, portrait and extended-canvas cases show a
+   slight colour shift or seam; fit a correction on the ring around the selection), grain
+   matching only if still needed. Also: whole image as a scene reference; the tile offset seen
+   with earlier test layers present.
 4. Full code review.
-5. Website before the first public release (presentation + all user docs; GitHub docs suit
-   developers only). SEO and GEO worked hard. Domain considered: fulla.photo.
-6. First public release.
-7. fal.ai provider (real masks), compared on real photos.
-8. Local models: check UXP allows `http://127.0.0.1` first; ComfyUI managed by the plugin vs own
+5. Local models, **before the website and the public release** (his decision, 2026-11-07): with
+   cost, privacy (nothing leaves the computer) is the big argument against Photoshop for many
+   photographers. First check UXP allows `http://127.0.0.1`; ComfyUI managed by the plugin vs own
    server, decided by research.
+6. Website (presentation + all user docs; SEO and GEO). Domain considered: fulla.photo.
+7. First public release.
+8. fal.ai provider (real masks), compared on real photos.
 
 Outside the steps: measure direct providers against OpenRouter (Stéphane finds direct often
 faster); if confirmed, the docs say OpenRouter is the simplest start and direct gives the best
@@ -83,6 +75,9 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Recently done
 
+- 2026-11-07 — Roadmap 2.5 (`54f1c90`): one layer per run, thumbnails swap it, Done clears.
+  Prompt wording (`16d37cc`): Photoshop's placeholder; add/change/remove/fill prompts. Help in the
+  panel's ≡ menu (`1cf4bcf`, UXP needs a `show` hook), model-request template, 310 px minimum.
 - 2026-11-07 — Roadmap 2.3 and 2.4 + Generate tab rework (`6e26e16`, `20dbb07`, `1bd710d`): model
   button and menu, no custom model IDs, key page button, settings popup with Auto size, prompt on
   top with one button row and a resize grip, lighter look; Cancel/no-selection fixes.

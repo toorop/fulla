@@ -25,7 +25,7 @@ This only works if Photoshop keeps embedded profiles. Check **Edit > Color Setti
 
 | Provider | Models | Get a key |
 |---|---|---|
-| OpenRouter (one key for every model, recommended) | Nano Banana 2.1 (default), Nano Banana Pro, Qwen Image 3, Qwen Image 2.1 Pro, GPT Image 2.6 and 2.5 Sunburst, or any model ID | [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys) |
+| OpenRouter (one account for every model, recommended) | Nano Banana 2.1 (default), Nano Banana Pro, Qwen Image 3, Qwen Image 2.1 Pro, GPT Image 2.6 and 2.5 Sunburst, or any model ID | No key to create: **Connect with OpenRouter** in the panel |
 | OpenAI | GPT Image 2.5 Sunburst (default), GPT Image 2.5 Flare, GPT Image 2, or any model ID | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
 | Google Gemini | Nano Banana 2.1 (default), Nano Banana Pro, Nano Banana 2 Lite, or any model ID | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
 
@@ -46,7 +46,16 @@ You pay the provider directly, per image. Each needs a funded account: OpenRoute
 
 </details>
 
-Then start Photoshop and open **Plugins > Fulla**, open the **Providers** tab, paste your key and press **Save keys**. Keys stay on your computer, in Photoshop's secure storage.
+## First run
+
+Start Photoshop and open **Plugins > Fulla**. With no provider yet, the panel opens on its **Providers** tab:
+
+- **Connect with OpenRouter** (recommended): Photoshop asks to open your browser (the window may open behind Photoshop). On openrouter.ai, sign in or create an account; you can set a spending limit and an expiry for the key there. Click **Authorize**, then paste the code it shows into the panel. OpenRouter's page says "terminal": it means the panel. A new account needs credits before its first image; the panel says so and links the page. If, after creating your OpenRouter account, you don't land on the page with the **Authorize** button, go back to the panel and click **Open the page again**: you are signed in by then, so it goes straight there.
+- **Already have a key?** Add a Google Gemini or OpenAI key. Fulla checks it with a free request before saving it.
+
+Keys stay on your computer, in Photoshop's secure storage, and go only to their provider. **Test** checks a saved key again; **Remove** deletes it.
+
+**Is connecting safe?** Fulla hosts nothing: you only deal with openrouter.ai. It uses OAuth with PKCE: Fulla makes up a secret that never leaves your computer, and the code OpenRouter shows you is useless without it. OpenRouter hands the key straight to the panel. The code is in `plugin/src/connect.js`.
 
 ## Develop
 
@@ -80,6 +89,7 @@ plugin/
     ├── pipeline.js      # read, generate, place; host-free, tested with fakes
     ├── photoshop.js     # every Photoshop call
     ├── providers/       # one file per provider: openrouter.js, openai.js, gemini.js
+    ├── connect.js       # OpenRouter connect (OAuth PKCE, headless), with sha256.js
     ├── cost.js          # estimated cost from the tokens each reply reports
     ├── image.js, png.js, geometry.js, bytes.js
     ├── icc.js           # sRGB profile embedded in results

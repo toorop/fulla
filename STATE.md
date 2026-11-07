@@ -6,11 +6,10 @@
 
 ## Next action
 
-- Roadmap sub-step 1.4 (first-run path), once Stéphane says to start: **discuss** the texts and
-  the welcome screen (decided: Providers opens when no key; explanation; "Create an OpenRouter
-  key" (recommended) running the headless OAuth connect from 1.1; "Add a Google key" / "Add an
-  OpenAI key"; the Generate tab stays clickable and explains). The OpenRouter row's "Add a key" is
-  a stopgap until then. No code before he agrees.
+- Roadmap sub-step 1.5 (end of step 1): the remaining box is checking the sign-up path with a
+  fresh OpenRouter account (Stéphane, private window, other e-mail); the fallback "Open the page
+  again" is in the README. Then step 2 (chat-style prompt box), starting with a discussion, once
+  Stéphane says to start.
 - The detailed roadmap with checkboxes lives in Stéphane's notes (not in the repo); tick it as
   sub-steps finish.
 - Blocked by: —
@@ -20,7 +19,7 @@
 
 ## Current step
 
-Sub-steps 1.0 to 1.3 done (2026-11-07). Next: 1.4, starting with a discussion.
+Sub-steps 1.0 to 1.4 done (2026-11-07); Stéphane connected OpenRouter for real through the panel.
 
 ## Roadmap (order agreed 2026-11-07; details and checkboxes in Stéphane's notes)
 
@@ -32,14 +31,24 @@ Sub-steps 1.0 to 1.3 done (2026-11-07). Next: 1.4, starting with a discussion.
 2. Chat-style prompt box: model chip (searchable menu built by hand), options chip, Send → Cancel,
    results above the prompt, scrolling, placeholder bug, "Open an issue" link + issue template.
 3. Automatic resolution (rule to agree first), then grain matching only if still needed.
-4. Full code review, then a first public release.
-5. fal.ai provider (real masks), compared on real photos.
-6. Local models: check UXP allows `http://127.0.0.1` first; ComfyUI managed by the plugin vs own
+4. Full code review.
+5. Website before the first public release (presentation + all user docs; GitHub docs suit
+   developers only). SEO and GEO worked hard. Domain considered: fulla.photo.
+6. First public release.
+7. fal.ai provider (real masks), compared on real photos.
+8. Local models: check UXP allows `http://127.0.0.1` first; ComfyUI managed by the plugin vs own
    server, decided by research.
 
 Each step and sub-step is discussed and validated by Stéphane, and starts only when he says so.
 
 ## Recently done
+
+- 2026-11-07 — Roadmap 1.4: first run. No key → Providers opens on a welcome screen ("Connect with
+  OpenRouter", Google/OpenAI rows under "Already have a key?"); Generate shows "Connect a provider
+  to start". Guided OpenRouter connect (`connect.js`, `sha256.js`): headless OAuth PKCE, session
+  reused 9 min, waits out a new key's 401s, then checks the balance and offers "Add credits". The
+  provider picked in Generate follows the saved keys. Manifest `launchProcess` (https). README
+  "First run". 58/58 tests, self-test 24/26; real connect by Stéphane worked first time.
 
 - 2026-11-07 — Roadmap 1.3: Providers tab, one row per provider (state as text, Test/Remove or Add
   a key; regular-weight action buttons; Spectrum dividers, the only lines that follow the theme).

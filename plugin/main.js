@@ -6,6 +6,7 @@ const { runGeneration, UserError } = require("./src/pipeline");
 const settings = require("./src/settings");
 const { toBase64 } = require("./src/bytes");
 const { addUsage, estimateCost, formatCost } = require("./src/cost");
+const connect = require("./src/connect");
 
 const $ = (id) => document.getElementById(id);
 const CUSTOM = "__custom__";
@@ -276,6 +277,13 @@ function bind() {
   });
   $("generate").addEventListener("click", generate);
   for (const t of TABS) $(`tab-${t}`).addEventListener("click", () => showTab(t));
+  $("setupProvider").addEventListener("click", () => showTab("providers"));
+  $("connectOpenRouter").addEventListener("click", startConnect);
+  $("connectGo").addEventListener("click", finishConnect);
+  $("connectReopen").addEventListener("click", openConnectPage);
+  $("connectCancel").addEventListener("click", () => endConnect(false));
+  $("connectContinue").addEventListener("click", () => endConnect(true));
+  $("addCredits").addEventListener("click", () => openBrowser(getProvider("openrouter").creditsUrl, "Fulla opens openrouter.ai so you can add credits."));
 }
 
 // ---------- providers tab ----------
@@ -326,9 +334,24 @@ function buildProviderRows() {
 
 const adding = (p) => $(`padd-${p.id}`).children.length > 0;
 
+async function anyKey() {
+  for (const p of PROVIDERS) if (await settings.getKey(p.id)) return true;
+  return false;
+}
+
+/**
+ * Rows, plus the first-run state: with no key at all, the welcome screen replaces the OpenRouter row
+ * and the Generate tab says a provider is needed. Returns whether any provider has a key.
+ */
 async function renderProviders() {
+  const any = await anyKey();
+  $("welcome").hidden = any || connecting;
+  $("connect").hidden = !connecting;
+  $("providerList").hidden = connecting;
+  $("noProvider").hidden = any;
   for (const p of PROVIDERS) {
     const key = await settings.getKey(p.id);
+    $(`prow-${p.id}`).hidden = !any && p.id === "openrouter";
     const state = $(`pstate-${p.id}`);
     state.textContent = key ? "Connected" : "No key";
     state.className = key ? "pstate on" : "pstate";
@@ -339,11 +362,29 @@ async function renderProviders() {
     if (key) {
       actions.appendChild(button("Test", () => testKey(p)));
       actions.appendChild(button("Remove", () => removeKey(p)));
+    } else if (p.id === "openrouter") {
+      actions.appendChild(button("Connect", startConnect)); // guided, no key to paste
     } else {
       actions.appendChild(button("Add a key", () => openAdd(p)));
     }
     actions.hidden = adding(p);
   }
+  return any;
+}
+
+async function savedKeys() {
+  const keys = {};
+  for (const x of PROVIDERS) keys[x.id] = await settings.getKey(x.id);
+  return keys;
+}
+
+/** The provider picked in Generate must have a key: switch to this one when it has none. */
+function useProviderIfNeeded(p, keys) {
+  if (keys[prefs.provider]) return;
+  prefs.provider = p.id;
+  persist();
+  buildStaticPickers();
+  buildProviderPickers();
 }
 
 function openAdd(p) {
@@ -377,14 +418,21 @@ async function saveKey(p) {
     if (e.code !== "network") return providerMessage(p, e.message || String(e), "error");
     warning = ` Couldn't check it yet: ${e.message}`; // offline: keep the key, say so
   }
+  const wasFirst = !(await anyKey());
   try {
     await settings.setKey(p.id, value);
   } catch (e) {
     return providerMessage(p, `Couldn't save the key: ${e.message || e}`, "error");
   }
+  useProviderIfNeeded(p, await savedKeys());
   closeAdd(p);
   await renderProviders();
   providerMessage(p, warning ? `Saved.${warning}` : "Saved. The key works.", warning ? "error" : undefined);
+  if (wasFirst) {
+    // The first key: straight to Generate, which is what the user came for.
+    showTab("generate");
+    setStatus(`${p.name} is connected. Make a selection, then click Generate.${warning}`);
+  }
 }
 
 async function testKey(p) {
@@ -405,15 +453,129 @@ async function removeKey(p) {
   } catch (e) {
     return providerMessage(p, `Couldn't remove the key: ${e.message || e}`, "error");
   }
+  const keys = await savedKeys();
+  const other = PROVIDERS.find((x) => keys[x.id]);
+  if (other) useProviderIfNeeded(other, keys);
   await renderProviders();
   providerMessage(p, "Key removed.");
+}
+
+// ---------- OpenRouter connect ----------
+// Guided steps in the Providers tab (see connect.js). The same session (verifier) is reused for 9
+// minutes, so "Open the page again" keeps every code the user was shown valid.
+
+let connecting = false;
+let connectSession = null;
+
+function randomBytes(n) {
+  const b = new Uint8Array(n);
+  crypto.getRandomValues(b);
+  return b;
+}
+
+/** Opens a page in the user's browser; Photoshop asks the user first. Returns an error text or "". */
+async function openBrowser(url, why) {
+  try {
+    const r = await require("uxp").shell.openExternal(url, why);
+    return typeof r === "string" ? r : "";
+  } catch (e) {
+    return String((e && e.message) || e || "refused");
+  }
+}
+
+function connectMessage(text, kind) {
+  const el = $("connectMsg");
+  el.textContent = text || "";
+  el.className = kind === "error" ? "status error" : "status";
+  el.hidden = !text;
+}
+
+async function startConnect() {
+  connecting = true;
+  $("connectSteps").hidden = false;
+  $("connectDone").hidden = true;
+  $("connectUrl").hidden = true;
+  $("connectCode").value = "";
+  connectMessage("");
+  showTab("providers");
+  await renderProviders();
+  await openConnectPage();
+}
+
+async function openConnectPage() {
+  if (!connect.isFresh(connectSession)) connectSession = connect.newSession(randomBytes);
+  // Photoshop's consent dialog shows only the end of the address, so this text names the site.
+  const err = await openBrowser(connectSession.url, "Fulla opens openrouter.ai so you can connect your account.");
+  if (err) {
+    connectMessage("The browser didn't open. Copy this address into your browser:", "error");
+    $("connectUrl").value = connectSession.url;
+    $("connectUrl").hidden = false;
+  }
+}
+
+async function finishConnect() {
+  const code = ($("connectCode").value || "").trim();
+  if (!code) return connectMessage("Paste the code shown on the OpenRouter page first.", "error");
+  if (!connect.isFresh(connectSession)) return connectMessage('This attempt has expired. Click "Open the page again" and paste the new code.', "error");
+  const or = getProvider("openrouter");
+  const f = (url, init) => fetch(url, init);
+  connectMessage("Connecting...");
+  let key;
+  try {
+    key = await connect.exchangeCode({ fetch: f, code, verifier: connectSession.verifier });
+  } catch (e) {
+    return connectMessage(e.message || String(e), "error");
+  }
+  connectSession = null;
+  try {
+    await settings.setKey("openrouter", key);
+  } catch (e) {
+    return connectMessage(`Couldn't save the key: ${e.message || e}`, "error");
+  }
+  $("connectSteps").hidden = true;
+  connectMessage("Connected. Activating your key...");
+  try {
+    await connect.waitUntilActive({ check: () => or.checkKey({ fetch: f, apiKey: key }), sleep: (ms) => new Promise((r) => setTimeout(r, ms)) });
+  } catch (e) {
+    connectMessage(e.status === 401 ? "Connected, but OpenRouter hasn't activated the key yet. Wait a minute, then click Test." : `Connected, but the key couldn't be checked: ${e.message || e}`, "error");
+    $("addCredits").hidden = true;
+    $("connectDone").hidden = false;
+    return;
+  }
+  const left = await or.balance({ fetch: f, apiKey: key });
+  if (left !== null && left <= 0) {
+    connectMessage("Connected. Your OpenRouter account has no credits yet: add some to start ($5 is about 100 images).");
+    $("addCredits").hidden = false;
+    $("connectDone").hidden = false;
+    return;
+  }
+  await endConnect(true);
+}
+
+/** Leave the guide. After a connect, OpenRouter becomes the provider used in Generate. */
+async function endConnect(connected) {
+  connecting = false;
+  connectMessage("");
+  if (connected && (await settings.getKey("openrouter"))) {
+    prefs.provider = "openrouter";
+    persist();
+    buildStaticPickers();
+    buildProviderPickers();
+    await renderProviders();
+    showTab("generate");
+    return setStatus("OpenRouter is connected. Make a selection, then click Generate.");
+  }
+  await renderProviders();
 }
 
 buildStaticPickers();
 buildProviderPickers();
 buildProviderRows();
 bind();
-renderProviders();
+// First run: no provider yet, so open on the Providers tab and its welcome screen.
+renderProviders().then((any) => {
+  if (!any) showTab("providers");
+});
 
 // Developer self-test hook. selftest.js is left out of release builds, so this is a no-op for users.
 try {

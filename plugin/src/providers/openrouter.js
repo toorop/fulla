@@ -147,6 +147,20 @@ async function checkKey({ fetch, apiKey }) {
   return (json && json.data) || {};
 }
 
+/**
+ * Account balance in USD (credits bought minus used), or null when OpenRouter won't say. A new
+ * account has none, and its first generation would fail: the panel offers to add credits.
+ */
+async function balance({ fetch, apiKey }) {
+  try {
+    const json = await getJson({ fetch, url: `https://${HOST}/api/v1/credits`, headers: { Authorization: `Bearer ${apiKey}` }, classify, host: HOST });
+    const d = (json && json.data) || {};
+    return typeof d.total_credits === "number" ? d.total_credits - (d.total_usage || 0) : null;
+  } catch (_) {
+    return null;
+  }
+}
+
 /** Same request shape as openai.generate. */
 async function generate(req) {
   if (!req.apiKey) throw new ProviderError("Add your OpenRouter API key in the Providers tab first.", { code: "no_key" });
@@ -185,6 +199,8 @@ module.exports = {
   fitSize,
   generate,
   checkKey,
+  balance,
+  creditsUrl: "https://openrouter.ai/settings/credits",
   _classify: classify,
   _usageFrom: usageFrom,
 };

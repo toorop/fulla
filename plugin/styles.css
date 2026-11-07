@@ -170,3 +170,18 @@ sp-textarea {
 .pmsg {
   min-height: 0;
 }
+
+.stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.stack > * + * {
+  margin-top: 8px;
+}
+
+.row.code sp-textfield {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+}

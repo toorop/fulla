@@ -13,6 +13,10 @@
       <sp-divider class="tabs-line" size="small"></sp-divider>
 
       <section id="page-generate" class="page">
+      <section id="noProvider" class="stack" hidden>
+        <div>Connect a provider to start.</div>
+        <div class="row"><sp-action-button id="setupProvider" size="s">Set up a provider</sp-action-button></div>
+      </section>
       <section id="promptRow">
         <sp-label for="prompt">Prompt</sp-label>
         <sp-textarea id="prompt" placeholder="Describe what to add, or leave empty to remove"></sp-textarea>
@@ -63,6 +67,40 @@
       </section>
 
       <section id="page-providers" class="page" hidden>
+        <!-- First run, shown while no provider has a key. -->
+        <section id="welcome" class="stack" hidden>
+          <sp-heading size="XS">Connect a provider</sp-heading>
+          <div>Fulla sends your selection to an AI model. The provider runs it and bills you a few cents per image. Your key stays on this computer.</div>
+          <sp-button id="connectOpenRouter" variant="cta">Connect with OpenRouter</sp-button>
+          <div class="hint">Recommended: one account for every model (Nano Banana, GPT Image, Qwen...). Pay by card, and set a spending limit while connecting.</div>
+          <sp-divider size="small"></sp-divider>
+          <div>Already have a key?</div>
+        </section>
+
+        <!-- Guided OpenRouter connect (connect.js): no key to create or paste. -->
+        <section id="connect" class="stack" hidden>
+          <sp-heading size="XS">Connect with OpenRouter</sp-heading>
+          <div id="connectSteps" class="stack">
+            <div>1. Photoshop asks to open your browser: click Allow. It may open behind Photoshop.</div>
+            <div>2. On openrouter.ai, sign in or create an account, then click Authorize.</div>
+            <div>3. Paste the code it shows (it says "terminal": it means this panel).</div>
+            <div class="row code">
+              <sp-textfield id="connectCode" placeholder="Code"></sp-textfield>
+              <sp-action-button id="connectGo" size="s">Connect</sp-action-button>
+            </div>
+            <sp-textfield id="connectUrl" readonly hidden></sp-textfield>
+            <div class="row">
+              <sp-action-button id="connectReopen" size="s">Open the page again</sp-action-button>
+              <sp-action-button id="connectCancel" size="s">Cancel</sp-action-button>
+            </div>
+          </div>
+          <div id="connectMsg" class="status" hidden></div>
+          <div id="connectDone" class="row" hidden>
+            <sp-action-button id="addCredits" size="s">Add credits</sp-action-button>
+            <sp-action-button id="connectContinue" size="s">Continue</sp-action-button>
+          </div>
+        </section>
+
         <!-- One row per provider, built by main.js (renderProviders). -->
         <div id="providerList"></div>
         <div class="hint">Keys stay on this computer, in Photoshop's secure storage, and go only to their provider. You pay that provider per image. The cost shown after each run comes from what the provider reports; your bill is the reference.</div>

@@ -522,8 +522,9 @@ const SCENARIOS = {
     if (await settings.getKey(current)) return { noKeyCheck: `skipped: ${current} has a key` };
     await click("generate");
     expect(shown().join() === "providers", `Generate without a key should open Providers, pages: ${shown()}`);
+    // With no key at all the welcome screen shows (the provider's row is hidden); otherwise its row says why.
     const msg = $(`pmsg-${current}`).textContent;
-    expect(/API key first/.test(msg), `provider message: "${msg}"`);
+    expect(!$("welcome").hidden || /API key first/.test(msg), `neither welcome screen nor provider message ("${msg}")`);
     await click("tab-generate");
     return { noKeyCheck: `ran with ${current}` };
   },
@@ -543,12 +544,20 @@ const SCENARIOS = {
       expect(b, `no "${label}" button in ${id}`);
       return b;
     };
+    // OpenRouter connects through its guided flow (no key form), so take another provider.
     let p = null;
-    for (const x of PROVIDERS) if (!p && !(await settings.getKey(x.id))) p = x;
-    if (!p) return { skipped: "every provider has a key" };
+    for (const x of PROVIDERS) if (!p && x.id !== "openrouter" && !(await settings.getKey(x.id))) p = x;
+    if (!p) return { skipped: "every provider with a key form has a key" };
     const id = p.id;
+    let firstRun = true;
+    for (const x of PROVIDERS) if (await settings.getKey(x.id)) firstRun = false;
     try {
       await click("tab-providers");
+      if (firstRun) {
+        // No key anywhere: welcome screen instead of the OpenRouter row, and Generate says so.
+        expect(!$("welcome").hidden && $("prow-openrouter").hidden, "first run: welcome screen should replace the OpenRouter row");
+        expect(!$("noProvider").hidden, "first run: the Generate tab should say a provider is needed");
+      }
       expect($(`pstate-${id}`).textContent === "No key", `state: "${$(`pstate-${id}`).textContent}"`);
       expect($(`padd-${id}`).children.length === 0, "key form open before Add");
       await click(buttonIn(`pactions-${id}`, "Add a key"));
@@ -567,12 +576,18 @@ const SCENARIOS = {
       await click("tab-providers"); // re-renders the rows
       await tick();
       expect($(`pstate-${id}`).textContent === "Connected", `state with a key: "${$(`pstate-${id}`).textContent}"`);
+      expect($("welcome").hidden && $("noProvider").hidden, "with a key, no welcome screen and no Generate notice");
+      if (firstRun) {
+        expect(!$("prow-openrouter").hidden, "with a key, the OpenRouter row is back");
+        buttonIn("pactions-openrouter", "Connect"); // guided connect, not a key form
+      }
       expect(/\.\.\.1234$/.test($(`pkey-${id}`).textContent), `key hint: "${$(`pkey-${id}`).textContent}"`);
       await click(buttonIn(`pactions-${id}`, "Remove"));
       await tick();
       expect(!(await settings.getKey(id)), "Remove left the key");
       expect($(`pstate-${id}`).textContent === "No key", `state after Remove: "${$(`pstate-${id}`).textContent}"`);
-      return { provider: id, refused };
+      if (firstRun) expect(!$("welcome").hidden, "removing the last key brings the welcome screen back");
+      return { provider: id, firstRun, refused };
     } finally {
       await settings.setKey(id, "");
       await click("tab-generate");

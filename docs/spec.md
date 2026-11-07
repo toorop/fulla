@@ -47,6 +47,7 @@ Neither provider follows the mask pixel-exactly, so the Photoshop layer mask doe
 | `plugin/src/geometry.js` | Crop maths |
 | `plugin/src/png.js`, `image.js`, `bytes.js` | PNG encoder, resize/mask helpers, base64 |
 | `plugin/src/settings.js` | Keys in UXP secure storage, prefs in localStorage |
+| `plugin/src/connect.js`, `sha256.js` | OpenRouter connect: OAuth PKCE in headless mode (no callback, nothing hosted) |
 | `plugin/src/selftest.js` | In-Photoshop self-test (dev only, left out of releases) |
 | `scripts/package.js` | Builds `dist/fulla-<ver>.ccx` and `-windows.zip` |
 | `installer/` | Manual install without Creative Cloud |

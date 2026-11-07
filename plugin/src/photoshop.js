@@ -298,15 +298,44 @@ async function putSelectionPixels(docId, s) {
   }
 }
 
+/** A result as a temp file Photoshop can place, tagged sRGB (pixels were read and sent as sRGB). */
+async function resultFile(r) {
+  const ext = /jpe?g/.test(r.mime) ? "jpg" : /webp/.test(r.mime) ? "webp" : "png";
+  // Say it's sRGB, so Photoshop converts it into the document's profile instead of reading it as if
+  // it were already in it.
+  return writeTemp(tagSrgb(r.bytes), ext);
+}
+
+async function removeTemp(file) {
+  try {
+    await file.delete();
+  } catch (_) {
+    /* the temp folder is cleared when the plugin unloads */
+  }
+}
+
+function findLayer(layers, id) {
+  for (const l of Array.from(layers || [])) {
+    if (l.id === id) return l;
+    const inner = findLayer(l.layers, id);
+    if (inner) return inner;
+  }
+  return null;
+}
+
 /**
- * Apply a finished generation to the document. Call inside modal(..., { historyDocId }).
+ * Apply a finished generation to the document, like Adobe's Generative Fill: one layer (the first
+ * result as a smart object fitted to the crop), named after the prompt, with the selection as its
+ * own mask. No group. Other variations are swapped in later with showVariation.
+ * Call inside modal(..., { historyDocId }).
  * @param {object} o
  * @param {number} o.docId
  * @param {Array<{bytes, mime}>} o.results
- * @param {{left,top,right,bottom}} o.crop   where the results go (document px)
- * @param {string} o.name                    group name
+ * @param {{left,top,right,bottom}} o.crop   where the result goes (document px)
+ * @param {string} o.name                    layer name
  * @param {number} o.feather                 mask feather in px
  * @param {object} o.selection               {data, width, height, left, top}: the selection read before generating
+ * @returns {Promise<{docId, layerId, crop}>}
  */
 async function commit(o) {
   const doc = findDoc(o.docId);
@@ -315,60 +344,49 @@ async function commit(o) {
   // Transforms with an active selection only move the selected pixels, so place with nothing selected.
   await bp([{ _obj: "set", _target: [SELECTION], to: { _enum: "ordinal", _value: "none" } }]);
 
-  const files = [];
+  const file = await resultFile(o.results[0]);
   try {
-    const layers = [];
-    for (let i = 0; i < o.results.length; i++) {
-      const r = o.results[i];
-      const ext = /jpe?g/.test(r.mime) ? "jpg" : /webp/.test(r.mime) ? "webp" : "png";
-      // Pixels were read and sent as sRGB, and come back as sRGB: say so, so Photoshop converts them
-      // into the document's profile instead of reading them as if they were already in it.
-      const file = await writeTemp(tagSrgb(r.bytes), ext);
-      files.push(file);
-      const layer = await placeFitted(doc, file, o.crop, o.trace);
-      layer.name = o.results.length > 1 ? `Variation ${i + 1}` : o.name;
-      layers.push(layer);
-    }
-
-    await bp([
-      { _obj: "select", _target: [{ _ref: "layer", _id: layers[0].id }], makeVisible: false },
-      ...layers.slice(1).map((l) => ({
-        _obj: "select",
-        _target: [{ _ref: "layer", _id: l.id }],
-        selectionModifier: { _enum: "selectionModifierType", _value: "addToSelection" },
-        makeVisible: false,
-      })),
-      { _obj: "make", _target: [{ _ref: "layerSection" }], from: TARGET, name: o.name },
-    ]);
-    const group = doc.activeLayers[0];
-    group.name = o.name;
-
-    // Recreate the exact selection, then turn it into the group's mask.
+    const layer = await placeFitted(doc, file, o.crop, o.trace);
+    layer.name = o.name;
+    // Recreate the exact selection, then turn it into the layer's mask.
     await putSelectionPixels(doc.id, o.selection);
     await bp([{ _obj: "make", new: { _class: "channel" }, at: { _ref: "channel", _enum: "channel", _value: "mask" }, using: { _enum: "userMaskEnabled", _value: "revealSelection" } }]);
     try {
-      group.layerMaskFeather = o.feather;
+      layer.layerMaskFeather = o.feather;
     } catch (_) {
       /* feather is cosmetic; the mask itself is correct */
     }
-    for (let i = 1; i < layers.length; i++) layers[i].visible = false;
-    if (o.trace) o.trace.push({ step: "done", group: group.id, groupBounds: layerBounds(group), doc: [num(doc.width), num(doc.height)] });
-    return { docId: doc.id, groupId: group.id, layerIds: layers.map((l) => l.id) };
+    if (o.trace) o.trace.push({ step: "done", layer: layer.id, bounds: layerBounds(layer), doc: [num(doc.width), num(doc.height)] });
+    return { docId: doc.id, layerId: layer.id, crop: o.crop };
   } finally {
-    for (const f of files) {
-      try {
-        await f.delete();
-      } catch (_) {
-        /* the temp folder is cleared when the plugin unloads */
-      }
-    }
+    await removeTemp(file);
   }
 }
 
-async function showVariation(placed, index) {
+/**
+ * Show another variation: replace the content of the run's smart object (its mask and place stay),
+ * as one undo step, like a click on a variation in Adobe's Properties panel.
+ * @param {{docId, layerId}} placed  what commit returned
+ * @param {{bytes, mime}} result
+ */
+async function showVariation(placed, result) {
+  const doc = Array.from(app.documents || []).find((d) => d.id === placed.docId);
+  if (!doc) throw new HostError("That document is closed. Generate again.");
+  if (!findLayer(doc.layers, placed.layerId)) throw new HostError("That Fulla layer was deleted. Generate again.");
   return modal(
-    "Fulla: choose variation",
-    () => bp(placed.layerIds.map((id, i) => ({ _obj: i === index ? "show" : "hide", null: [{ _ref: "layer", _id: id }] }))),
+    "Fulla: variation",
+    async () => {
+      if (app.activeDocument.id !== doc.id) app.activeDocument = doc;
+      const file = await resultFile(result);
+      try {
+        await bp([
+          { _obj: "select", _target: [{ _ref: "layer", _id: placed.layerId }], makeVisible: false },
+          { _obj: "placedLayerReplaceContents", null: { _path: lfs.createSessionToken(file), _kind: "local" } },
+        ]);
+      } finally {
+        await removeTemp(file);
+      }
+    },
     { historyDocId: placed.docId }
   );
 }

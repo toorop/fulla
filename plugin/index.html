@@ -39,7 +39,12 @@
 
       <!-- The last run, filled by main.js: running, done, or failed. -->
       <div id="runCard" class="card" hidden>
-        <div id="runTitle" class="card-title"></div>
+        <!-- Provider while running; "model · size · time" once done, with Done on the right (it
+             clears the card and the prompt, the result stays in the document). -->
+        <div class="row card-head">
+          <span id="runTitle" class="grow card-title"></span>
+          <div id="runDone" class="obtn" hidden><div class="obtn-in">Done</div></div>
+        </div>
         <div id="runProgress" class="stack">
           <div class="row"><span id="runStage" class="grow"></span><span id="runTime"></span></div>
           <div id="runBar" class="bar"><div id="runBarFill" class="bar-fill"></div></div>
@@ -48,7 +53,6 @@
         <section id="results" hidden>
           <div id="thumbs" class="thumbs"></div>
         </section>
-        <div id="runMeta" class="hint" hidden></div>
         <div id="runCost" class="hint" hidden></div>
         <div id="status" class="status" aria-live="polite"></div>
       </div>

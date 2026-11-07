@@ -1,7 +1,7 @@
 // One generation, start to finish, in three phases:
 //   1. read   (short modal scope): selection, pixels and masks; the document is not changed
 //   2. generate (no modal scope): the network call; Photoshop stays usable
-//   3. commit (one modal scope, one undo step): place, group, mask
+//   3. commit (one modal scope, one undo step): place one layer, mask it
 // Photoshop access goes through `ps` (photoshop.js, or a fake in tests), so this file has no host dependencies.
 
 const { computeCrop, inputSize } = require("./geometry");

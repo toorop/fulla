@@ -33,6 +33,7 @@ function loadWithFakes({ imagingMissing = false, fail8bit = false, trim = null, 
   const doc = {
     id: 7, width: 2000, height: 1000, resolution: 300,
     get activeLayers() { return [state.active]; },
+    get layers() { return Object.values(state.layers); },
   };
   const app = { documents: [doc], activeDocument: doc };
 
@@ -147,7 +148,7 @@ test("getSelectionBounds unwraps unit values; null when nothing selected", async
   assert.equal(await ps.getSelectionBounds(7), null);
 });
 
-test("commit: deselect, place and fit each result, group, restore exact selection, mask", async () => {
+test("commit: one layer, like Adobe's: deselect, place and fit the first result, name it, restore the exact selection as its mask; no group", async () => {
   const { ps, calls, state } = loadWithFakes();
   const crop = { left: 100, top: 50, right: 868, bottom: 562 };
   const sel = { data: new Uint8Array(768 * 512).fill(255), width: 768, height: 512, left: 100, top: 50 };
@@ -155,35 +156,30 @@ test("commit: deselect, place and fit each result, group, restore exact selectio
   const ops = bpOps(calls);
   assert.equal(ops[0], "set", "deselect first");
   assert.equal(calls.find((c) => c[1] === "set")[2].to._value, "none");
-  assert.equal(ops.filter((o) => o === "placeEvent").length, 3);
-  for (const id of placed.layerIds) assert.deepEqual(state.layers[id].b, crop, "each layer fitted exactly to the crop");
+  assert.equal(ops.filter((o) => o === "placeEvent").length, 1, "only the first variation is placed");
+  assert.ok(!calls.some((c) => c[1] === "make" && c[2]._target && c[2]._target[0]._ref === "layerSection"), "no group");
+  const layer = state.layers[placed.layerId];
+  assert.deepEqual(layer.b, crop, "fitted exactly to the crop");
   assert.ok(calls.filter((c) => c[0] === "scale").every((c) => c[2] === "tl"), "scaled from the top-left");
-  const group = state.layers[placed.groupId];
-  assert.equal(group.kind, "group");
-  assert.equal(group.name, "Fulla: test");
-  assert.equal(group.layerMaskFeather, 4);
+  assert.equal(layer.name, "Fulla: test");
+  assert.equal(layer.layerMaskFeather, 4);
   assert.deepEqual(state.putSelection.targetBounds, { left: 100, top: 50 });
   const created = calls.find((c) => c[0] === "createImageData");
   assert.equal(created[1], 768 * 512);
   assert.equal(created[2].colorSpace, "Grayscale");
-  // selection restored before the mask is made
+  // selection restored before the mask is made, on the placed layer (still the active one)
   const putIdx = calls.findIndex((c) => c[0] === "putSelection");
   const maskIdx = calls.findIndex((c) => c[1] === "make" && c[2].using);
   assert.ok(putIdx >= 0 && maskIdx > putIdx);
-  assert.deepEqual(placed.layerIds.map((id) => state.layers[id].name), ["Variation 1", "Variation 2", "Variation 3"]);
-  assert.deepEqual(placed.layerIds.map((id) => state.layers[id].visible), [true, false, false]);
-  assert.equal(state.deleted.length, 3, "temp files removed");
-  assert.equal(placed.docId, 7);
+  assert.equal(state.active.id, placed.layerId);
+  assert.equal(state.deleted.length, 1, "temp file removed");
+  assert.deepEqual(placed, { docId: 7, layerId: layer.id, crop });
 });
 
-test("commit refuses a closed document and cleans temp files on failure", async () => {
-  const { ps, app, state } = loadWithFakes();
+test("commit refuses a closed document", async () => {
+  const { ps, app } = loadWithFakes();
   app.documents = [];
   await assert.rejects(ps.commit({ docId: 7, results: [png(1)], crop: { left: 0, top: 0, right: 1, bottom: 1 }, name: "x", feather: 2, selection: {} }), /closed/);
-  const f = loadWithFakes();
-  const bad = { bytes: { buffer: null }, mime: "image/png" };
-  await assert.rejects(f.ps.commit({ docId: 7, results: [png(5), bad], crop: { left: 0, top: 0, right: 10, bottom: 10 }, name: "x", feather: 2, selection: {} }));
-  assert.equal(f.state.deleted.length, 1);
 });
 
 test("modal commits history on success, rolls back on failure, skips history for reads", async () => {
@@ -229,12 +225,22 @@ test("readSelection full resolution when no size given", async () => {
   assert.equal(r.data.length, 600);
 });
 
-test("showVariation shows one layer and hides the rest as one undo step", async () => {
-  const { ps, calls, state } = loadWithFakes();
-  await ps.showVariation({ docId: 7, layerIds: [1, 2, 3] }, 1);
-  const vis = calls.filter((c) => c[1] === "show" || c[1] === "hide").map((c) => [c[1], c[2].null[0]._id]);
-  assert.deepEqual(vis, [["hide", 1], ["show", 2], ["hide", 3]]);
-  assert.deepEqual(state.history.at(-1), ["resume", 42, true]);
+test("showVariation replaces the run layer's content as one undo step; a deleted layer or closed document says so", async () => {
+  const { ps, calls, state, app } = loadWithFakes();
+  const sel = { data: new Uint8Array(4).fill(255), width: 2, height: 2, left: 0, top: 0 };
+  const placed = await ps.commit({ docId: 7, results: [png(10), png(20)], crop: { left: 0, top: 0, right: 2, bottom: 2 }, name: "x", feather: 2, selection: sel });
+  calls.length = 0;
+  await ps.showVariation(placed, png(20));
+  const ops = calls.filter((c) => c[0] === "bp").map((c) => c[2]);
+  assert.deepEqual(ops.map((d) => d._obj), ["select", "placedLayerReplaceContents"]);
+  assert.equal(ops[0]._target[0]._id, placed.layerId, "the run's layer is the one replaced");
+  assert.match(ops[1].null._path, /^token:fulla-.*\.png$/);
+  assert.deepEqual(state.history.slice(-2), [["suspend", 7, "Fulla: variation"], ["resume", 42, true]]);
+  assert.equal(state.deleted.length, 2, "temp files removed");
+  delete state.layers[placed.layerId];
+  await assert.rejects(ps.showVariation(placed, png(20)), /layer was deleted/);
+  app.documents = [];
+  await assert.rejects(ps.showVariation(placed, png(20)), /document is closed/);
 });
 
 test("refused commands become errors, never Photoshop dialogs", async () => {

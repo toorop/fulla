@@ -12,7 +12,7 @@ const { filterItems, modelMenuItems } = require("./src/menu");
 const $ = (id) => document.getElementById(id);
 let prefs = settings.loadPrefs();
 let busy = false;
-let lastRun = null; // { placed, count, active }
+let lastRun = null; // { placed, results, active }: the last run's layer and its variations
 const sessionSpend = newSpend(); // since the panel was opened
 
 // ---------- chips ----------
@@ -74,7 +74,7 @@ function resetCard(title) {
   $("runTitle").textContent = title;
   $("runStage").textContent = "";
   $("runTime").textContent = "";
-  for (const id of ["runMeta", "runCost", "results"]) $(id).hidden = true;
+  for (const id of ["runDone", "runCost", "results"]) $(id).hidden = true;
   animateBar(false);
   setStatus("");
   showCard();
@@ -188,12 +188,21 @@ function renderThumbs(results) {
 async function chooseVariation(i) {
   if (!lastRun || busy || i === lastRun.active) return;
   try {
-    await ps.showVariation(lastRun.placed, i);
+    await ps.showVariation(lastRun.placed, lastRun.results[i]);
     lastRun.active = i;
     document.querySelectorAll(".thumb").forEach((t, k) => (t.className = k === i ? "thumb active" : "thumb"));
   } catch (e) {
     setStatus(`Couldn't switch variation: ${e.message || e}`, "error");
   }
+}
+
+/** Done: the result stays in the document; the card, its thumbnails and the prompt are cleared. */
+function finishRun() {
+  lastRun = null;
+  $("runCard").hidden = true;
+  $("thumbs").innerHTML = "";
+  $("prompt").value = "";
+  renderIdle();
 }
 
 // ---------- generate ----------
@@ -289,12 +298,11 @@ async function generate() {
       onUsage,
     });
     animateBar(false);
-    lastRun = { placed: out.placed, count: out.results.length, active: 0 };
-    const p = prompt.trim().replace(/\s+/g, " ");
-    $("runTitle").textContent = p ? `"${p.length > 120 ? p.slice(0, 119) + "…" : p}"` : "No prompt: remove or fill";
+    lastRun = { placed: out.placed, results: out.results, active: 0 };
+    // The prompt is still in the box above, so the card names the model, size and time instead.
     const size = out.target.imageSize || `${out.target.width}×${out.target.height}`;
-    $("runMeta").textContent = `${modelLabel(provider, model)} · ${size} · ${seconds()} s`;
-    $("runMeta").hidden = false;
+    $("runTitle").textContent = `${modelLabel(provider, model)} · ${size} · ${seconds()} s`;
+    $("runDone").hidden = false;
     renderThumbs(out.results);
     const notes = [];
     if (out.results.length < prefs.n) notes.push(`${prefs.n - out.results.length} variation(s) were blocked or failed.`);
@@ -525,6 +533,7 @@ async function toggleModelMenu() {
 function bind() {
   $("modelChip").addEventListener("click", toggleModelMenu);
   $("optionsChip").addEventListener("click", toggleSettings);
+  $("runDone").addEventListener("click", finishRun);
   bindGrip();
   // A click anywhere else in the panel closes the menu (the chip toggles it itself).
   $("app").addEventListener("click", (e) => {

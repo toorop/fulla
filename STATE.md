@@ -6,12 +6,22 @@
 
 ## Next action
 
-- **Step 2 next: propose sub-step 2.5, results like Adobe's** (discuss first). Open point:
-  Adobe creates the layer at once and a thumbnail click swaps its content, no "validate"
-  (recommended over the validate step noted earlier). Thumbnails go in the area under the
-  prompt (it is empty today when nothing ran). Then: prompt placeholder bug + wording and
-  `prompts.js` (add, modify e.g. a face's expression, remove; no prompt fills an empty area);
-  "Open an issue" link + `model-request.yml` (GitHub: ask). Principle: look at Adobe first.
+- **Roadmap 2.5 (results like Adobe's) agreed and coded, not committed.** `ps.commit` places only
+  the first result: one top-level smart object named after the prompt, the selection as its own
+  mask, no group; returns `{ docId, layerId, crop }`. `ps.showVariation(placed, result)` selects
+  that layer and runs `placedLayerReplaceContents` (one undo step "Fulla: variation"); a deleted
+  layer or closed document gives a plain message. Thumbnails (up to 4 a row) in the run card;
+  the chosen one framed by a blue background gap. Fake tests and self-test (`fill`, `variations`
+  checks one new layer, swaps, mask kept, content still fitted; `adobeRgb`) updated. 62/62,
+  package builds. Self-test 25/26 free scenarios (only `openaiRaw`, no key): the replace keeps
+  mask, place and colours. His real 2-variation run: fine; requests already go out in parallel
+  (Nano Banana: one per variation via `Promise.allSettled`; Qwen/GPT: one request with n). His
+  changes, coded: card head = "model · size · time" (no prompt recap: it is in the box) with a
+  Done button on the right (`finishRun`: clears card, thumbnails and prompt; the layer stays).
+  `panelRun` now also drives an answered run offline (fake replies readable by every provider):
+  2 thumbnails, one layer, click swaps, Done clears. 62/62, package builds, panel scenarios +
+  `fill`/`variations` pass. Left: his look, commit (ask).
+  Later: Adobe's "generate more" into the same layer.
 - Generate tab as of `1bd710d` (agreed with Stéphane on 2026-11-07): prompt box at the top with
   a resize grip (`prefs.promptHeight`), one row under it: model button (provider `badge` OR/G/OA
   + model name, searchable menu), settings button (icons/sliders.svg) opening one popup

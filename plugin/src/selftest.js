@@ -149,6 +149,8 @@ async function probe(doc, x, y) {
 }
 
 const historyCount = (doc) => doc.historyStates.length;
+const GREEN_SOLID = [40, 200, 60];
+const YELLOW_SOLID = [230, 210, 40];
 
 async function undoTo(doc, count) {
   await ps.modal("Fulla self-test: undo", async () => {
@@ -156,18 +158,14 @@ async function undoTo(doc, count) {
   });
 }
 
-async function groupInfo(doc, groupId) {
-  const group = Array.from(doc.layers).find((l) => l.id === groupId);
-  expect(group, `group ${groupId} not found at top level`);
+/** The run's layer: at the top level (no group), with its mask. */
+async function layerInfo(doc, layerId) {
+  const layer = Array.from(doc.layers).find((l) => l.id === layerId);
+  expect(layer, `layer ${layerId} not at the top level (inside a group?)`);
   const [m] = await ps.modal("Fulla self-test: inspect", () =>
-    ps.bp([{ _obj: "get", _target: [{ _property: "hasUserMask" }, { _ref: "layer", _id: groupId }, { _ref: "document", _id: doc.id }] }])
+    ps.bp([{ _obj: "get", _target: [{ _property: "hasUserMask" }, { _ref: "layer", _id: layerId }, { _ref: "document", _id: doc.id }] }])
   );
-  return {
-    name: group.name,
-    hasMask: !!(m && m.hasUserMask),
-    feather: group.layerMaskFeather,
-    children: Array.from(group.layers || []).map((l) => ({ id: l.id, name: l.name, visible: l.visible })),
-  };
+  return { name: layer.name, hasMask: !!(m && m.hasUserMask), feather: layer.layerMaskFeather, kind: String(layer.kind) };
 }
 
 let outFolder = null;
@@ -244,12 +242,12 @@ async function fillScenario(name, docOpts, sel, { shape = "rect", base = openai,
   }
   if (sel.left > inset + 20) near(await probe(doc, sel.left - inset, cy), sel.left - inset < halfW ? RED : BLUE, 12, "left of selection untouched");
 
-  const g = await groupInfo(doc, out.placed.groupId);
-  expect(g.hasMask, "group has no layer mask");
-  expect(g.name === layerName(prompt), `group name is "${g.name}"`);
-  expect(g.children.length === n, `group has ${g.children.length} layers, expected ${n}`);
+  const g = await layerInfo(doc, out.placed.layerId);
+  expect(g.hasMask, "the layer has no mask");
+  expect(g.name === layerName(prompt), `layer name is "${g.name}"`);
   expect(historyCount(doc) === h0 + 1, `history grew by ${historyCount(doc) - h0}, expected exactly 1`);
   notes.feather = g.feather;
+  notes.kind = g.kind;
 
   await undoTo(doc, h0);
   near(await probe(doc, cx, cy), cx < halfW ? RED : BLUE, 12, "undo restores the original");
@@ -381,19 +379,21 @@ const SCENARIOS = {
       const sel = { left: 450, top: 250, right: 750, bottom: 550 };
     await select(doc, "rect", sel);
     const h0 = historyCount(doc);
+    const layers0 = Array.from(doc.layers).length;
     const prov = mockProvider();
     const out = await run(prov, { prompt: "selftest variations", n: 3 });
     await snapshot(doc, "variations-1");
-    const g = await groupInfo(doc, out.placed.groupId);
-    expect(g.children.length === 3, `${g.children.length} variation layers`);
-    const names = g.children.map((c) => c.name).sort();
-    expect(names.join() === "Variation 1,Variation 2,Variation 3", `names: ${names}`);
-    expect(g.children.filter((c) => c.visible).length === 1, "more than one variation visible");
+    // Like Adobe: three variations still make one layer, no group; the others are swapped in.
+    expect(Array.from(doc.layers).length === layers0 + 1, `${Array.from(doc.layers).length - layers0} new top-level layers, expected 1`);
+    const g = await layerInfo(doc, out.placed.layerId);
+    expect(g.hasMask && g.name === "Fulla: selftest variations", `layer ${JSON.stringify(g)}`);
     near(await probe(doc, 600, 400), gradAt(600, 400, out.crop, prov.outSize.W, prov.outSize.H), 12, "variation 1 shown first");
-    await ps.showVariation(out.placed, 1);
+    await ps.showVariation(out.placed, out.results[1]);
     near(await probe(doc, 600, 400), [0, 255, 0], 12, "variation 2 after switching");
-    await ps.showVariation(out.placed, 2);
+    await ps.showVariation(out.placed, out.results[2]);
     near(await probe(doc, 600, 400), [255, 255, 0], 12, "variation 3 after switching");
+    near(await probe(doc, 520, 320), [255, 255, 0], 12, "variation 3 near the selection corner (content still fitted)");
+    expect((await layerInfo(doc, out.placed.layerId)).hasMask, "switching lost the mask");
     near(await probe(doc, 400, 400), RED, 12, "outside selection untouched with variations");
     await snapshot(doc, "variations");
     expect(historyCount(doc) === h0 + 3, `history grew by ${historyCount(doc) - h0}, expected 3 (generate + 2 switches)`);
@@ -702,9 +702,10 @@ const SCENARIOS = {
   },
 
   async panelRun() {
-    // Roadmap 2.2, the run card. Free: every request goes to a fake fetch that answers nothing until
-    // Cancel, then fails. Running: card, stage, seconds and bar move, prompt and chip locked, Cancel.
-    // After Cancel: "Cancelled", unlocked. Then an error card (no selection).
+    // The run card, driven from the panel. Free: every request goes to a fake fetch. First one that
+    // answers nothing until Cancel: card, stage, seconds and bar move, prompt and chip locked, Cancel,
+    // then "Cancelled". Then one that answers with two images: one layer, two thumbnails, a click
+    // swaps the variation, Done clears the card and the prompt. Then an error card (no selection).
     const $ = (id) => document.getElementById(id);
     const tick = (ms = 150) => new Promise((r) => setTimeout(r, ms));
     const prefs = JSON.parse(localStorage.getItem("fulla.prefs.v1") || "{}");
@@ -757,6 +758,60 @@ const SCENARIOS = {
       // Never hand the real network back while the run could still retry: that would be a paid request.
       if (await idle(30)) net.fetch = realFetch;
       else throw new Error("run still going after 60 s; fetch left faked, reload the plugin");
+    }
+
+    // A run that succeeds, with 2 variations (set through the settings popup like a user).
+    const seg = (rowId, value) => $(rowId) && Array.from($(rowId).querySelectorAll(".seg-btn")).find((b) => b.getAttribute("data-value") === value);
+    const n0 = String(JSON.parse(localStorage.getItem("fulla.prefs.v1") || "{}").n || 1);
+    const setN = async (v) => {
+      $("optionsChip").dispatchEvent(new Event("click"));
+      await tick();
+      seg("optVariations", v).dispatchEvent(new Event("click"));
+      await tick();
+      $("optionsChip").dispatchEvent(new Event("click"));
+      await tick();
+    };
+    await setN("2");
+    const { toBase64 } = require("./bytes");
+    const colours = [GREEN_SOLID, YELLOW_SOLID];
+    let served = 0;
+    const image = () => toBase64(encodePng(new Uint8Array(64 * 64 * 3).map((_, i) => colours[served % 2][i % 3]), 64, 64, 3));
+    // One reply shape every provider reads: OpenRouter/OpenAI "data", Gemini "candidates".
+    const answer = async (url, init) => {
+      const body = JSON.parse(init.body || "{}");
+      const count = Math.max(1, body.n || 1);
+      const data = [];
+      for (let i = 0; i < count; i++, served++) data.push({ b64_json: image(), media_type: "image/png" });
+      const json = { data, candidates: [{ content: { parts: [{ inlineData: { mimeType: "image/png", data: data[0].b64_json } }] }, finishReason: "STOP" }], usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2, cost: 0 } };
+      return { ok: true, status: 200, headers: { get: () => null }, text: async () => JSON.stringify(json) };
+    };
+    const real2 = net.fetch;
+    net.fetch = answer;
+    const h1 = historyCount(doc);
+    const layers1 = Array.from(doc.layers).length;
+    try {
+      $("prompt").value = "selftest done";
+      $("generate").dispatchEvent(new Event("click"));
+      await tick(300);
+      expect(await idle(30), "the answered run did not end");
+      expect(!/error/.test($("status").className) || !$("status").textContent, `answered run failed: "${$("status").textContent}"`);
+      const thumbs = $("thumbs").querySelectorAll(".thumb");
+      expect(!$("results").hidden && thumbs.length === 2, `thumbnails: ${thumbs.length}, shown ${!$("results").hidden}`);
+      expect(!$("runDone").hidden && / · \d+ s$/.test($("runTitle").textContent) && !/selftest done/.test($("runTitle").textContent), `card head "${$("runTitle").textContent}", Done shown ${!$("runDone").hidden}`);
+      expect(Array.from(doc.layers).length === layers1 + 1 && historyCount(doc) === h1 + 1, "the run should add one layer and one undo step");
+      near(await probe(doc, 600, 400), GREEN_SOLID, 12, "variation 1 in the document");
+      thumbs[1].dispatchEvent(new Event("click"));
+      for (let i = 0; i < 20 && historyCount(doc) === h1 + 1; i++) await tick(200);
+      near(await probe(doc, 600, 400), YELLOW_SOLID, 12, "variation 2 after a click on its thumbnail");
+      expect(thumbs[1].className === "thumb active", "the clicked thumbnail is not marked");
+      $("runDone").dispatchEvent(new Event("click"));
+      await tick();
+      expect($("runCard").hidden && !$("idleHint").hidden && $("prompt").value === "", `Done: card hidden ${$("runCard").hidden}, prompt "${$("prompt").value}"`);
+      expect(Array.from(doc.layers).length === layers1 + 1, "Done changed the document");
+      info.answered = `${thumbs.length} thumbnails, swap, Done`;
+    } finally {
+      if (await idle(30)) net.fetch = real2;
+      await setN(n0);
     }
 
     await select(doc, "none");
@@ -943,9 +998,9 @@ const SCENARIOS = {
     } catch (e) {
       got.colorSettings = `unreadable: ${e.message}`;
     }
-    await ps.showVariation(out.placed, 1);
+    await ps.showVariation(out.placed, out.results[1]);
     got.green = { got: (await probe(doc, 600, 400)).slice(0, 3), want: GREEN };
-    await ps.showVariation(out.placed, 2);
+    await ps.showVariation(out.placed, out.results[2]);
     got.brick = { got: (await probe(doc, 600, 400)).slice(0, 3), want: BRICK };
     await snapshot(doc, "adobeRgb");
     const bad = [got.green, got.brick].filter((v) => v.got.some((c, k) => Math.abs(c - v.want[k]) > 6));

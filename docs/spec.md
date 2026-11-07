@@ -22,7 +22,7 @@ Free, open-source (MIT) Photoshop plugin: generative fill (a prompt paints the s
 Three phases, so Photoshop is never locked during the network call:
 1. **Read** (short modal scope, no document change): selection bounds; crop = selection + 35% context, at least 512px a side, grown to the model's output aspect, clamped to the document; composite pixels and selection at upload size (long edge max 2048), read at full resolution in strips of at most 4 MP and shrunk in JS (Photoshop's own scaled reads come back shifted); a full-resolution copy of the selection.
 2. **Generate** (no modal scope): image + mask (grown about 1% so the model can blend) to the provider. With a prompt the model paints it in the selection; with an empty prompt it removes what is selected and rebuilds the background (`prompts.js`). Cancel discards the result.
-3. **Commit** (one modal scope, one undo step, rolled back on error): deselect, place each result as a smart object fitted to the crop, group, restore the exact selection (Imaging `putSelection`), make it the group's mask, feather, show the first variation.
+3. **Commit** (one modal scope, one undo step, rolled back on error): deselect, place the first result as a smart object fitted to the crop and named after the prompt, restore the exact selection (Imaging `putSelection`), make it the layer's mask, feather. No group. A click on another variation replaces the smart object's content (one undo step), like Adobe's Generative Fill.
 
 ## Providers
 | | OpenAI | Gemini |

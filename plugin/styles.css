@@ -323,6 +323,10 @@ sp-textarea {
   margin-top: 6px;
 }
 
+.card-head {
+  align-items: center;
+}
+
 .card-title {
   color: var(--uxp-host-text-color);
 }
@@ -357,16 +361,18 @@ sp-textarea {
   flex-wrap: wrap;
 }
 
+/* Variations, up to four in a row. The chosen one is framed by a blue background showing through
+   a 2 px gap (UXP drops some bottom borders). */
 .thumb {
-  width: calc(50% - 4px);
+  width: calc(25% - 4px);
   margin: 2px;
-  border: 2px solid transparent;
+  padding: 2px;
   border-radius: 4px;
-  overflow: hidden;
+  cursor: pointer;
 }
 
 .thumb.active {
-  border-color: var(--uxp-host-link-text-color, #378ef0);
+  background-color: #378ef0;
 }
 
 .thumb img {

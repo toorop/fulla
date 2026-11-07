@@ -307,7 +307,7 @@ function fakePs({ doc = { id: 1, width: 4000, height: 3000, resolution: 300 }, s
       const m = new Uint8Array(w * h); m.fill(255, 0, Math.min(m.length, 5000));
       return { data: m, width: w, height: h };
     },
-    async commit(o) { log.push(["commit", o]); return { docId: o.docId, groupId: 9, layerIds: o.results.map((_, i) => 10 + i) }; },
+    async commit(o) { log.push(["commit", o]); return { docId: o.docId, layerId: 9, crop: o.crop }; },
   };
 }
 

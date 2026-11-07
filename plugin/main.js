@@ -22,7 +22,7 @@ const sessionSpend = newSpend(); // since the panel was opened
 
 // ---------- pickers ----------
 // Photoshop's sp-picker breaks ("locks") if its own menu is rebuilt while it is closing, so a picker's
-// items are never changed after creation. Lists that depend on the service are replaced with a fresh
+// items are never changed after creation. Lists that depend on the provider are replaced with a fresh
 // picker element, after the event that triggered it has finished.
 
 const N_ITEMS = [1, 2, 3, 4].map((n) => ({ id: n, label: String(n) }));
@@ -67,7 +67,7 @@ function buildStaticPickers() {
     if (id === prefs.provider) return;
     prefs.provider = id;
     persist();
-    setTimeout(buildServicePickers, 0); // after the service picker has closed
+    setTimeout(buildProviderPickers, 0); // after the provider picker has closed
   });
   makePicker("n", N_ITEMS, prefs.n, (n) => {
     prefs.n = n;
@@ -79,8 +79,8 @@ function buildStaticPickers() {
   });
 }
 
-/** Model and quality lists depend on the service. */
-function buildServicePickers() {
+/** Model and quality lists depend on the provider. */
+function buildProviderPickers() {
   const provider = getProvider(prefs.provider);
   if (!provider.models.some((m) => m.id === prefs.models[provider.id]) && prefs.models[provider.id] !== CUSTOM) {
     prefs.models[provider.id] = provider.defaultModel;
@@ -117,13 +117,23 @@ function setBusy(b) {
   g.setAttribute("variant", b ? "secondary" : "cta");
 }
 
+const TABS = ["generate", "providers"];
+
+/** Show one tab's page. A generation keeps running while another tab is shown. */
+function showTab(name) {
+  for (const t of TABS) {
+    $(`page-${t}`).hidden = t !== name;
+    $(`tab-${t}`).className = t === name ? "tab active" : "tab";
+  }
+}
+
 function persist() {
   settings.savePrefs(prefs);
 }
 
 // ---------- cost ----------
 // Estimated from the tokens each reply reports. Replies count even when the run is then cancelled
-// or a variation is blocked, because the service may still bill them.
+// or a variation is blocked, because the provider may still bill them.
 
 function newSpend() {
   return { usage: null, cost: 0, priced: false, unpriced: false };
@@ -198,8 +208,10 @@ async function generate() {
   if (!model) return setStatus("Enter a model ID first.", "error");
   const apiKey = await settings.getKey(provider.id);
   if (!apiKey) {
-    $("settings").hidden = false;
-    return setStatus(`Add your ${provider.name} API key below first.`, "error");
+    const msg = `Add your ${provider.name} API key first.`;
+    setStatus(msg, "error");
+    $("keyStatus").textContent = msg;
+    return showTab("providers");
   }
   const prompt = $("prompt").value || "";
   if (prompt.length > 4000) return setStatus("Prompt is too long (4,000 characters max).", "error");
@@ -262,9 +274,7 @@ function bind() {
     persist();
   });
   $("generate").addEventListener("click", generate);
-  $("toggleSettings").addEventListener("click", () => {
-    $("settings").hidden = !$("settings").hidden;
-  });
+  for (const t of TABS) $(`tab-${t}`).addEventListener("click", () => showTab(t));
   $("saveKeys").addEventListener("click", async () => {
     try {
       let where = "secure";
@@ -294,7 +304,7 @@ async function showSavedKeys() {
 }
 
 buildStaticPickers();
-buildServicePickers();
+buildProviderPickers();
 bind();
 showSavedKeys();
 

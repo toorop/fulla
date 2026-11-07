@@ -17,7 +17,7 @@ const QWEN_RATIOS = ["1:1", "1:2", "2:1", "1:4", "4:1", "2:3", "3:2", "3:4", "4:
 const OPENAI_RATIOS = ["1:1", "3:2", "2:3", "4:3", "3:4", "16:9", "9:16", "21:9"];
 
 // Catalogue: models Fulla offers through OpenRouter. maxN = variations per request (1 = one request
-// each). OpenAI models take no `resolution` (the service picks the pixels) but can be asked for PNG.
+// each). OpenAI models take no `resolution` (the provider picks the pixels) but can be asked for PNG.
 const MODELS = [
   { id: "google/gemini-nano-banana-2.1", label: "Nano Banana 2.1 (recommended)", ratios: GEMINI_RATIOS, tiers: ["1K", "2K", "4K"], maxN: 1 },
   { id: "google/gemini-3-pro-image", label: "Nano Banana Pro", ratios: GEMINI_PRO_RATIOS, tiers: ["1K", "2K", "4K"], maxN: 1 },

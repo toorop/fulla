@@ -6,9 +6,9 @@
 
 ## Next action
 
-- Roadmap sub-step 1.2 (Generate and Providers tabs), once Stéphane says to start: **discuss**
-  the mock-up first (what goes where, what tabs look like in UXP on current Photoshop and the
-  beta). No code before he agrees.
+- Roadmap sub-step 1.3 (Providers tab): **discuss** the mock-up with Stéphane first (one row per
+  provider with its state, Remove, Test, adding a key, same dots in every key field, state as
+  readable text), together with the first-run screen decided for 1.4. No code before he agrees.
 - The detailed roadmap with checkboxes lives in Stéphane's notes (not in the repo); tick it as
   sub-steps finish.
 - Blocked by: —
@@ -18,8 +18,7 @@
 
 ## Current step
 
-Sub-steps 1.0 and 1.1 done (2026-11-07). Nothing coded in Fulla yet; the working tree only has
-STATE.md changes. Waiting for Stéphane to start 1.2.
+Sub-steps 1.0, 1.1 and 1.2 done (2026-11-07). Starting 1.3 with the mock-up discussion.
 
 ## Roadmap (order agreed 2026-11-07; details and checkboxes in Stéphane's notes)
 
@@ -40,9 +39,14 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Recently done
 
+- 2026-11-07 — Roadmap 1.2: Generate and Providers tabs (plain underlined labels, UXP has no tab
+  widget; current content moved, not redesigned); Generate without a key opens Providers;
+  "service" → "provider" in 18 files, stale texts fixed (bug template modes, OpenRouter missing in
+  `SECURITY.md`). Self-test `panelTabs`; `panelPickers` now restores OpenRouter. 51/51 tests,
+  self-test 23/25 on Photoshop Beta 28 (`geminiRaw`/`openaiRaw` need keys).
 - 2026-11-07 — Target narrowed to current Photoshop + beta: manifest `minVersion` 24.4.0 → 27.11.0,
   `ensureSupported` message, `CLAUDE.md`, `CONTRIBUTING.md`, README, spec. 51/51 tests, package
-  builds. Not yet checked: the plugin still loads in UXP Developer Tools (Unload + Load).
+  builds. Stéphane checked the panel still loads in UXP Developer Tools (`5b39a69`).
 - 2026-11-07 — Roadmap 1.1: OpenRouter **headless** OAuth PKCE tested end to end, outside the
   plugin (Node) and in UXP (console snippet on Photoshop Beta 28.0.1): `crypto.getRandomValues`
   exists, a pure-JS SHA-256 gives a challenge OpenRouter accepts, `shell.openExternal` opens the
@@ -75,6 +79,13 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Decisions taken
 
+- First run (roadmap 1.4): at launch, no provider configured → open Providers with an explanation,
+  "Create an OpenRouter key" (recommended), "Add a Google key", "Add an OpenAI key"; the Generate
+  tab stays clickable and explains ("Connect a provider to start" + button), not greyed out (a
+  greyed tab gives no reason). A saved key switches to Generate; removing the last key goes back.
+- Stay as close as possible to Photoshop's built-in Generative Fill (2026-11-07), e.g. one
+  variation → one layer, no group; several → thumbnails in the panel, click to try, validate to
+  create the layer (roadmap step 2). Show clearly that a generation is running.
 - Only current Photoshop and the beta matter (2026-11-07): with the subscription everyone can
   update. Manifest `minVersion` 27.11.0 (Photoshop 2026 on Stéphane's PC); raise it as releases come.
 - OpenRouter connect uses headless OAuth PKCE (S256): nothing hosted by us, the user only sees

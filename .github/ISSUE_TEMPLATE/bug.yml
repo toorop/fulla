@@ -17,11 +17,11 @@ body:
     validations:
       required: true
   - type: dropdown
-    id: service
+    id: provider
     attributes:
-      label: Service and mode
+      label: Provider and area
       multiple: true
-      options: [OpenAI, Google Gemini, Fill, Remove, Expand, Variations, Install / panel]
+      options: [OpenRouter, OpenAI, Google Gemini, Fill (prompt), Remove (empty prompt), Variations, Install / panel]
   - type: textarea
     id: steps
     attributes:

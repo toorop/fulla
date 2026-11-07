@@ -1,8 +1,8 @@
-// Estimated cost of a generation, from the token counts the service sends back (or the exact amount,
-// for services such as OpenRouter that report it).
+// Estimated cost of a generation, from the token counts the provider sends back (or the exact amount,
+// for providers such as OpenRouter that report it).
 // Each provider turns its own usage reply into { inputText, inputImage, outputText, outputImage, total }.
 
-// USD per 1M tokens, standard paid tier. Update by hand when the services change their prices.
+// USD per 1M tokens, standard paid tier. Update by hand when the providers change their prices.
 // Gemini: ai.google.dev/gemini-api/docs/pricing (last updated 2026-10-27, checked 2026-10-27).
 //   Image input costs the same as text input; thinking tokens are billed as text output.
 // OpenAI: developers.openai.com/api/docs/pricing (checked 2026-10-27). No text output price is listed

@@ -34,7 +34,7 @@ Three phases, so Photoshop is never locked during the network call:
 | Variations | `n` in one call | Parallel calls |
 | Custom model ID | Yes | Yes |
 
-Neither service follows the mask pixel-exactly, so the Photoshop layer mask does the final clipping.
+Neither provider follows the mask pixel-exactly, so the Photoshop layer mask does the final clipping.
 
 ## Code map
 | File | Job |
@@ -43,7 +43,7 @@ Neither service follows the mask pixel-exactly, so the Photoshop layer mask does
 | `plugin/main.js` | Panel UI and wiring |
 | `plugin/src/pipeline.js` | One generation end to end (host-independent) |
 | `plugin/src/photoshop.js` | All Photoshop calls (imaging API, batchPlay, DOM) |
-| `plugin/src/providers/*.js` | One file per AI service, same interface |
+| `plugin/src/providers/*.js` | One file per AI provider, same interface |
 | `plugin/src/geometry.js` | Crop maths |
 | `plugin/src/png.js`, `image.js`, `bytes.js` | PNG encoder, resize/mask helpers, base64 |
 | `plugin/src/settings.js` | Keys in UXP secure storage, prefs in localStorage |
@@ -53,8 +53,8 @@ Neither service follows the mask pixel-exactly, so the Photoshop layer mask does
 | `test/` | Node tests (`npm test`), fake Photoshop and fake APIs |
 
 ## Known limits
-- The services return at most about 4K. Filling a large part of a big image is upscaled and looks softer; the panel says so.
-- Cancel cannot recall a request already sent; the service may still bill it.
+- The providers return at most about 4K. Filling a large part of a big image is upscaled and looks softer; the panel says so.
+- Cancel cannot recall a request already sent; the provider may still bill it.
 - Colour: pixels are read and sent as sRGB; result PNGs get an embedded sRGB profile so Photoshop converts them into the document's profile. Photoshop discards that profile when its RGB colour policy is Off, and JPEG/WebP results are not tagged yet.
 - Manual installer is Windows only; macOS users use the .ccx.
 - Verified live against both APIs: requests reach them and their error replies are mapped (Gemini accepts `imageConfig`; `responseFormat.image` wants enum values). Not yet verified: a paid image coming back.
@@ -62,4 +62,4 @@ Neither service follows the mask pixel-exactly, so the Photoshop layer mask does
 ## Test plan
 - `npm test` (49 tests): geometry, PNG encoder (checked against zlib), base64, strip downsampling, provider requests and error mapping (with real captured error bodies), pipeline and Photoshop layer with fakes, require paths.
 - In-Photoshop self-test (dev only): fill, variations + switching, ellipse, remove, corner, select-all, 24 MP photo, transparent area, 300 ppi, 16-bit, odd output sizes, Adobe RGB document colours, rollback, cancel, no selection, panel pickers, live network checks. 23/23 on Photoshop 27.10 before the Expand scenarios were removed (21 now).
-- Still to do: a paid generation per service.
+- Still to do: a paid generation per provider.

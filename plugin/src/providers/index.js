@@ -1,4 +1,4 @@
-// Provider registry. To add a model service, write one adapter with the same shape as openai.js and list it here.
+// Provider registry. To add a model provider, write one adapter with the same shape as openai.js and list it here.
 
 const openrouter = require("./openrouter");
 const openai = require("./openai");

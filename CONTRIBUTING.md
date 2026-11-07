@@ -17,11 +17,11 @@ Releases (`.ccx` and the Windows zip) are built and published by the maintainer 
 - **It works in real Photoshop.** If you touch `plugin/src/photoshop.js`, `pipeline.js` or `main.js`, run the in-Photoshop self-test (see the README, "Develop") and paste the result and your Photoshop version in the pull request.
 - **Tests come with the change.** New behaviour gets a unit test in `test/`; Photoshop behaviour gets a self-test scenario.
 - **Zero runtime dependencies.** The plugin is plain CommonJS that runs in Photoshop's UXP. It targets the current Photoshop release and the beta (see `minVersion` in `plugin/manifest.json`). No `btoa`, `TextEncoder`, `FormData`, canvas or ES modules in `plugin/`.
-- **Match the code around you.** Same naming, comment density and structure. All Photoshop calls stay in `photoshop.js`; one file per AI service in `providers/`.
+- **Match the code around you.** Same naming, comment density and structure. All Photoshop calls stay in `photoshop.js`; one file per AI provider in `providers/`.
 - **One change per pull request**, with a clear title and a short explanation of why.
 - **Never commit keys** or logs that contain them.
 
-## Adding an AI service
+## Adding an AI provider
 
 Write one file in `plugin/src/providers/` with the same shape as `openai.js` (`id`, `name`, `models`, `fitSize`, `generate`), list it in `providers/index.js`, add its domain to `plugin/manifest.json`, and add tests with recorded responses, including its error replies.
 

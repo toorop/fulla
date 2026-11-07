@@ -169,7 +169,7 @@ test("openrouter sends image + mask as references, sizes by ratio and tier, repo
   assert.equal(q.calls[0].body.n, 3);
   assert.equal(q.calls[0].body.resolution, "1K");
 
-  // OpenAI models: no resolution field (the service picks the pixels), PNG asked for.
+  // OpenAI models: no resolution field (the provider picks the pixels), PNG asked for.
   const o = fakeFetch(() => orOk(2));
   await openrouter.generate(req({ fetch: o, model: "openai/gpt-image-2.6-sunburst", target: openrouter.fitSize("openai/gpt-image-2.6-sunburst", 1500, 1000, "2K"), n: 2 }));
   assert.equal(o.calls.length, 1);
@@ -373,7 +373,7 @@ test("gemini quota refusals: free tier says so and never retries; long waits are
 });
 
 // ---------------- Usage (for the cost estimate) ----------------
-// Reply shapes follow each service's API reference; the counts are made up.
+// Reply shapes follow each provider's API reference; the counts are made up.
 
 const geminiUsage = {
   promptTokenCount: 1300,

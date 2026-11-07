@@ -6,6 +6,12 @@
   </head>
   <body>
     <main id="app">
+      <nav class="tabs" role="tablist">
+        <div class="tab active" id="tab-generate" role="tab">Generate</div>
+        <div class="tab" id="tab-providers" role="tab">Providers</div>
+      </nav>
+
+      <section id="page-generate" class="page">
       <section id="promptRow">
         <sp-label for="prompt">Prompt</sp-label>
         <sp-textarea id="prompt" placeholder="Describe what to add, or leave empty to remove"></sp-textarea>
@@ -13,7 +19,7 @@
 
       <section class="grid2">
         <div>
-          <sp-label>Service</sp-label>
+          <sp-label>Provider</sp-label>
           <sp-picker id="provider" size="s"><sp-menu slot="options"></sp-menu></sp-picker>
         </div>
         <div>
@@ -53,10 +59,9 @@
         <div id="thumbs" class="thumbs"></div>
       </section>
 
-      <sp-divider size="small"></sp-divider>
+      </section>
 
-      <sp-action-button id="toggleSettings" quiet>API keys</sp-action-button>
-      <section id="settings" hidden>
+      <section id="page-providers" class="page" hidden>
         <div class="key">
           <sp-label>OpenRouter API key</sp-label>
           <sp-textfield id="key-openrouter" type="password" placeholder="sk-or-..."></sp-textfield>
@@ -76,7 +81,7 @@
           <sp-button id="saveKeys" variant="secondary" size="s">Save keys</sp-button>
           <span id="keyStatus" class="hint"></span>
         </div>
-        <div class="hint">Keys stay on this computer and go only to the service you pick. You pay that service per image. The cost shown after each run is an estimate from the tokens the service reports, at its list prices; your bill is the reference.</div>
+        <div class="hint">Keys stay on this computer and go only to the provider you pick. You pay that provider per image. The cost shown after each run is an estimate from the tokens the provider reports, at its list prices; your bill is the reference.</div>
       </section>
     </main>
     <script src="main.js"></script>

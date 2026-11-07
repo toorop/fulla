@@ -12,8 +12,35 @@ body {
   padding: 12px;
 }
 
-#app > * + * {
+#app > * + *,
+.page > * + * {
   margin-top: 10px;
+}
+
+/* Tabs in the style of Photoshop's own panel tabs: plain labels, the active one underlined.
+   (UXP has no tab widget.) */
+.tabs {
+  display: flex;
+  flex-direction: row;
+  border-bottom: 1px solid var(--uxp-host-border-color, rgba(128, 128, 128, 0.4));
+}
+
+.tab {
+  padding: 4px 2px 6px;
+  margin-right: 16px;
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  color: var(--uxp-host-text-color-secondary);
+  cursor: pointer;
+}
+
+.tab:hover {
+  color: var(--uxp-host-text-color);
+}
+
+.tab.active {
+  color: var(--uxp-host-text-color);
+  border-bottom-color: var(--uxp-host-text-color);
 }
 
 [hidden] {

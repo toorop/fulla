@@ -6,14 +6,14 @@ const { PROVIDERS } = require("../plugin/src/providers/index");
 
 const usage = (o) => ({ ...emptyUsage(), ...o });
 
-test("every listed model has a price, unless its service reports the billed amount", () => {
+test("every listed model has a price, unless its provider reports the billed amount", () => {
   for (const p of PROVIDERS) if (!p.reportsCost) for (const m of p.models) assert.ok(PRICES[m.id], `${p.id} ${m.id} missing from cost.js`);
   // A reported amount wins over any price table, for known and custom models alike.
   assert.equal(estimateCost("my-custom-model", usage({ outputImage: 1000, cost: 0.0412 })), 0.0412);
   assert.equal(estimateCost("gpt-image-2", usage({ outputImage: 1000, cost: 0 })), 0);
 });
 
-test("cost matches the services' own per-image figures", () => {
+test("cost matches the providers' own per-image figures", () => {
   // Google lists Nano Banana 2.1 1K output as $0.0336 per image, i.e. 1,120 image tokens at $30/M.
   assert.ok(Math.abs(estimateCost("gemini-nano-banana-2.1", usage({ outputImage: 1120 })) - 0.0336) < 1e-9);
   // Input and output together, text and image priced apart (OpenAI).

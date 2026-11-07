@@ -5,7 +5,7 @@
 //   a few seconds, runs every scenario on throwaway documents, and writes selftest\result.json plus PNG
 //   snapshots next to it. selftest.json may contain {"only": ["fill", ...]} or {"live": "openrouter"|"openai"|"gemini", "model": "<optional model id>"}.
 //
-// Scenarios use a stand-in AI service that returns a position-encoded gradient (R = x, G = y), so every
+// Scenarios use a stand-in AI provider that returns a position-encoded gradient (R = x, G = y), so every
 // probe can check that the result landed exactly where it should, at any resolution or bit depth.
 
 const { app, action, constants } = require("photoshop");
@@ -27,7 +27,7 @@ const SELECTION = { _ref: "channel", _property: "selection" };
 const RED = [255, 0, 0];
 const BLUE = [0, 0, 255];
 
-// ---------- images from the stand-in service ----------
+// ---------- images from the stand-in provider ----------
 
 function gradientPng(w, h) {
   const p = new Uint8Array(w * h * 3);
@@ -48,7 +48,7 @@ function solidPng(w, h, rgb) {
   return encodePng(p, w, h, 3);
 }
 
-/** Stand-in AI service. Variation 1 is the gradient, others solid colours. */
+/** Stand-in AI provider. Variation 1 is the gradient, others solid colours. */
 function mockProvider({ base = openai, colors = [null, [0, 255, 0], [255, 255, 0], [0, 255, 255]], scale = 1, garbage = false } = {}) {
   const m = {
     name: "Mock",
@@ -202,7 +202,7 @@ async function fillScenario(name, docOpts, sel, { shape = "rect", base = openai,
   const notes = { crop, target: out.target, input: { w: req.image.width, h: req.image.height }, out: prov.outSize, trace };
   try {
 
-  // What the service received: the right pixels at the right place, and the right mask.
+  // What the provider received: the right pixels at the right place, and the right mask.
   const at = (x, y) => {
     const ix = Math.floor(((x - crop.left) * req.image.width) / (crop.right - crop.left));
     const iy = Math.floor(((y - crop.top) * req.image.height) / (crop.bottom - crop.top));
@@ -211,16 +211,16 @@ async function fillScenario(name, docOpts, sel, { shape = "rect", base = openai,
   };
   const cx = Math.round((sel.left + sel.right) / 2);
   const cy = Math.round((sel.top + sel.bottom) / 2);
-  expect(at(cx, cy).mask === 255, "mask sent to service: selection centre not marked");
+  expect(at(cx, cy).mask === 255, "mask sent to provider: selection centre not marked");
   const halfW = Math.round(docOpts.width || 1200) / 2;
-  // The mask sent to the service is grown ~1% of the upload (so the model can blend); stay outside that.
+  // The mask sent to the provider is grown ~1% of the upload (so the model can blend); stay outside that.
   const grownDoc = Math.ceil((Math.max(req.image.width, req.image.height) * 0.01 * (crop.right - crop.left)) / req.image.width) + 4;
   const gap = 40 + grownDoc;
   const outsideLeft = { x: Math.max(crop.left + 2, Math.min(sel.left - gap, halfW - 20)), y: cy };
   if (outsideLeft.x <= sel.left - gap && outsideLeft.x < halfW) {
     const s = at(outsideLeft.x, outsideLeft.y);
-    near(s.rgb, RED, 12, "image sent to service (left of selection)");
-    expect(s.mask === 0, "mask sent to service marks an unselected pixel");
+    near(s.rgb, RED, 12, "image sent to provider (left of selection)");
+    expect(s.mask === 0, "mask sent to provider marks an unselected pixel");
   }
   if (!prompt) expect(/Remove everything/.test(req.task), "an empty prompt did not send the remove instruction");
 
@@ -494,8 +494,37 @@ const SCENARIOS = {
     await choose("quality", "Auto");
     await choose("n", "1");
     await choose("maxTier", "2K");
-    await choose("provider", before === "gemini" ? "Google Gemini" : "OpenAI");
+    await choose("provider", { gemini: "Google Gemini", openrouter: "OpenRouter" }[before] || "OpenAI");
     return log;
+  },
+
+  async panelTabs() {
+    // Tabs switch pages; Generate with no key for the chosen provider opens Providers and says why.
+    const $ = (id) => document.getElementById(id);
+    const tick = () => new Promise((r) => setTimeout(r, 150));
+    const click = async (id) => {
+      $(id).dispatchEvent(new Event("click"));
+      await tick();
+    };
+    const shown = () => ["generate", "providers"].filter((t) => !$(`page-${t}`).hidden);
+    const active = () => Array.from(document.querySelectorAll(".tab.active")).map((t) => t.id);
+    await click("tab-generate");
+    expect(shown().join() === "generate" && active().join() === "tab-generate", `start: pages ${shown()} tabs ${active()}`);
+    await click("tab-providers");
+    expect(shown().join() === "providers" && active().join() === "tab-providers", `after Providers: pages ${shown()} tabs ${active()}`);
+    expect(!!$("saveKeys") && !$("page-providers").contains($("generate")), "Providers page holds the keys, not Generate");
+    await click("tab-generate");
+    expect(shown().join() === "generate", `after Generate: pages ${shown()}`);
+    // Only with a provider that has no key: with a key, the click would start a real, paid run.
+    const prefs = JSON.parse(localStorage.getItem("fulla.prefs.v1") || "{}");
+    const current = prefs.provider || settings.DEFAULTS.provider;
+    if (await settings.getKey(current)) return { noKeyCheck: `skipped: ${current} has a key` };
+    await click("generate");
+    expect(shown().join() === "providers", `Generate without a key should open Providers, pages: ${shown()}`);
+    expect(/API key first/.test($("keyStatus").textContent), `key status: "${$("keyStatus").textContent}"`);
+    $("keyStatus").textContent = "";
+    await click("tab-generate");
+    return { noKeyCheck: `ran with ${current}` };
   },
 
   async geminiRaw() {
@@ -580,7 +609,7 @@ const SCENARIOS = {
   },
 
   async geminiSizesOddOutput() {
-    // fixed-ratio sizing, and a service that returns a different size than asked
+    // fixed-ratio sizing, and a provider that returns a different size than asked
     return (await fillScenario("geminiSizesOddOutput", { width: 1600, height: 900 }, { left: 700, top: 300, right: 1000, bottom: 600 }, { base: gemini, scale: 0.75 })).notes;
   },
 

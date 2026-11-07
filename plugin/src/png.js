@@ -229,7 +229,7 @@ function imageSize(bytes) {
 
 /**
  * Embed an sRGB ICC profile (iCCP chunk after IHDR) in a PNG that does not say what colour space it
- * is in. The services return sRGB without saying so, and Photoshop would read the pixels in the
+ * is in. The providers return sRGB without saying so, and Photoshop would read the pixels in the
  * document's profile instead (it ignores the lighter sRGB chunk). Other formats come back unchanged.
  */
 function tagSrgb(bytes) {

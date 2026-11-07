@@ -1,6 +1,6 @@
 # Fulla
 
-Photoshop UXP plugin: generative fill with the user's own AI service (OpenAI, Gemini; local models planned). MIT, open source. Maintainer: Stéphane (toorop). Started on 2026-11-06 from OpenFill by Daman Reddy (MIT, github.com/damanjz/openfill); no upstream tracking, the projects have parted. Spec: `docs/spec.md`.
+Photoshop UXP plugin: generative fill with the user's own AI provider (OpenRouter, OpenAI, Gemini; local models planned). MIT, open source. Maintainer: Stéphane (toorop). Started on 2026-11-06 from OpenFill by Daman Reddy (MIT, github.com/damanjz/openfill); no upstream tracking, the projects have parted. Spec: `docs/spec.md`.
 
 ## Working with Stéphane
 - Start every session by reading `STATE.md` and resume from its `## Next action`.
@@ -29,7 +29,7 @@ Photoshop UXP plugin: generative fill with the user's own AI service (OpenAI, Ge
 ## Rules
 - Zero runtime dependencies. Plugin code is CommonJS for UXP. Target: the current Photoshop release and the beta only (manifest `minVersion`, 27.11 as of 2026-11-07; with the subscription everyone can update, so no work for older versions). Keep avoiding `btoa`, `TextEncoder`, `FormData`, canvas and ES modules until checked in UXP.
 - All Photoshop calls live in `plugin/src/photoshop.js`; `pipeline.js` stays host-free and tested with fakes.
-- One file per AI service in `plugin/src/providers/`, same interface as `openai.js`.
+- One file per AI provider in `plugin/src/providers/`, same interface as `openai.js`.
 
 ## Tests
 - Every feature or fix ships with its tests, in the same change.

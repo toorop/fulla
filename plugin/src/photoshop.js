@@ -1,6 +1,6 @@
 // Everything that touches Photoshop. The pipeline calls these; nothing else imports "photoshop".
 // Targets the current Photoshop and the beta (manifest minVersion). Network calls never happen inside a modal scope, so
-// Photoshop stays usable while a service is generating.
+// Photoshop stays usable while a provider is generating.
 
 const { app, core, action, imaging, constants } = require("photoshop");
 const uxp = require("uxp");

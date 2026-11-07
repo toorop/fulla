@@ -39,7 +39,7 @@ async function read(ps, doc, fit) {
   if (small.width !== inp.width || small.height !== inp.height) mask = resample(mask, small.width, small.height, 1, inp.width, inp.height);
   if (coverage(mask) === 0) throw new UserError("The selection is empty.");
   // Full-resolution copy of the selection, so the final layer mask is exact even if the user
-  // changes the selection while the service is working.
+  // changes the selection while the provider is working.
   const full = await ps.readSelection(doc.id, geo.crop, null);
   return { geo, inp, rgb, mask, selection: { data: full.data, width: full.width, height: full.height, left: geo.crop.left, top: geo.crop.top } };
 }
@@ -57,7 +57,7 @@ async function read(ps, doc, fit) {
  * @param {string} [o.maxTier="2K"]
  * @param {(label: string) => void} [o.progress]
  * @param {() => boolean} [o.cancelled]
- * @param {(usage: object) => void} [o.onUsage]  token counts of each service reply, even if the run then fails
+ * @param {(usage: object) => void} [o.onUsage]  token counts of each provider reply, even if the run then fails
  */
 async function runGeneration(o) {
   const { ps, provider } = o;

@@ -6,22 +6,15 @@
 
 ## Next action
 
-- **Roadmap 2.5 (results like Adobe's) agreed and coded, not committed.** `ps.commit` places only
-  the first result: one top-level smart object named after the prompt, the selection as its own
-  mask, no group; returns `{ docId, layerId, crop }`. `ps.showVariation(placed, result)` selects
-  that layer and runs `placedLayerReplaceContents` (one undo step "Fulla: variation"); a deleted
-  layer or closed document gives a plain message. Thumbnails (up to 4 a row) in the run card;
-  the chosen one framed by a blue background gap. Fake tests and self-test (`fill`, `variations`
-  checks one new layer, swaps, mask kept, content still fitted; `adobeRgb`) updated. 62/62,
-  package builds. Self-test 25/26 free scenarios (only `openaiRaw`, no key): the replace keeps
-  mask, place and colours. His real 2-variation run: fine; requests already go out in parallel
-  (Nano Banana: one per variation via `Promise.allSettled`; Qwen/GPT: one request with n). His
-  changes, coded: card head = "model · size · time" (no prompt recap: it is in the box) with a
-  Done button on the right (`finishRun`: clears card, thumbnails and prompt; the layer stays).
-  `panelRun` now also drives an answered run offline (fake replies readable by every provider):
-  2 thumbnails, one layer, click swaps, Done clears. 62/62, package builds, panel scenarios +
-  `fill`/`variations` pass. Left: his look, commit (ask).
-  Later: Adobe's "generate more" into the same layer.
+- **Step 2 next: the prompt sub-step** (discuss first): placeholder bug (reproduce first) and
+  wording, plus `prompts.js`: cover add, modify (e.g. a face's expression), remove, and with no
+  prompt fill an empty area; Adobe's placeholder is "Describe what you want to generate
+  (optional)". Then "Open an issue" link + `model-request.yml` (GitHub: ask), then end of step 2
+  (README captures, his full walk-through).
+- Roadmap 2.5 done (`54f1c90`): one top-level layer per run (smart object named after the
+  prompt, selection as its mask, no group); thumbnails in the run card swap its content
+  (`placedLayerReplaceContents`, one undo step); card head "model · size · time" + Done (clears
+  card, thumbnails and prompt; the layer stays). Later: Adobe's "generate more" into the layer.
 - Generate tab as of `1bd710d` (agreed with Stéphane on 2026-11-07): prompt box at the top with
   a resize grip (`prefs.promptHeight`), one row under it: model button (provider `badge` OR/G/OA
   + model name, searchable menu), settings button (icons/sliders.svg) opening one popup
@@ -55,8 +48,8 @@
 
 ## Current step
 
-Step 2 (chat-style prompt box) in progress: 2.1 to 2.4 done (layout, run card, model button,
-settings popup); next 2.5 (results like Adobe's). Step 1 left to test some day, not blocking:
+Step 2 (prompt box) in progress: 2.1 to 2.5 done (layout, run card, model button, settings
+popup, Adobe-like results); next the prompt wording and `prompts.js`. Step 1 left to test some day, not blocking:
 sign-up with a fresh OpenRouter account; a real OpenAI key (a Google key works since 2026-11-07).
 
 ## Roadmap (order agreed 2026-11-07; details and checkboxes in Stéphane's notes)

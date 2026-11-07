@@ -6,13 +6,11 @@
 
 ## Next action
 
-- Start Plan step 3 (panel redesign) with its first piece: **automatic resolution**. Pick the
-  smallest tier where the tile needs no upscaling (`computeCrop` softness ≤ 1), capped by what the
-  model supports; show it as "Auto · 2K · ≈ $0.04", user can override. Reason: on a real B&W photo
-  (Qwen, 1K) the pasted tile was softer than the photo and the feathered edge showed a texture
-  border; a tile at native detail should remove it. Agree the exact rule with Stéphane first, then
-  code + tests + self-test.
-- Then the rest of step 3 (see Plan), designing each piece with Stéphane before coding.
+- Roadmap sub-step 1.2 (Generate and Providers tabs), once Stéphane says to start: **discuss**
+  the mock-up first (what goes where, what tabs look like in UXP on current Photoshop and the
+  beta). No code before he agrees.
+- The detailed roadmap with checkboxes lives in Stéphane's notes (not in the repo); tick it as
+  sub-steps finish.
 - Blocked by: —
 - Working setup: Fulla runs from UXP Developer Tools on Photoshop (Beta) 28.0.1 (Load + Watch; a
   manifest change needs Unload + Load). Self-test folder and commands: `CLAUDE.md`. Stéphane's
@@ -20,35 +18,44 @@
 
 ## Current step
 
-Nothing in progress. Session of 2026-11-06 ended with everything committed and pushed.
+Sub-steps 1.0 and 1.1 done (2026-11-07). Nothing coded in Fulla yet; the working tree only has
+STATE.md changes. Waiting for Stéphane to start 1.2.
 
-## Plan (revised 2026-11-06; design each piece with Stéphane before coding)
+## Roadmap (order agreed 2026-11-07; details and checkboxes in Stéphane's notes)
 
-1. Base: rename to Fulla, merge the cost estimate. Done.
-2. Remove the modes and Expand. Done (`1350c2d`). Colour fix done (`ebd5829`).
-3. Panel redesign in the style of AI chat apps:
-   - automatic resolution (Next action);
-   - Generate and Providers tabs; "Service" becomes "provider" everywhere;
-   - first-run onboarding: no provider → Providers tab opens; big "Connect with OpenRouter" button
-     (OAuth PKCE headless: the user copies a code, no key to create or paste) with a plain
-     explanation and the price per image; a link naming the alternatives ("I already have a Google
-     or OpenAI key, fal.ai and others later"); Generate shows "add a provider" instead of a dead form;
-   - prompt box with a model chip (one searchable menu, grouped by provider, "model · provider",
-     Nano Banana 2.1 marked recommended; UXP has no such control: build it, check early that a
-     popover fits inside the panel) and an options chip ("Auto 2K · ×1": resolution, variations,
-     quality when the model has one); send button that turns into Cancel;
-   - results and cost above the prompt; panel scrolls; prompt placeholder bug;
-   - "Another model or provider? Open an issue" link to a new `model-request.yml` issue template
-     (`launchProcess` https permission in the manifest).
-   Mock-ups were proposed in the session, not formally agreed.
-4. OpenRouter provider. Done (this session), see Recently done. Next for it: OAuth connect (step 3).
-5. fal.ai provider (real masks) and/or local Qwen Image, decided after more real-photo trials.
+1. Onboarding: 1.0 remove the saved key; 1.1 OpenRouter OAuth return path and trust (discussion,
+   then a throwaway UXP feasibility test); 1.2 Generate and Providers tabs, "service" → "provider";
+   1.3 Providers tab (state, Remove, Test, Google/OpenAI keys); 1.4 first-run path (Providers opens,
+   "Connect with OpenRouter", link naming the alternatives, Generate says "Add a provider to start");
+   1.5 self-test, README, Stéphane runs the whole path from zero keys.
+2. Chat-style prompt box: model chip (searchable menu built by hand), options chip, Send → Cancel,
+   results above the prompt, scrolling, placeholder bug, "Open an issue" link + issue template.
+3. Automatic resolution (rule to agree first), then grain matching only if still needed.
+4. Full code review, then a first public release.
+5. fal.ai provider (real masks), compared on real photos.
+6. Local models: check UXP allows `http://127.0.0.1` first; ComfyUI managed by the plugin vs own
+   server, decided by research.
 
-Also pending: a full code review (security, bugs, useful refactors); possible grain matching for
-the pasted tile (after automatic resolution); GPT Image 2.6 `markup` (mask-like overlay) to try.
+Each step and sub-step is discussed and validated by Stéphane, and starts only when he says so.
 
 ## Recently done
 
+- 2026-11-07 — Roadmap 1.1: OpenRouter **headless** OAuth PKCE tested end to end, outside the
+  plugin (Node) and in UXP (console snippet on Photoshop Beta 28.0.1): `crypto.getRandomValues`
+  exists, a pure-JS SHA-256 gives a challenge OpenRouter accepts, `shell.openExternal` opens the
+  browser (needs `launchProcess` https; Photoshop asks the user first), the code exchange returns
+  the key. Findings for 1.4: Photoshop's consent dialog went behind its window (launched from the
+  DevTools console; recheck from a panel button) and shows only the URL's end, so the developer
+  text must name openrouter.ai; a new key answers 401 "User not found." for 1 to 33 s, so poll
+  `GET /api/v1/key` and word that 401 as "still activating"; keep the same verifier for 10 min when
+  the page is reopened (a code from an earlier attempt gives 403); OpenRouter's page says
+  "terminal". The `launchProcess` permission was removed again after the test.
+- 2026-11-07 — Detailed roadmap with checkboxes written in Stéphane's notes, plus a reference note on
+  local models (not the current work). Found: the panel cannot remove a saved key ("Save keys"
+  skips empty fields, `main.js`); fixed by the Providers tab's Remove button in roadmap 1.3.
+  Also: UXP masks the placeholder of password fields, so each key field shows a different number
+  of dots and "Saved (...xxxx)" was never readable. Roadmap 1.3: same dots everywhere, state shown
+  as readable text beside the field (Stéphane's request).
 - 2026-11-06 — OpenRouter provider (`providers/openrouter.js`): `POST /api/v1/images`, picture +
   mask as `input_references` (no mask parameter exists), catalogue Nano Banana 2.1 (default,
   recommended), Nano Banana Pro, Qwen Image 3, Qwen Image 2.1 Pro, GPT Image 2.6 and 2.5 Sunburst;
@@ -65,6 +72,10 @@ the pasted tile (after automatic resolution); GPT Image 2.6 `markup` (mask-like 
 
 ## Decisions taken
 
+- Only current Photoshop and the beta matter (2026-11-07): with the subscription everyone can
+  update. The "v24 to v28" rule in `CLAUDE.md` and the manifest's `minVersion` are not updated yet.
+- OpenRouter connect uses headless OAuth PKCE (S256): nothing hosted by us, the user only sees
+  openrouter.ai and pastes a code that is useless without the plugin's verifier (trust).
 - Own project, not a fork to upstream; OpenFill's MIT copyright line stays in `LICENSE`.
 - No modes and no Expand: to extend, enlarge the canvas in Photoshop and fill the new area.
 - Vocabulary: a provider is who gets the request and bills; a model is what generates.
@@ -87,5 +98,4 @@ the pasted tile (after automatic resolution); GPT Image 2.6 `markup` (mask-like 
 - JPEG/WebP results get no colour profile yet (OpenAI always PNG; Gemini/Qwen via OpenRouter: check
   the `media_type` of real replies).
 - GitHub "Forked from" label (optional, Stéphane): leave the fork network or ask Support.
-- Local folder is still named `openfill`; Stéphane renames it to `fulla` later.
 - Minor: `uninstall.ps1` always prints "Fulla", even with another `-Id`.

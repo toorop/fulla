@@ -4,7 +4,7 @@
 const { toBase64, fromBase64 } = require("../bytes");
 const { encodePng } = require("../png");
 const { binarize } = require("../image");
-const { postJson, ProviderError } = require("./http");
+const { postJson, getJson, ProviderError } = require("./http");
 
 const HOST = "generativelanguage.googleapis.com";
 const urlFor = (model) => `https://${HOST}/v1beta/models/${encodeURIComponent(model)}:generateContent`;
@@ -74,7 +74,7 @@ function classify(status, json, text) {
   const msg = e.message || (text || "").slice(0, 200) || `HTTP ${status}`;
   const reasons = JSON.stringify(e.details || []);
   if (/API_KEY_INVALID/.test(reasons) || /API key not valid/i.test(msg)) {
-    return new ProviderError("Google rejected the Gemini API key. Check it in Settings.", { status, code: "bad_key" });
+    return new ProviderError("Google rejected the Gemini API key. Check it in the Providers tab.", { status, code: "bad_key" });
   }
   if (status === 400 && e.status === "FAILED_PRECONDITION") {
     return new ProviderError("Gemini's free tier isn't available for this account or region. Enable billing in Google AI Studio.", { status, code: e.status });
@@ -207,8 +207,14 @@ async function generateOne(req, text, imgB64, maskB64, size) {
 }
 
 /** Same request shape as openai.generate. Variations run as parallel requests. */
+/** Free request that only proves the key works. */
+async function checkKey({ fetch, apiKey }) {
+  await getJson({ fetch, url: `https://${HOST}/v1beta/models?pageSize=1`, headers: { "x-goog-api-key": apiKey }, classify, host: HOST });
+  return {};
+}
+
 async function generate(req) {
-  if (!req.apiKey) throw new ProviderError("Add your Gemini API key in Settings first.", { code: "no_key" });
+  if (!req.apiKey) throw new ProviderError("Add your Gemini API key in the Providers tab first.", { code: "no_key" });
   const { width, height } = req.image;
   const imgB64 = toBase64(encodePng(req.image.rgb, width, height, 3));
   const maskB64 = toBase64(encodePng(binarize(req.mask), width, height, 1));
@@ -226,12 +232,12 @@ module.exports = {
   name: "Google Gemini",
   host: HOST,
   keyHelp: "aistudio.google.com/apikey",
-  keyPlaceholder: "AIza...",
   models: MODELS.map(({ id, label }) => ({ id, label })),
   defaultModel: MODELS[0].id,
   qualities: null,
   fitSize,
   generate,
+  checkKey,
   _classify: classify,
   _extractImage: extractImage,
   _usageFrom: usageFrom,

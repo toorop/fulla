@@ -5,7 +5,7 @@
 const { toBase64, fromBase64 } = require("../bytes");
 const { encodePng } = require("../png");
 const { binarize } = require("../image");
-const { postJson, ProviderError } = require("./http");
+const { postJson, getJson, ProviderError } = require("./http");
 
 const HOST = "openrouter.ai";
 const URL = `https://${HOST}/api/v1/images`;
@@ -90,7 +90,11 @@ function classify(status, json, text) {
   const msg = e.message || (text || "").slice(0, 200) || `HTTP ${status}`;
   const code = String(e.code || status);
   const detail = `${status}: ${msg}`;
-  if (status === 401) return new ProviderError("OpenRouter rejected the API key. Check it in Settings.", { status, code: "bad_key", detail });
+  if (status === 401) {
+    // OpenRouter answers the same for a wrong key and for one created seconds ago (it takes up to
+    // about a minute to start working), so the message covers both.
+    return new ProviderError("OpenRouter rejected the API key. If you just created it, wait a minute and try again; otherwise check it in the Providers tab.", { status, code: "bad_key", detail });
+  }
   if (status === 402) {
     return new ProviderError("Your OpenRouter credits are used up. Add credits at openrouter.ai/settings/credits, then try again.", { status, code: "credits", detail });
   }
@@ -137,9 +141,15 @@ async function request(req, body) {
   return items.map((d) => ({ bytes: fromBase64(d.b64_json), mime: d.media_type || "image/png" }));
 }
 
+/** Free request that only proves the key works (it describes the key: usage, limit). */
+async function checkKey({ fetch, apiKey }) {
+  const json = await getJson({ fetch, url: `https://${HOST}/api/v1/key`, headers: { Authorization: `Bearer ${apiKey}` }, classify, host: HOST });
+  return (json && json.data) || {};
+}
+
 /** Same request shape as openai.generate. */
 async function generate(req) {
-  if (!req.apiKey) throw new ProviderError("Add your OpenRouter API key in Settings first.", { code: "no_key" });
+  if (!req.apiKey) throw new ProviderError("Add your OpenRouter API key in the Providers tab first.", { code: "no_key" });
   const { width, height } = req.image;
   const info = modelInfo(req.model);
   const size = req.target.aspectRatio ? req.target : fitSize(req.model, req.target.width, req.target.height, "2K");
@@ -167,13 +177,14 @@ module.exports = {
   name: "OpenRouter",
   host: HOST,
   keyHelp: "openrouter.ai/settings/keys",
-  keyPlaceholder: "sk-or-...",
+  tagline: "One key for every model.",
   models: MODELS.map(({ id, label }) => ({ id, label })),
   defaultModel: MODELS[0].id,
   qualities: null,
   reportsCost: true,
   fitSize,
   generate,
+  checkKey,
   _classify: classify,
   _usageFrom: usageFrom,
 };

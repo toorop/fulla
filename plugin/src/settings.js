@@ -57,6 +57,7 @@ async function setKey(providerId, value) {
       } catch (_) {
         /* older hosts reject when the key was never stored */
       }
+      localStorage.removeItem(`fulla.key.${providerId}`); // a copy saved by a host without secure storage
     }
     return "secure";
   }

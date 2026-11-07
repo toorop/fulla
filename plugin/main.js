@@ -125,6 +125,7 @@ function showTab(name) {
     $(`page-${t}`).hidden = t !== name;
     $(`tab-${t}`).className = t === name ? "tab active" : "tab";
   }
+  if (name === "providers") renderProviders();
 }
 
 function persist() {
@@ -210,8 +211,8 @@ async function generate() {
   if (!apiKey) {
     const msg = `Add your ${provider.name} API key first.`;
     setStatus(msg, "error");
-    $("keyStatus").textContent = msg;
-    return showTab("providers");
+    showTab("providers");
+    return providerMessage(provider, msg, "error");
   }
   const prompt = $("prompt").value || "";
   if (prompt.length > 4000) return setStatus("Prompt is too long (4,000 characters max).", "error");
@@ -275,38 +276,144 @@ function bind() {
   });
   $("generate").addEventListener("click", generate);
   for (const t of TABS) $(`tab-${t}`).addEventListener("click", () => showTab(t));
-  $("saveKeys").addEventListener("click", async () => {
-    try {
-      let where = "secure";
-      let saved = 0;
-      for (const p of PROVIDERS) {
-        const v = $(`key-${p.id}`).value;
-        if (v && v.trim()) {
-          where = await settings.setKey(p.id, v);
-          saved++;
-        }
-      }
-      await showSavedKeys();
-      $("keyStatus").textContent = saved ? (where === "secure" ? "Saved to secure storage." : "Saved on this computer.") : "Nothing to save: paste a key first.";
-    } catch (e) {
-      $("keyStatus").textContent = `Couldn't save: ${e.message || e}`;
-    }
-  });
 }
 
-async function showSavedKeys() {
+// ---------- providers tab ----------
+// One row per provider: its state as readable text, then Test / Remove, or Add a key. The key field
+// only exists while adding a key and has no placeholder (UXP masks a password field's placeholder
+// too, so its length would show); once saved, the key is never put back in the page.
+
+function el(tag, attrs = {}, text) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (text != null) e.textContent = text;
+  return e;
+}
+
+// Action buttons: Spectrum's regular-weight button (sp-button labels are bold).
+function button(label, onClick) {
+  const b = el("sp-action-button", { size: "s" }, label);
+  b.addEventListener("click", onClick);
+  return b;
+}
+
+function providerMessage(p, text, kind) {
+  const m = $(`pmsg-${p.id}`);
+  m.textContent = text || "";
+  m.className = kind === "error" ? "pmsg status error" : "pmsg status";
+  m.hidden = !text;
+}
+
+function buildProviderRows() {
+  const list = $("providerList");
   for (const p of PROVIDERS) {
-    const k = await settings.getKey(p.id);
-    // Never put the real key back in the field; show a masked hint instead.
-    $(`key-${p.id}`).value = "";
-    $(`key-${p.id}`).setAttribute("placeholder", k ? `Saved (...${k.slice(-4)})` : p.keyPlaceholder);
+    const row = el("div", { id: `prow-${p.id}`, class: "prow" });
+    const head = el("div", { class: "prow-head" });
+    head.appendChild(el("span", {}, p.name));
+    head.appendChild(el("span", { id: `pstate-${p.id}`, class: "pstate" }));
+    row.appendChild(head);
+    row.appendChild(el("div", { id: `pkey-${p.id}`, class: "hint" }));
+    row.appendChild(el("div", { id: `pactions-${p.id}`, class: "row" }));
+    // Filled only while a key is being added (see openAdd): hiding it instead left its height behind.
+    row.appendChild(el("div", { id: `padd-${p.id}`, class: "padd" }));
+    const msg = el("div", { id: `pmsg-${p.id}`, class: "pmsg status" });
+    row.appendChild(msg);
+    list.appendChild(row);
+    list.appendChild(el("sp-divider", { size: "small" }));
+    msg.hidden = true;
   }
+}
+
+const adding = (p) => $(`padd-${p.id}`).children.length > 0;
+
+async function renderProviders() {
+  for (const p of PROVIDERS) {
+    const key = await settings.getKey(p.id);
+    const state = $(`pstate-${p.id}`);
+    state.textContent = key ? "Connected" : "No key";
+    state.className = key ? "pstate on" : "pstate";
+    $(`pkey-${p.id}`).textContent = key ? `Key ...${key.slice(-4)}` : "";
+    $(`pkey-${p.id}`).hidden = !key;
+    const actions = $(`pactions-${p.id}`);
+    actions.innerHTML = "";
+    if (key) {
+      actions.appendChild(button("Test", () => testKey(p)));
+      actions.appendChild(button("Remove", () => removeKey(p)));
+    } else {
+      actions.appendChild(button("Add a key", () => openAdd(p)));
+    }
+    actions.hidden = adding(p);
+  }
+}
+
+function openAdd(p) {
+  const add = $(`padd-${p.id}`);
+  add.innerHTML = "";
+  add.appendChild(el("sp-label", {}, `Paste your ${p.name} API key`));
+  const line = el("div", { class: "row" });
+  line.appendChild(el("sp-textfield", { id: `key-${p.id}`, type: "password" }));
+  line.appendChild(button("Save", () => saveKey(p)));
+  line.appendChild(button("Cancel", () => closeAdd(p)));
+  add.appendChild(line);
+  add.appendChild(el("div", { class: "hint" }, `${p.tagline ? `${p.tagline} ` : ""}Get one at ${p.keyHelp}`));
+  $(`pactions-${p.id}`).hidden = true;
+  providerMessage(p, "");
+}
+
+function closeAdd(p) {
+  $(`padd-${p.id}`).innerHTML = ""; // removes the field and whatever was typed in it
+  $(`pactions-${p.id}`).hidden = false;
+}
+
+/** Check the key with one free request before saving it. Refused keys are not saved. */
+async function saveKey(p) {
+  const value = ($(`key-${p.id}`).value || "").trim();
+  if (!value) return providerMessage(p, "Paste a key first.", "error");
+  providerMessage(p, "Checking the key...");
+  let warning = "";
+  try {
+    await p.checkKey({ fetch: (url, init) => fetch(url, init), apiKey: value });
+  } catch (e) {
+    if (e.code !== "network") return providerMessage(p, e.message || String(e), "error");
+    warning = ` Couldn't check it yet: ${e.message}`; // offline: keep the key, say so
+  }
+  try {
+    await settings.setKey(p.id, value);
+  } catch (e) {
+    return providerMessage(p, `Couldn't save the key: ${e.message || e}`, "error");
+  }
+  closeAdd(p);
+  await renderProviders();
+  providerMessage(p, warning ? `Saved.${warning}` : "Saved. The key works.", warning ? "error" : undefined);
+}
+
+async function testKey(p) {
+  const key = await settings.getKey(p.id);
+  if (!key) return renderProviders();
+  providerMessage(p, "Checking the key...");
+  try {
+    await p.checkKey({ fetch: (url, init) => fetch(url, init), apiKey: key });
+    providerMessage(p, "The key works.");
+  } catch (e) {
+    providerMessage(p, e.message || String(e), "error");
+  }
+}
+
+async function removeKey(p) {
+  try {
+    await settings.setKey(p.id, "");
+  } catch (e) {
+    return providerMessage(p, `Couldn't remove the key: ${e.message || e}`, "error");
+  }
+  await renderProviders();
+  providerMessage(p, "Key removed.");
 }
 
 buildStaticPickers();
 buildProviderPickers();
+buildProviderRows();
 bind();
-showSavedKeys();
+renderProviders();
 
 // Developer self-test hook. selftest.js is left out of release builds, so this is a no-op for users.
 try {

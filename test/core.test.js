@@ -257,3 +257,28 @@ test("downsampleStrips keeps edges exactly where they belong, reading in strips"
   }
   await assert.rejects(downsampleStrips(strip, 10, 10, 4, 20, 10), /only shrinks/);
 });
+
+test("keys: saved to secure storage and read back; Remove also clears a copy left in localStorage", async () => {
+  const Module = require("node:module");
+  const secure = new Map();
+  const local = new Map([["fulla.key.gemini", "old-local-copy"]]); // saved by a host without secure storage
+  global.localStorage = { getItem: (k) => (local.has(k) ? local.get(k) : null), setItem: (k, v) => local.set(k, v), removeItem: (k) => local.delete(k) };
+  const uxp = { storage: { secureStorage: { getItem: async (k) => secure.get(k) || null, setItem: async (k, v) => secure.set(k, v), removeItem: async (k) => secure.delete(k) } } };
+  const origLoad = Module._load;
+  Module._load = function (request) {
+    return request === "uxp" ? uxp : origLoad.apply(this, arguments);
+  };
+  try {
+    const settings = require("../plugin/src/settings");
+    assert.equal(await settings.setKey("openrouter", "  sk-or-v1-abcd  "), "secure");
+    assert.equal(await settings.getKey("openrouter"), "sk-or-v1-abcd");
+    assert.equal(await settings.getKey("gemini"), "old-local-copy");
+    await settings.setKey("openrouter", "");
+    await settings.setKey("gemini", "");
+    assert.equal(await settings.getKey("openrouter"), "");
+    assert.equal(await settings.getKey("gemini"), "", "the old local copy is gone too");
+  } finally {
+    Module._load = origLoad;
+    delete global.localStorage;
+  }
+});

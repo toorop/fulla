@@ -16,7 +16,7 @@ const tinyPng = (w = 4, h = 4) => encodePng(new Uint8Array(w * h * 3).fill(90), 
 function fakeFetch(handler) {
   const calls = [];
   const fn = async (url, init) => {
-    calls.push({ url, init, body: JSON.parse(init.body) });
+    calls.push({ url, init, body: init.body ? JSON.parse(init.body) : null });
     const { status = 200, json, headers = {} } = await handler(url, init, calls.length);
     return {
       ok: status >= 200 && status < 300,
@@ -193,6 +193,33 @@ test("openrouter maps errors to plain messages; failed generations are retried",
   assert.equal((await openrouter.generate(req({ fetch: flaky, model: "google/gemini-nano-banana-2.1", target, n: 1 }))).length, 1);
   assert.equal(flaky.calls.length, 2);
   await assert.rejects(openrouter.generate(req({ fetch: flaky, model: "x", target, apiKey: "" })), /Add your OpenRouter API key/);
+});
+
+// ---------------- key checks (Providers tab) ----------------
+
+test("checkKey: one free GET per provider with the key; refused keys and network failures give plain messages", async () => {
+  // Refusal bodies captured from the real APIs with an invalid key (2026-11-07).
+  const cases = [
+    [openrouter, "https://openrouter.ai/api/v1/key", ["authorization", "Bearer k"], 401, { error: { message: "User not found.", code: 401 } }, /rejected the API key.*just created it, wait a minute/],
+    [openai, "https://api.openai.com/v1/models", ["authorization", "Bearer k"], 401, { error: { message: "Incorrect API key provided: sk-f***", type: "invalid_request_error", code: "invalid_api_key" } }, /OpenAI rejected the API key.*Providers tab/],
+    [gemini, "https://generativelanguage.googleapis.com/v1beta/models?pageSize=1", ["x-goog-api-key", "k"], 400, { error: { code: 400, message: "API key not valid. Please pass a valid API key.", status: "INVALID_ARGUMENT", details: [{ reason: "API_KEY_INVALID" }] } }, /Google rejected the Gemini API key.*Providers tab/],
+  ];
+  for (const [provider, url, [header, value], status, json, re] of cases) {
+    const ok = fakeFetch(() => ({ json: { data: { label: "sk-or-v1-abc...xyz", usage: 0, limit: null } } }));
+    await provider.checkKey({ fetch: ok, apiKey: "k" });
+    assert.equal(ok.calls.length, 1);
+    assert.equal(ok.calls[0].url, url);
+    assert.equal(ok.calls[0].init.method, "GET");
+    const headers = Object.fromEntries(Object.entries(ok.calls[0].init.headers).map(([k, v]) => [k.toLowerCase(), v]));
+    assert.equal(headers[header], value, `${provider.id} sends the key`);
+    const refused = fakeFetch(() => ({ status, json }));
+    await assert.rejects(provider.checkKey({ fetch: refused, apiKey: "k" }), re);
+    assert.equal(refused.calls.length, 1, `${provider.id}: a key check is never retried`);
+    const offline = async () => {
+      throw new Error("getaddrinfo ENOTFOUND");
+    };
+    await assert.rejects(provider.checkKey({ fetch: offline, apiKey: "k" }), (e) => e.code === "network" && /Can't reach/.test(e.message));
+  }
 });
 
 // ---------------- Gemini ----------------

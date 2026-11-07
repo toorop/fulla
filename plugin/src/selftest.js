@@ -15,6 +15,7 @@ const { runGeneration, layerName } = require("./pipeline");
 const openai = require("./providers/openai");
 const gemini = require("./providers/gemini");
 const openrouter = require("./providers/openrouter");
+const { PROVIDERS } = require("./providers/index");
 const { estimateCost } = require("./cost");
 const settings = require("./settings");
 const { encodePng } = require("./png");
@@ -512,7 +513,7 @@ const SCENARIOS = {
     expect(shown().join() === "generate" && active().join() === "tab-generate", `start: pages ${shown()} tabs ${active()}`);
     await click("tab-providers");
     expect(shown().join() === "providers" && active().join() === "tab-providers", `after Providers: pages ${shown()} tabs ${active()}`);
-    expect(!!$("saveKeys") && !$("page-providers").contains($("generate")), "Providers page holds the keys, not Generate");
+    expect($("page-providers").contains($("providerList")) && !$("page-providers").contains($("generate")), "Providers page holds the provider list, not Generate");
     await click("tab-generate");
     expect(shown().join() === "generate", `after Generate: pages ${shown()}`);
     // Only with a provider that has no key: with a key, the click would start a real, paid run.
@@ -521,10 +522,61 @@ const SCENARIOS = {
     if (await settings.getKey(current)) return { noKeyCheck: `skipped: ${current} has a key` };
     await click("generate");
     expect(shown().join() === "providers", `Generate without a key should open Providers, pages: ${shown()}`);
-    expect(/API key first/.test($("keyStatus").textContent), `key status: "${$("keyStatus").textContent}"`);
-    $("keyStatus").textContent = "";
+    const msg = $(`pmsg-${current}`).textContent;
+    expect(/API key first/.test(msg), `provider message: "${msg}"`);
     await click("tab-generate");
     return { noKeyCheck: `ran with ${current}` };
+  },
+
+  async panelProviders() {
+    // The Providers tab with a provider that has no key: a refused key is not saved, Cancel closes
+    // the form, a saved key shows as "Connected · ...last 4", Remove deletes it. Free: the only
+    // network call is a key check that the provider refuses.
+    const $ = (id) => document.getElementById(id);
+    const tick = (ms = 150) => new Promise((r) => setTimeout(r, ms));
+    const click = async (elOrId) => {
+      (typeof elOrId === "string" ? $(elOrId) : elOrId).dispatchEvent(new Event("click"));
+      await tick();
+    };
+    const buttonIn = (id, label) => {
+      const b = Array.from($(id).querySelectorAll("sp-action-button")).find((x) => x.textContent === label);
+      expect(b, `no "${label}" button in ${id}`);
+      return b;
+    };
+    let p = null;
+    for (const x of PROVIDERS) if (!p && !(await settings.getKey(x.id))) p = x;
+    if (!p) return { skipped: "every provider has a key" };
+    const id = p.id;
+    try {
+      await click("tab-providers");
+      expect($(`pstate-${id}`).textContent === "No key", `state: "${$(`pstate-${id}`).textContent}"`);
+      expect($(`padd-${id}`).children.length === 0, "key form open before Add");
+      await click(buttonIn(`pactions-${id}`, "Add a key"));
+      expect($(`padd-${id}`).children.length > 0 && $(`pactions-${id}`).hidden, "Add a key did not open the form");
+      expect(!$(`key-${id}`).getAttribute("placeholder"), "the key field must have no placeholder (its masked length would show)");
+      $(`key-${id}`).value = "fulla-selftest-invalid";
+      await click(buttonIn(`padd-${id}`, "Save"));
+      for (let i = 0; i < 50 && /Checking/.test($(`pmsg-${id}`).textContent); i++) await tick(200);
+      const refused = $(`pmsg-${id}`).textContent;
+      expect(/rejected/.test(refused), `invalid key message: "${refused}"`);
+      expect(!(await settings.getKey(id)), "a refused key was saved");
+      await click(buttonIn(`padd-${id}`, "Cancel"));
+      expect($(`padd-${id}`).children.length === 0 && !$(`pactions-${id}`).hidden, "Cancel did not close the form");
+      expect(!$(`key-${id}`), "Cancel left the key field in the page");
+      await settings.setKey(id, "fulla-selftest-saved-1234");
+      await click("tab-providers"); // re-renders the rows
+      await tick();
+      expect($(`pstate-${id}`).textContent === "Connected", `state with a key: "${$(`pstate-${id}`).textContent}"`);
+      expect(/\.\.\.1234$/.test($(`pkey-${id}`).textContent), `key hint: "${$(`pkey-${id}`).textContent}"`);
+      await click(buttonIn(`pactions-${id}`, "Remove"));
+      await tick();
+      expect(!(await settings.getKey(id)), "Remove left the key");
+      expect($(`pstate-${id}`).textContent === "No key", `state after Remove: "${$(`pstate-${id}`).textContent}"`);
+      return { provider: id, refused };
+    } finally {
+      await settings.setKey(id, "");
+      await click("tab-generate");
+    }
   },
 
   async geminiRaw() {

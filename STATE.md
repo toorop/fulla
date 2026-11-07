@@ -6,9 +6,11 @@
 
 ## Next action
 
-- Roadmap sub-step 1.3 (Providers tab): **discuss** the mock-up with Stéphane first (one row per
-  provider with its state, Remove, Test, adding a key, same dots in every key field, state as
-  readable text), together with the first-run screen decided for 1.4. No code before he agrees.
+- Roadmap sub-step 1.4 (first-run path), once Stéphane says to start: **discuss** the texts and
+  the welcome screen (decided: Providers opens when no key; explanation; "Create an OpenRouter
+  key" (recommended) running the headless OAuth connect from 1.1; "Add a Google key" / "Add an
+  OpenAI key"; the Generate tab stays clickable and explains). The OpenRouter row's "Add a key" is
+  a stopgap until then. No code before he agrees.
 - The detailed roadmap with checkboxes lives in Stéphane's notes (not in the repo); tick it as
   sub-steps finish.
 - Blocked by: —
@@ -18,7 +20,7 @@
 
 ## Current step
 
-Sub-steps 1.0, 1.1 and 1.2 done (2026-11-07). Starting 1.3 with the mock-up discussion.
+Sub-steps 1.0 to 1.3 done (2026-11-07). Next: 1.4, starting with a discussion.
 
 ## Roadmap (order agreed 2026-11-07; details and checkboxes in Stéphane's notes)
 
@@ -38,6 +40,14 @@ Sub-steps 1.0, 1.1 and 1.2 done (2026-11-07). Starting 1.3 with the mock-up disc
 Each step and sub-step is discussed and validated by Stéphane, and starts only when he says so.
 
 ## Recently done
+
+- 2026-11-07 — Roadmap 1.3: Providers tab, one row per provider (state as text, Test/Remove or Add
+  a key; regular-weight action buttons; Spectrum dividers, the only lines that follow the theme).
+  The key form is built on Add and removed on close (a hidden element kept its height in UXP) and
+  has no placeholder. `checkKey` per provider (one free GET, no retry): a refused key is not
+  saved, offline saves with a warning. OpenRouter answers 401 "User not found." for a wrong key and
+  for a brand-new one, so its message covers both. Remove also clears an old localStorage copy.
+  53/53 tests, self-test 24/26 (`geminiRaw`/`openaiRaw` need keys).
 
 - 2026-11-07 — Roadmap 1.2: Generate and Providers tabs (plain underlined labels, UXP has no tab
   widget; current content moved, not redesigned); Generate without a key opens Providers;

@@ -19,15 +19,25 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
  * Retries retryable errors up to `retries` times with exponential backoff + jitter.
  */
 async function postJson({ fetch, url, headers, body, classify, retries = 2, host }) {
+  return requestJson({ fetch, url, headers, body, classify, retries, host, method: "POST" });
+}
+
+/** GET JSON, no retries: used for quick checks the user is waiting on (is this key valid?). */
+async function getJson({ fetch, url, headers, classify, host }) {
+  return requestJson({ fetch, url, headers, classify, retries: 0, host, method: "GET" });
+}
+
+async function requestJson({ fetch, url, headers, body, classify, retries, host, method }) {
   let attempt = 0;
   for (;;) {
     let res;
     try {
-      res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...headers },
-        body: JSON.stringify(body),
-      });
+      res = await fetch(
+        url,
+        method === "GET"
+          ? { method, headers: { ...headers } }
+          : { method, headers: { "Content-Type": "application/json", ...headers }, body: JSON.stringify(body) }
+      );
     } catch (e) {
       const err = new ProviderError(`Can't reach ${host}. Check your internet connection.`, {
         code: "network",
@@ -65,4 +75,4 @@ function backoff(attempt) {
   return Math.min(8000, 1000 * 2 ** (attempt - 1)) + Math.floor(Math.random() * 400);
 }
 
-module.exports = { ProviderError, postJson, sleep };
+module.exports = { ProviderError, postJson, getJson, sleep };

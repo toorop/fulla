@@ -3,7 +3,7 @@
 const { toBase64, fromBase64 } = require("../bytes");
 const { encodePng } = require("../png");
 const { alphaEditMask } = require("../image");
-const { postJson, ProviderError } = require("./http");
+const { postJson, getJson, ProviderError } = require("./http");
 
 const HOST = "api.openai.com";
 const URL = `https://${HOST}/v1/images/edits`;
@@ -57,7 +57,7 @@ function classify(status, json, text) {
   const msg = e.message || (text || "").slice(0, 200) || `HTTP ${status}`;
   const code = e.code || e.type || "";
   const detail = `${status} ${e.type || ""} ${e.code || ""}: ${msg}`.trim();
-  if (status === 401) return new ProviderError("OpenAI rejected the API key. Check it in Settings.", { status, code, detail });
+  if (status === 401) return new ProviderError("OpenAI rejected the API key. Check it in the Providers tab.", { status, code, detail });
   if (code === "moderation_blocked") {
     return new ProviderError("OpenAI's safety filter blocked this request. Try a different prompt or selection.", { status, code, detail });
   }
@@ -96,6 +96,12 @@ function usageFrom(json) {
   return { inputText, inputImage, outputText, outputImage: output - outputText, total: u.total_tokens || input + output };
 }
 
+/** Free request that only proves the key works. */
+async function checkKey({ fetch, apiKey }) {
+  await getJson({ fetch, url: `https://${HOST}/v1/models`, headers: { Authorization: `Bearer ${apiKey}` }, classify, host: HOST });
+  return {};
+}
+
 /**
  * @param {object} req
  * @param {string} req.apiKey
@@ -111,7 +117,7 @@ function usageFrom(json) {
  * @returns {Promise<Array<{bytes: Uint8Array, mime: string}>>}
  */
 async function generate(req) {
-  if (!req.apiKey) throw new ProviderError("Add your OpenAI API key in Settings first.", { code: "no_key" });
+  if (!req.apiKey) throw new ProviderError("Add your OpenAI API key in the Providers tab first.", { code: "no_key" });
   const { width, height } = req.image;
   const imagePng = encodePng(req.image.rgb, width, height, 3);
   const maskPng = encodePng(alphaEditMask(req.mask), width, height, 4);
@@ -146,12 +152,12 @@ module.exports = {
   name: "OpenAI",
   host: HOST,
   keyHelp: "platform.openai.com/api-keys",
-  keyPlaceholder: "sk-...",
   models: MODELS,
   defaultModel: MODELS[0].id,
   qualities: QUALITIES,
   fitSize: (model, w, h, tier) => fitSize(w, h, tier),
   generate,
+  checkKey,
   // exposed for tests
   _fitSize: fitSize,
   _classify: classify,

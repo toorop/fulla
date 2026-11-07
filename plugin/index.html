@@ -10,6 +10,7 @@
         <div class="tab active" id="tab-generate" role="tab">Generate</div>
         <div class="tab" id="tab-providers" role="tab">Providers</div>
       </nav>
+      <sp-divider class="tabs-line" size="small"></sp-divider>
 
       <section id="page-generate" class="page">
       <section id="promptRow">
@@ -62,26 +63,9 @@
       </section>
 
       <section id="page-providers" class="page" hidden>
-        <div class="key">
-          <sp-label>OpenRouter API key</sp-label>
-          <sp-textfield id="key-openrouter" type="password" placeholder="sk-or-..."></sp-textfield>
-          <div class="hint">One key for every model. Get one at openrouter.ai/settings/keys</div>
-        </div>
-        <div class="key">
-          <sp-label>OpenAI API key</sp-label>
-          <sp-textfield id="key-openai" type="password" placeholder="sk-..."></sp-textfield>
-          <div class="hint">Get one at platform.openai.com/api-keys</div>
-        </div>
-        <div class="key">
-          <sp-label>Gemini API key</sp-label>
-          <sp-textfield id="key-gemini" type="password" placeholder="AIza..."></sp-textfield>
-          <div class="hint">Get one at aistudio.google.com/apikey</div>
-        </div>
-        <div class="row">
-          <sp-button id="saveKeys" variant="secondary" size="s">Save keys</sp-button>
-          <span id="keyStatus" class="hint"></span>
-        </div>
-        <div class="hint">Keys stay on this computer and go only to the provider you pick. You pay that provider per image. The cost shown after each run is an estimate from the tokens the provider reports, at its list prices; your bill is the reference.</div>
+        <!-- One row per provider, built by main.js (renderProviders). -->
+        <div id="providerList"></div>
+        <div class="hint">Keys stay on this computer, in Photoshop's secure storage, and go only to their provider. You pay that provider per image. The cost shown after each run comes from what the provider reports; your bill is the reference.</div>
       </section>
     </main>
     <script src="main.js"></script>

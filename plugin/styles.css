@@ -22,13 +22,16 @@ body {
 .tabs {
   display: flex;
   flex-direction: row;
-  border-bottom: 1px solid var(--uxp-host-border-color, rgba(128, 128, 128, 0.4));
+}
+
+/* Lines are Spectrum dividers: they follow the user's Photoshop theme, unlike a fixed colour. */
+#app > .tabs-line {
+  margin-top: 0;
 }
 
 .tab {
   padding: 4px 2px 6px;
   margin-right: 16px;
-  margin-bottom: -1px;
   border-bottom: 2px solid transparent;
   color: var(--uxp-host-text-color-secondary);
   cursor: pointer;
@@ -127,8 +130,43 @@ sp-textarea {
   display: block;
 }
 
-.key {
+/* Providers tab: one row per provider. */
+.prow {
   display: flex;
   flex-direction: column;
-  margin-bottom: 8px;
+  padding: 8px 0;
+}
+
+.prow > * + * {
+  margin-top: 6px;
+}
+
+.prow-head {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pstate {
+  color: var(--uxp-host-text-color-secondary);
+}
+
+.pstate.on {
+  color: #2d9d78;
+}
+
+.padd {
+  display: flex;
+  flex-direction: column;
+}
+
+.padd .row sp-textfield {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+}
+
+.pmsg {
+  min-height: 0;
 }

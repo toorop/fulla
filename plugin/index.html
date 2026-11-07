@@ -12,32 +12,28 @@
       </nav>
       <sp-divider class="tabs-line" size="small"></sp-divider>
 
-      <!-- Chat-style layout: a scrolling area, and the prompt box pinned at the bottom. -->
+      <!-- The prompt box on top (like Adobe's Properties panel), the last run below it; extra panel
+           height stays empty at the bottom. -->
       <section id="page-generate" class="page">
+      <div id="promptBox" class="promptbox">
+        <sp-textarea id="prompt" placeholder="Describe what to add, or leave empty to remove"></sp-textarea>
+        <!-- Drag to make the prompt taller or shorter (main.js remembers the height). -->
+        <div class="grip-row"><div id="promptGrip" class="grip"><img src="icons/grip.svg" width="10" height="10" /></div></div>
+        <div class="row chips">
+          <!-- Model button: one menu with every model of every provider that has a key (main.js). -->
+          <div id="modelChip" class="obtn"><div class="obtn-in"><span id="modelBadge" class="badge"></span><span id="modelName"></span><span class="caret">▾</span></div></div>
+          <!-- Settings button: one popup with the settings the model offers a choice for. -->
+          <div id="optionsChip" class="obtn"><div class="obtn-in"><img src="icons/sliders.svg" width="16" height="16" /></div></div>
+          <div class="grow"></div>
+          <sp-button id="generate" variant="cta" size="s">Generate</sp-button>
+        </div>
+      </div>
+
       <div id="genScroll" class="scroll">
       <section id="noProvider" class="stack" hidden>
         <div>Connect a provider to start.</div>
-        <div class="row"><sp-action-button id="setupProvider" size="s">Set up a provider</sp-action-button></div>
+        <div class="row"><div id="setupProvider" class="obtn"><div class="obtn-in">Set up a provider</div></div></div>
       </section>
-
-      <!-- Provisional: these pickers move into the options chip (roadmap 2.4). -->
-      <section class="grid3">
-        <div>
-          <sp-label>Variations</sp-label>
-          <sp-picker id="n" size="s"><sp-menu slot="options"></sp-menu></sp-picker>
-        </div>
-        <div>
-          <sp-label>Resolution</sp-label>
-          <sp-picker id="maxTier" size="s"><sp-menu slot="options"></sp-menu></sp-picker>
-        </div>
-        <div id="qualityCell">
-          <sp-label>Quality</sp-label>
-          <sp-picker id="quality" size="s"><sp-menu slot="options"></sp-menu></sp-picker>
-        </div>
-      </section>
-
-      <!-- Pushes the hint or the run card down against the prompt box, like a chat's last message. -->
-      <div class="grow"></div>
 
       <div id="idleHint" class="hint idle">Select an area in the image, then describe what to add or change. Leave it empty to remove what is selected, or to fill an empty area.</div>
 
@@ -56,16 +52,6 @@
         <div id="runCost" class="hint" hidden></div>
         <div id="status" class="status" aria-live="polite"></div>
       </div>
-      </div>
-
-      <div id="promptBox" class="promptbox">
-        <sp-textarea id="prompt" placeholder="Describe what to add, or leave empty to remove"></sp-textarea>
-        <div class="row chips">
-          <!-- Model chip: one menu with every model of every provider that has a key (main.js). -->
-          <sp-action-button id="modelChip" size="s" quiet>Model ▾</sp-action-button>
-          <div class="grow"></div>
-          <sp-button id="generate" variant="cta" size="s">Generate</sp-button>
-        </div>
       </div>
       </section>
 
@@ -89,18 +75,18 @@
             <div>3. Paste the code it shows (it says "terminal": it means this panel).</div>
             <div class="row code">
               <sp-textfield id="connectCode" placeholder="Code"></sp-textfield>
-              <sp-action-button id="connectGo" size="s">Connect</sp-action-button>
+              <div id="connectGo" class="obtn"><div class="obtn-in">Connect</div></div>
             </div>
             <sp-textfield id="connectUrl" readonly hidden></sp-textfield>
             <div class="row">
-              <sp-action-button id="connectReopen" size="s">Open the page again</sp-action-button>
-              <sp-action-button id="connectCancel" size="s">Cancel</sp-action-button>
+              <div id="connectReopen" class="obtn"><div class="obtn-in"><img class="ico" src="icons/external.svg" width="12" height="12" /><span>Open the page again</span></div></div>
+              <div id="connectCancel" class="obtn"><div class="obtn-in">Cancel</div></div>
             </div>
           </div>
           <div id="connectMsg" class="status" hidden></div>
           <div id="connectDone" class="row" hidden>
-            <sp-action-button id="addCredits" size="s">Add credits</sp-action-button>
-            <sp-action-button id="connectContinue" size="s">Continue</sp-action-button>
+            <div id="addCredits" class="obtn"><div class="obtn-in"><img class="ico" src="icons/external.svg" width="12" height="12" /><span>Add credits</span></div></div>
+            <div id="connectContinue" class="obtn"><div class="obtn-in">Continue</div></div>
           </div>
         </section>
 

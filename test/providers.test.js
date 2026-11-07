@@ -167,7 +167,7 @@ test("openrouter sends image + mask as references, sizes by ratio and tier, repo
   assert.equal(qOut.length, 3);
   assert.equal(q.calls.length, 1);
   assert.equal(q.calls[0].body.n, 3);
-  assert.equal(q.calls[0].body.resolution, "1K");
+  assert.equal(q.calls[0].body.resolution, "2K", "Qwen always renders 2K (1K would only be a downscale)");
 
   // OpenAI models: no resolution field (the provider picks the pixels), PNG asked for.
   const o = fakeFetch(() => orOk(2));
@@ -343,7 +343,7 @@ test("pipeline: read in one modal, network outside, commit as one undo step", as
 test("pipeline errors are user-friendly and leave the document alone", async () => {
   const provider = fakeProvider(1);
   const none = fakePs({ selection: null });
-  await assert.rejects(runGeneration({ ps: none, provider, apiKey: "k", model: "m" }), (e) => e instanceof UserError && /Make a selection first/.test(e.message));
+  await assert.rejects(runGeneration({ ps: none, provider, apiKey: "k", model: "m" }), (e) => e instanceof UserError && /Make a selection first/.test(e.message) && e.code === "noSelection");
   const c = fakePs();
   await assert.rejects(runGeneration({ ps: c, provider, apiKey: "k", model: "m", cancelled: () => true }), /Cancelled/);
   assert.ok(!c.log.some((l) => l[0] === "commit"), "cancel never touches the document");
@@ -482,4 +482,28 @@ test("after Cancel no new request is sent: a failed request is not retried (each
     /Cancelled/
   );
   assert.equal(fetch.calls.length, 1);
+});
+
+test("sizes: Auto takes the smallest covering size up to 2K, a chosen size is used as is, and only real choices are offered", async () => {
+  // What the options sheet offers: same-price sizes dropped, fixed-size models offer nothing to choose.
+  assert.deepEqual(openrouter.resolutions("google/gemini-nano-banana-2.1"), ["1K", "2K", "4K"]);
+  assert.deepEqual(openrouter.resolutions("google/gemini-3-pro-image"), ["2K", "4K"], "Pro bills 1K like 2K");
+  assert.deepEqual(gemini.resolutions("gemini-3-pro-image"), ["2K", "4K"]);
+  assert.deepEqual(openrouter.resolutions("qwen/qwen-image-3"), ["2K"], "Qwen always renders 2K");
+  assert.deepEqual(openrouter.resolutions("openai/gpt-image-2.6-sunburst"), [], "OpenRouter picks GPT Image's size");
+  assert.deepEqual(gemini.resolutions("gemini-3.1-flash-lite-image"), ["1K"]);
+  // The pipeline turns the user's choice into the size asked for.
+  const sizeFor = async (provider, model, resolution, w = 500, h = 500) => {
+    let target = null;
+    const spy = { ...provider, generate: async (r) => ((target = r.target), [{ bytes: tinyPng(), mime: "image/png" }]) };
+    const ps = fakePs({ selection: { left: 1000, top: 1000, right: 1000 + w, bottom: 1000 + h } });
+    await runGeneration({ ps, provider: spy, apiKey: "k", model, resolution });
+    return target;
+  };
+  assert.equal((await sizeFor(gemini, "gemini-nano-banana-2.1", "auto")).imageSize, "1K", "Auto: a small selection gets 1K");
+  assert.equal((await sizeFor(gemini, "gemini-nano-banana-2.1", "auto", 2400, 2400)).imageSize, "2K", "Auto stops at 2K");
+  assert.equal((await sizeFor(gemini, "gemini-nano-banana-2.1", "4K")).imageSize, "4K", "a chosen size is used even for a small selection");
+  assert.equal((await sizeFor(gemini, "gemini-3-pro-image", "auto")).imageSize, "2K", "Pro never asks for 1K");
+  const o = await sizeFor(openai, "gpt-image-2", "4K");
+  assert.ok(o.width * o.height > 2560 * 1440, `OpenAI 4K asks for 4K pixels, got ${o.width}x${o.height}`);
 });

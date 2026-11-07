@@ -27,4 +27,7 @@ test("model menu lists only providers with a key, in registry order, and checks 
   assert.ok(items.every((it) => !/\(/.test(it.label) && ["", "Recommended", "Fast"].includes(it.note)));
   assert.deepEqual(items.filter((it) => it.note === "Recommended").map((it) => `${it.label} · ${it.group}`), ["Nano Banana 2.1 · OpenRouter"]);
   assert.deepEqual(modelMenuItems(PROVIDERS, {}, { provider: "openrouter", model: "x" }), []);
+  // The model button shows the provider as a short badge; each one is distinct.
+  const badges = PROVIDERS.map((p) => p.badge);
+  assert.ok(badges.every((b) => typeof b === "string" && b.length >= 1 && b.length <= 2) && new Set(badges).size === badges.length, `badges ${badges}`);
 });

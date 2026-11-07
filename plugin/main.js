@@ -10,48 +10,12 @@ const connect = require("./src/connect");
 const { filterItems, modelMenuItems } = require("./src/menu");
 
 const $ = (id) => document.getElementById(id);
-const TIERS = [
-  { id: "1K", label: "1K (fast)" },
-  { id: "2K", label: "2K" },
-  { id: "4K", label: "4K (slow, costly)" },
-];
-
 let prefs = settings.loadPrefs();
 let busy = false;
 let lastRun = null; // { placed, count, active }
 const sessionSpend = newSpend(); // since the panel was opened
 
-// ---------- pickers ----------
-// Photoshop's sp-picker breaks ("locks") if its own menu is rebuilt while it is closing, so a picker's
-// items are never changed after creation. Lists that depend on the provider are replaced with a fresh
-// picker element, after the event that triggered it has finished.
-
-const N_ITEMS = [1, 2, 3, 4].map((n) => ({ id: n, label: String(n) }));
-
-function makePicker(id, items, selected, onChange) {
-  const old = $(id);
-  const picker = document.createElement("sp-picker");
-  picker.id = id;
-  picker.setAttribute("size", "s");
-  const menu = document.createElement("sp-menu");
-  menu.setAttribute("slot", "options");
-  items.forEach((it) => {
-    const mi = document.createElement("sp-menu-item");
-    mi.setAttribute("value", String(it.id));
-    mi.textContent = it.label;
-    if (it.id === selected) mi.setAttribute("selected", "");
-    menu.appendChild(mi);
-  });
-  picker.appendChild(menu);
-  picker.addEventListener("change", () => {
-    const i = picker.selectedIndex;
-    if (i >= 0 && i < items.length) onChange(items[i].id);
-  });
-  old.parentNode.replaceChild(picker, old);
-  const idx = items.findIndex((it) => it.id === selected);
-  if (idx >= 0) picker.selectedIndex = idx;
-  return picker;
-}
+// ---------- chips ----------
 
 /** The model in use: the provider's saved choice, or its default when that is no longer in the catalogue. */
 function currentModel() {
@@ -60,29 +24,25 @@ function currentModel() {
   return prefs.models[provider.id];
 }
 
-function buildStaticPickers() {
-  makePicker("n", N_ITEMS, prefs.n, (n) => {
-    prefs.n = n;
-    persist();
-  });
-  makePicker("maxTier", TIERS, prefs.maxTier, (t) => {
-    prefs.maxTier = t;
-    persist();
-  });
+/** What the options sheet offers for the model in use: sizes besides Auto (none when only one), qualities. */
+function currentOffer() {
+  const provider = getProvider(prefs.provider);
+  const sizes = provider.resolutions ? provider.resolutions(currentModel()) : [];
+  return { resolutions: sizes.length > 1 ? sizes : [], qualities: provider.qualities || null };
 }
 
-/** The model chip's label ("OpenRouter · Nano Banana 2.1": a model may come from several providers), and the quality list, which depends on the provider. */
-function buildProviderPickers() {
+/** The size actually asked for: the saved choice when this model offers it, else Auto. */
+function currentResolution() {
+  return currentOffer().resolutions.includes(prefs.resolution) ? prefs.resolution : "auto";
+}
+
+/** The model button: the provider's badge ("OR", "G", "OA": a model may come from several providers) and the model's name. */
+function renderChips() {
   const provider = getProvider(prefs.provider);
-  $("modelChip").textContent = `${provider.name} · ${modelLabel(provider, currentModel())} ▾`;
-  $("qualityCell").hidden = !provider.qualities;
-  if (provider.qualities) {
-    if (!provider.qualities.includes(prefs.quality)) prefs.quality = provider.qualities[0];
-    makePicker("quality", provider.qualities.map((q) => ({ id: q, label: q[0].toUpperCase() + q.slice(1) })), prefs.quality, (q) => {
-      prefs.quality = q;
-      persist();
-    });
-  }
+  $("modelBadge").textContent = provider.badge;
+  $("modelName").textContent = modelLabel(provider, currentModel());
+  const offer = currentOffer();
+  if (offer.qualities && !offer.qualities.includes(prefs.quality)) prefs.quality = offer.qualities[0];
 }
 
 // ---------- render ----------
@@ -144,7 +104,7 @@ function modelLabel(provider, id) {
 }
 
 // Locked while a run is going: what was sent is what the card shows.
-const LOCKED = ["prompt", "modelChip", "n", "maxTier", "quality"];
+const LOCKED = ["prompt", "modelChip", "optionsChip"];
 
 function setBusy(b) {
   busy = b;
@@ -239,6 +199,32 @@ async function chooseVariation(i) {
 // ---------- generate ----------
 
 let cancelRequested = false;
+
+// "Open a document first" / "Make a selection first" go away by themselves once the user has done
+// it: the panel checks Photoshop every second while such a message shows (a cheap read).
+let readyWatch = null;
+
+function stopReadyWatch() {
+  clearInterval(readyWatch);
+  readyWatch = null;
+}
+
+function watchUntilReady(code) {
+  stopReadyWatch();
+  readyWatch = setInterval(async () => {
+    if (busy) return stopReadyWatch();
+    try {
+      const doc = await ps.getDocument();
+      const ready = doc && (code === "noDocument" || (await ps.getSelectionBounds(doc.id)));
+      if (!ready) return;
+      stopReadyWatch();
+      $("runCard").hidden = true; // the card held only this message
+      renderIdle();
+    } catch (_) {
+      /* try again next second */
+    }
+  }, 1000);
+}
 // The network used by generations; the self-test swaps it for a fake so its runs are free.
 const generationNet = { fetch: (url, init) => fetch(url, init) };
 
@@ -264,6 +250,7 @@ async function generate() {
   if (prompt.length > 4000) return setStatus("Prompt is too long (4,000 characters max).", "error");
 
   cancelRequested = false;
+  stopReadyWatch();
   setBusy(true);
   animateBar(true);
   const started = Date.now();
@@ -293,7 +280,7 @@ async function generate() {
       prompt,
       n: prefs.n,
       quality: prefs.quality,
-      maxTier: prefs.maxTier,
+      resolution: currentResolution(),
       progress: (label) => {
         stage = label;
         tick();
@@ -305,7 +292,8 @@ async function generate() {
     lastRun = { placed: out.placed, count: out.results.length, active: 0 };
     const p = prompt.trim().replace(/\s+/g, " ");
     $("runTitle").textContent = p ? `"${p.length > 120 ? p.slice(0, 119) + "…" : p}"` : "No prompt: remove or fill";
-    $("runMeta").textContent = `${modelLabel(provider, model)} · ${prefs.maxTier} · ${seconds()} s`;
+    const size = out.target.imageSize || `${out.target.width}×${out.target.height}`;
+    $("runMeta").textContent = `${modelLabel(provider, model)} · ${size} · ${seconds()} s`;
     $("runMeta").hidden = false;
     renderThumbs(out.results);
     const notes = [];
@@ -320,6 +308,7 @@ async function generate() {
     else {
       const known = e instanceof UserError || e.name === "ProviderError" || e instanceof ps.HostError;
       setStatus(known ? e.message : `Something went wrong: ${e.message || e}`, "error");
+      if (e.code === "noSelection" || e.code === "noDocument") watchUntilReady(e.code);
     }
   } finally {
     clearInterval(timer);
@@ -328,9 +317,9 @@ async function generate() {
 }
 
 // ---------- floating menu ----------
-// Built on open and removed on close (UXP keeps a hidden element's height). It covers the scrolling
-// area and stops above the prompt box: the box holds a text field, which UXP may draw over any page
-// content. One menu at a time; a click elsewhere in the panel closes it.
+// Built on open and removed on close (UXP keeps a hidden element's height). It opens under the
+// prompt box, over the last run, and never over the box: the box holds a text field, which UXP may
+// draw over any page content. One menu at a time; a click elsewhere in the panel closes it.
 
 let menuChip = null;
 
@@ -351,7 +340,7 @@ function openMenu(chip, items, onPick, searchHint) {
   const app = $("app").getBoundingClientRect();
   const box = $("promptBox").getBoundingClientRect();
   const menu = el("div", { id: "menu", class: "menu" });
-  menu.style.bottom = `${Math.round(app.bottom - box.top + 4)}px`;
+  menu.style.top = `${Math.round(box.bottom - app.top + 4)}px`;
   const search = el("sp-textfield", { id: "menuSearch", size: "s", placeholder: searchHint });
   const list = el("div", { id: "menuList", class: "menu-list" });
   let shown = [];
@@ -382,14 +371,14 @@ function openMenu(chip, items, onPick, searchHint) {
   menu.appendChild(search);
   menu.appendChild(list);
   render();
-  // The list takes the height above the box that the search field leaves, up to 12 px under the
-  // top of the panel. UXP lays the menu out only after this function returns, so the fit is
+  // The list takes the height under the box that the search field leaves, down to 12 px above the
+  // bottom of the panel. UXP lays the menu out only after this function returns, so the fit is
   // corrected once it has (a measurement taken here reads zero heights).
-  list.style.maxHeight = `${Math.max(60, Math.round(box.top - app.top - 70))}px`;
+  list.style.maxHeight = `${Math.max(60, Math.round(app.bottom - box.bottom - 70))}px`;
   $("app").appendChild(menu);
   setTimeout(() => {
     if ($("menu") !== menu) return;
-    const over = app.top + 12 - menu.getBoundingClientRect().top;
+    const over = menu.getBoundingClientRect().bottom - (app.bottom - 12);
     if (over > 0) list.style.maxHeight = `${Math.max(60, Math.round(list.getBoundingClientRect().height - over))}px`;
   }, 50);
   menuChip = chip;
@@ -400,9 +389,123 @@ function openMenu(chip, items, onPick, searchHint) {
   }
 }
 
+// ---------- settings popup ----------
+// The settings button opens one popup, in the floating spot the model menu uses (one at a time,
+// closed by a click elsewhere), with a row of buttons per setting the model in use offers a real
+// choice for. It stays open while choosing.
+
+/** The popup's rows, in order; a setting the model has no choice for is left out. */
+function optionRows() {
+  const offer = currentOffer();
+  const cap = (q) => q[0].toUpperCase() + q.slice(1);
+  const rows = [];
+  if (offer.resolutions.length) {
+    rows.push({
+      id: "optResolution",
+      title: "Resolution",
+      values: [{ id: "auto", label: "Auto" }, ...offer.resolutions.map((r) => ({ id: r, label: r }))],
+      current: currentResolution(),
+      set: (r) => (prefs.resolution = r),
+      hint: `Auto picks the size from your selection.${offer.resolutions.includes("4K") ? " 4K is slower and costs more." : ""}`,
+    });
+  }
+  rows.push({
+    id: "optVariations",
+    title: "Variations",
+    values: [1, 2, 3, 4].map((n) => ({ id: n, label: String(n) })),
+    current: prefs.n,
+    set: (n) => (prefs.n = n),
+    hint: "Each variation is billed.",
+  });
+  if (offer.qualities) {
+    rows.push({ id: "optQuality", title: "Quality", values: offer.qualities.map((q) => ({ id: q, label: cap(q) })), current: prefs.quality, set: (q) => (prefs.quality = q) });
+  }
+  return rows;
+}
+
+function fillSheet(sheet) {
+  const body = sheet.querySelector(".sheet-body");
+  body.innerHTML = "";
+  for (const r of optionRows()) {
+    const row = el("div", { id: r.id, class: "opt" });
+    row.appendChild(el("div", { class: "opt-title" }, r.title));
+    const seg = el("div", { class: "seg" });
+    for (const v of r.values) {
+      const b = el("div", { class: v.id === r.current ? "seg-btn on" : "seg-btn", "data-value": String(v.id) }, v.label);
+      b.addEventListener("click", () => {
+        r.set(v.id);
+        persist();
+        renderChips();
+        fillSheet(sheet);
+      });
+      seg.appendChild(b);
+    }
+    row.appendChild(seg);
+    if (r.hint) row.appendChild(el("div", { class: "hint" }, r.hint));
+    body.appendChild(row);
+  }
+}
+
+function toggleSettings() {
+  const chip = $("optionsChip");
+  if (busy) return;
+  if (menuChip === chip) return closeMenu();
+  closeMenu();
+  const app = $("app").getBoundingClientRect();
+  const box = $("promptBox").getBoundingClientRect();
+  // The border is on the popup, the scrolling on its body: UXP drops the bottom border of a box
+  // that scrolls itself.
+  const sheet = el("div", { id: "menu", class: "menu sheet" });
+  sheet.style.top = `${Math.round(box.bottom - app.top + 4)}px`;
+  const body = el("div", { class: "sheet-body" });
+  body.style.maxHeight = `${Math.max(80, Math.round(app.bottom - box.bottom - 30))}px`;
+  sheet.appendChild(body);
+  fillSheet(sheet);
+  $("app").appendChild(sheet);
+  menuChip = chip;
+}
+
+// ---------- prompt height ----------
+// The handle under the prompt drags its height (40 to 400 px); the height is remembered.
+
+function bindGrip() {
+  const grip = $("promptGrip");
+  const area = $("prompt");
+  if (prefs.promptHeight) area.style.height = `${prefs.promptHeight}px`;
+  let drag = null;
+  // The height is kept from the drag itself: UXP updates an element's measured size only later.
+  const move = (e) => {
+    if (!drag) return;
+    drag.now = Math.max(40, Math.min(400, Math.round(drag.h + e.clientY - drag.y)));
+    area.style.height = `${drag.now}px`;
+  };
+  const end = () => {
+    if (!drag) return;
+    if (drag.now) {
+      prefs.promptHeight = drag.now;
+      persist();
+    }
+    drag = null;
+  };
+  grip.addEventListener("pointerdown", (e) => {
+    closeMenu(); // an open menu or popup sits under the old prompt height
+    drag = { y: e.clientY, h: area.getBoundingClientRect().height };
+    try {
+      grip.setPointerCapture(e.pointerId); // keeps the drag even over the text field
+    } catch (_) {
+      /* the document listeners below still follow the pointer */
+    }
+  });
+  for (const t of [grip, document]) {
+    t.addEventListener("pointermove", move);
+    t.addEventListener("pointerup", end);
+  }
+}
+
 /** The model chip: one menu for every model of every provider that has a key. */
 async function toggleModelMenu() {
   const chip = $("modelChip");
+  if (busy) return;
   if (menuChip === chip) return closeMenu();
   const keys = await savedKeys();
   const keyed = {};
@@ -413,7 +516,7 @@ async function toggleModelMenu() {
     prefs.provider = it.providerId;
     prefs.models[it.providerId] = it.modelId;
     persist();
-    buildProviderPickers();
+    renderChips();
   }, "Search models");
 }
 
@@ -421,6 +524,8 @@ async function toggleModelMenu() {
 
 function bind() {
   $("modelChip").addEventListener("click", toggleModelMenu);
+  $("optionsChip").addEventListener("click", toggleSettings);
+  bindGrip();
   // A click anywhere else in the panel closes the menu (the chip toggles it itself).
   $("app").addEventListener("click", (e) => {
     const m = $("menu");
@@ -450,8 +555,17 @@ function el(tag, attrs = {}, text) {
 }
 
 // Action buttons: Spectrum's regular-weight button (sp-button labels are bold).
-function button(label, onClick) {
-  const b = el("sp-action-button", { size: "s" }, label);
+/**
+ * The outlined button of the Generate tab (class "obtn"), for one look across the panel.
+ * `icon` (icons/<name>.svg) only where it tells something: external (opens the browser), check
+ * (Test), trash (Remove), plus (add); form buttons (Save, Cancel...) stay text.
+ */
+function button(label, onClick, icon) {
+  const b = el("div", { class: "obtn" });
+  const inner = el("div", { class: "obtn-in" });
+  if (icon) inner.appendChild(el("img", { class: "ico", src: `icons/${icon}.svg`, width: "12", height: "12" }));
+  inner.appendChild(el("span", {}, label));
+  b.appendChild(inner);
   b.addEventListener("click", onClick);
   return b;
 }
@@ -512,12 +626,12 @@ async function renderProviders() {
     const actions = $(`pactions-${p.id}`);
     actions.innerHTML = "";
     if (key) {
-      actions.appendChild(button("Test", () => testKey(p)));
-      actions.appendChild(button("Remove", () => removeKey(p)));
+      actions.appendChild(button("Test", () => testKey(p), "check"));
+      actions.appendChild(button("Remove", () => removeKey(p), "trash"));
     } else if (p.id === "openrouter") {
-      actions.appendChild(button("Connect", startConnect)); // guided, no key to paste
+      actions.appendChild(button("Connect", startConnect, "plus")); // guided, no key to paste
     } else {
-      actions.appendChild(button("Add a key", () => openAdd(p)));
+      actions.appendChild(button("Add a key", () => openAdd(p), "plus"));
     }
     actions.hidden = adding(p);
   }
@@ -535,8 +649,7 @@ function useProviderIfNeeded(p, keys) {
   if (keys[prefs.provider]) return;
   prefs.provider = p.id;
   persist();
-  buildStaticPickers();
-  buildProviderPickers();
+  renderChips();
 }
 
 function openAdd(p) {
@@ -546,10 +659,14 @@ function openAdd(p) {
   const site = p.keyHelp.split("/")[0];
   const get = el("div", { class: "row" });
   get.appendChild(
-    button(`Get a key on ${site}`, async () => {
-      const err = await openBrowser(`https://${p.keyHelp}`, `Fulla opens ${site} so you can create a ${p.name} API key.`);
-      if (err) providerMessage(p, `Couldn't open the browser (${err}). Go to ${p.keyHelp}`, "error");
-    })
+    button(
+      `Get a key on ${site}`,
+      async () => {
+        const err = await openBrowser(`https://${p.keyHelp}`, `Fulla opens ${site} so you can create a ${p.name} API key.`);
+        if (err) providerMessage(p, `Couldn't open the browser (${err}). Go to ${p.keyHelp}`, "error");
+      },
+      "external"
+    )
   );
   add.appendChild(get);
   if (p.keyNote) add.appendChild(el("div", { class: "hint" }, p.keyNote));
@@ -721,8 +838,7 @@ async function endConnect(connected) {
   if (connected && (await settings.getKey("openrouter"))) {
     prefs.provider = "openrouter";
     persist();
-    buildStaticPickers();
-    buildProviderPickers();
+      renderChips();
     await renderProviders();
     showTab("generate");
     return setStatus("OpenRouter is connected. Make a selection, then click Generate.");
@@ -730,8 +846,7 @@ async function endConnect(connected) {
   await renderProviders();
 }
 
-buildStaticPickers();
-buildProviderPickers();
+renderChips();
 buildProviderRows();
 bind();
 // First run: no provider yet, so open on the Providers tab and its welcome screen.

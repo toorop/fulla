@@ -25,19 +25,28 @@ body {
   margin-top: 10px;
 }
 
-/* A page takes the height left under the tabs. */
+/* A page takes the height left under the tabs, and no more: with a basis of 0 its content can't
+   squeeze the tabs (UXP shrinks every flex child when one asks for more than there is). */
 .page {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
 }
 
-/* Scrolls when the panel is smaller than its content; never pushes the prompt box out. */
+#app > .tabs,
+#app > .tabs-line {
+  flex-shrink: 0;
+}
+
+/* Scrolls when the panel is smaller than its content; never pushes the prompt box out. It reaches
+   into the panel's right padding so its scroll bar sits there instead of over the content. */
 .scroll {
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
   overflow-y: auto;
+  margin-right: -10px;
+  padding-right: 10px;
 }
 
 /* Children keep their height and overflow, instead of being squeezed to fit. */
@@ -45,17 +54,84 @@ body {
   flex-shrink: 0;
 }
 
+/* No frames around the prompt box, the last run or the menus (tried 2026-11-07: lighter). */
 .promptbox {
   display: flex;
   flex-direction: column;
   flex: 0 0 auto;
-  padding: 8px;
-  border: 1px solid var(--uxp-host-text-color-secondary);
-  border-radius: 6px;
 }
 
-.page > .promptbox {
+.page > .scroll {
   margin-top: 10px;
+}
+
+/* UXP clips a page's last pixel row: without this the prompt box loses its bottom border. */
+.page {
+  padding-bottom: 2px;
+}
+
+/* Under the prompt: the resize handle, then one row of buttons (wraps only in a very narrow panel). */
+.promptbox > .grip-row {
+  margin-top: 0;
+}
+
+.grip-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+}
+
+.grip {
+  padding: 2px;
+  cursor: ns-resize;
+}
+
+.promptbox > .chips {
+  margin-top: 2px;
+  flex-wrap: wrap;
+}
+
+/* Outlined buttons, like Adobe's Generative Fill bar. The outline is the outer box's background
+   showing through a 1 px gap: UXP doesn't always draw a div's bottom border. */
+.obtn {
+  padding: 1px;
+  border-radius: 5px;
+  background-color: var(--uxp-host-text-color-secondary);
+  cursor: pointer;
+}
+
+.obtn:hover {
+  background-color: var(--uxp-host-text-color);
+}
+
+.obtn[disabled] {
+  opacity: 0.5;
+}
+
+.obtn-in {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background-color: var(--uxp-host-background-color);
+}
+
+.obtn-in .ico {
+  margin-right: 5px;
+}
+
+.badge {
+  padding: 0 4px;
+  margin-right: 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  background-color: rgba(128, 128, 128, 0.35);
+}
+
+.caret {
+  margin-left: 6px;
+  color: var(--uxp-host-text-color-secondary);
 }
 
 .chips {
@@ -74,10 +150,62 @@ body {
   right: 12px;
   display: flex;
   flex-direction: column;
-  padding: 6px;
-  border: 1px solid var(--uxp-host-text-color-secondary);
-  border-radius: 6px;
+  padding: 6px 0;
   background-color: var(--uxp-host-background-color);
+}
+
+/* Settings popup: one row of buttons per setting. Rows keep their height and the popup scrolls
+   instead (inside the floating column they would shrink). */
+.sheet-body {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.sheet-body > *,
+.opt > * {
+  flex-shrink: 0;
+}
+
+.opt {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 2px;
+}
+
+.opt + .opt {
+  margin-top: 6px;
+}
+
+.opt-title {
+  margin-bottom: 4px;
+}
+
+.opt .hint {
+  margin-top: 4px;
+}
+
+.seg {
+  display: flex;
+  flex-direction: row;
+}
+
+/* Filled, not outlined: UXP draws these divs without their bottom border (seen 2026-11-07). */
+.seg-btn {
+  padding: 4px 11px;
+  margin-right: 4px;
+  border-radius: 4px;
+  background-color: rgba(128, 128, 128, 0.3);
+  cursor: pointer;
+}
+
+.seg-btn:hover {
+  background-color: rgba(128, 128, 128, 0.45);
+}
+
+.seg-btn.on {
+  background-color: #378ef0;
+  color: #ffffff;
 }
 
 .menu-list {
@@ -167,24 +295,6 @@ section {
   margin-left: 6px;
 }
 
-.grid2,
-.grid3 {
-  flex-direction: row;
-}
-
-.grid2 > div,
-.grid3 > div {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 0;
-  min-width: 0;
-}
-
-.grid2 > div + div,
-.grid3 > div + div {
-  margin-left: 6px;
-}
-
 sp-picker,
 sp-textfield,
 sp-textarea {
@@ -207,9 +317,6 @@ sp-textarea {
 .card {
   display: flex;
   flex-direction: column;
-  padding: 8px;
-  border: 1px solid var(--uxp-host-text-color-secondary);
-  border-radius: 6px;
 }
 
 .card > * + * {

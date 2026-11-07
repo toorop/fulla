@@ -26,7 +26,8 @@ const R10 = R14.filter((r) => !WIDE.includes(r));
 
 const MODELS = [
   { id: "gemini-nano-banana-2.1", label: "Nano Banana 2.1", ratios: R14, tiers: ["1K", "2K", "4K"] },
-  { id: "gemini-3-pro-image", label: "Nano Banana Pro", ratios: R10, tiers: ["1K", "2K", "4K"] },
+  // Pro bills 1K and 2K the same (1,120 tokens, checked 2026-11-07), so 1K is not offered.
+  { id: "gemini-3-pro-image", label: "Nano Banana Pro", ratios: R10, tiers: ["2K", "4K"] },
   { id: "gemini-3.1-flash-lite-image", label: "Nano Banana 2 Lite", note: "Fast", ratios: R14, tiers: ["1K"] },
 ];
 const TIER_MULT = { "1K": 1, "2K": 2, "4K": 4 };
@@ -37,8 +38,11 @@ function modelInfo(model) {
   return MODELS.find((m) => m.id === model) || { id: model, ratios: R10, tiers: ["1K", "2K", "4K"] };
 }
 
-/** Closest supported ratio, and the smallest size tier (up to maxTier) that covers the crop. */
-function fitSize(model, w, h, maxTier = "2K") {
+/**
+ * Closest supported ratio, and a size tier: the smallest that covers the crop up to `maxTier`, or
+ * exactly `maxTier` with { exact: true } (when the model offers it).
+ */
+function fitSize(model, w, h, maxTier = "2K", { exact = false } = {}) {
   const info = modelInfo(model);
   const want = Math.log(w / h);
   let ratio = info.ratios[0];
@@ -50,7 +54,7 @@ function fitSize(model, w, h, maxTier = "2K") {
   }
   const cap = TIER_ORDER.indexOf(maxTier) >= 0 ? TIER_ORDER.indexOf(maxTier) : 1;
   const allowed = info.tiers.filter((t) => TIER_ORDER.indexOf(t) <= cap);
-  const tiers = allowed.length ? allowed : [info.tiers[0]];
+  const tiers = exact && info.tiers.includes(maxTier) ? [maxTier] : allowed.length ? allowed : [info.tiers[0]];
   const [bw, bh] = RATIOS_1K[ratio];
   const longest = Math.max(w, h);
   let tier = tiers[tiers.length - 1];
@@ -231,6 +235,7 @@ async function generate(req) {
 module.exports = {
   id: "gemini",
   name: "Google",
+  badge: "G", // shown before the model's name on the model button
   host: HOST,
   keyHelp: "aistudio.google.com/apikey",
   // Google's free tier allows no image generation: without billing, every run is refused.
@@ -239,6 +244,8 @@ module.exports = {
   defaultModel: MODELS[0].id,
   qualities: null,
   fitSize,
+  /** Sizes the user may choose for this model, besides Auto (none when there is only one). */
+  resolutions: (model) => modelInfo(model).tiers,
   generate,
   checkKey,
   _classify: classify,

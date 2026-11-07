@@ -22,10 +22,11 @@ const MIN_PIXELS = 655360;
 const TIER_MAX_PIXELS = { "1K": 1024 * 1024, "2K": 2560 * 1440, "4K": 8294400 };
 const MAX_EDGE = 3840;
 
-function fitSize(w, h, tier = "2K") {
+/** A legal size close to the crop's aspect: about the crop's pixels up to `tier`, or the tier's full size with { exact: true }. */
+function fitSize(w, h, tier = "2K", { exact = false } = {}) {
   const maxP = TIER_MAX_PIXELS[tier] || TIER_MAX_PIXELS["2K"];
   const r = Math.min(3, Math.max(1 / 3, w / h));
-  const want = Math.min(Math.max(w * h, MIN_PIXELS), maxP);
+  const want = exact ? maxP : Math.min(Math.max(w * h, MIN_PIXELS), maxP);
   // Try every legal height; keep the size closest in aspect first, then in pixel count.
   let best = null;
   let bestScore = Infinity;
@@ -152,12 +153,14 @@ async function generate(req) {
 module.exports = {
   id: "openai",
   name: "OpenAI",
+  badge: "OA", // shown before the model's name on the model button
   host: HOST,
   keyHelp: "platform.openai.com/api-keys",
   models: MODELS,
   defaultModel: MODELS[0].id,
   qualities: QUALITIES,
-  fitSize: (model, w, h, tier) => fitSize(w, h, tier),
+  fitSize: (model, w, h, tier, opts) => fitSize(w, h, tier, opts),
+  resolutions: () => ["1K", "2K", "4K"],
   generate,
   checkKey,
   // exposed for tests

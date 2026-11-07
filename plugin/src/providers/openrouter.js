@@ -20,9 +20,10 @@ const OPENAI_RATIOS = ["1:1", "3:2", "2:3", "4:3", "3:4", "16:9", "9:16", "21:9"
 // each). OpenAI models take no `resolution` (the provider picks the pixels) but can be asked for PNG.
 const MODELS = [
   { id: "google/gemini-nano-banana-2.1", label: "Nano Banana 2.1", note: "Recommended", ratios: GEMINI_RATIOS, tiers: ["1K", "2K", "4K"], maxN: 1 },
-  { id: "google/gemini-3-pro-image", label: "Nano Banana Pro", ratios: GEMINI_PRO_RATIOS, tiers: ["1K", "2K", "4K"], maxN: 1 },
-  { id: "qwen/qwen-image-3", label: "Qwen Image 3", ratios: QWEN_RATIOS, tiers: ["1K", "2K"], maxN: 6 },
-  { id: "qwen/qwen-image-2.1-pro", label: "Qwen Image 2.1 Pro", ratios: QWEN_RATIOS, tiers: ["1K", "2K"], maxN: 6 },
+  // Pro bills 1K and 2K the same, so 1K is not offered; Qwen always renders 2K (1K is a downscale, same price).
+  { id: "google/gemini-3-pro-image", label: "Nano Banana Pro", ratios: GEMINI_PRO_RATIOS, tiers: ["2K", "4K"], maxN: 1 },
+  { id: "qwen/qwen-image-3", label: "Qwen Image 3", ratios: QWEN_RATIOS, tiers: ["2K"], maxN: 6 },
+  { id: "qwen/qwen-image-2.1-pro", label: "Qwen Image 2.1 Pro", ratios: QWEN_RATIOS, tiers: ["2K"], maxN: 6 },
   { id: "openai/gpt-image-2.6-sunburst", label: "GPT Image 2.6 Sunburst", ratios: OPENAI_RATIOS, tiers: ["1K", "2K"], maxN: 4, noResolution: true, png: true },
   { id: "openai/gpt-image-2.5-sunburst", label: "GPT Image 2.5 Sunburst", ratios: OPENAI_RATIOS, tiers: ["1K", "2K"], maxN: 4, noResolution: true, png: true },
 ];
@@ -40,11 +41,12 @@ const ratioValue = (r) => {
 };
 
 /**
- * Closest supported ratio, and the smallest tier (up to maxTier) that covers the crop. OpenRouter picks
- * the exact pixels per provider, so width/height here are the expected size; placement fits whatever
- * comes back onto the crop.
+ * Closest supported ratio, and a size tier: the smallest that covers the crop up to `maxTier`, or
+ * exactly `maxTier` with { exact: true } (when the model offers it). OpenRouter picks the exact
+ * pixels per provider, so width/height here are the expected size; placement fits whatever comes
+ * back onto the crop.
  */
-function fitSize(model, w, h, maxTier = "2K") {
+function fitSize(model, w, h, maxTier = "2K", { exact = false } = {}) {
   const info = modelInfo(model);
   const want = Math.log(w / h);
   let ratio = info.ratios[0];
@@ -58,7 +60,7 @@ function fitSize(model, w, h, maxTier = "2K") {
   }
   const cap = TIER_ORDER.indexOf(maxTier) >= 0 ? TIER_ORDER.indexOf(maxTier) : 1;
   const allowed = info.tiers.filter((t) => TIER_ORDER.indexOf(t) <= cap);
-  const tiers = allowed.length ? allowed : [info.tiers[0]];
+  const tiers = exact && info.tiers.includes(maxTier) ? [maxTier] : allowed.length ? allowed : [info.tiers[0]];
   const size = (t) => {
     const k = ratioValue(ratio);
     const area = TIER_SIDE[t] * TIER_SIDE[t];
@@ -190,6 +192,7 @@ async function generate(req) {
 module.exports = {
   id: "openrouter",
   name: "OpenRouter",
+  badge: "OR", // shown before the model's name on the model button
   host: HOST,
   keyHelp: "openrouter.ai/settings/keys",
   models: MODELS.map(({ id, label, note }) => ({ id, label, note })),
@@ -197,6 +200,8 @@ module.exports = {
   qualities: null,
   reportsCost: true,
   fitSize,
+  /** Sizes the user may choose for this model, besides Auto (none when the provider picks the size). */
+  resolutions: (model) => (modelInfo(model).noResolution ? [] : modelInfo(model).tiers),
   generate,
   checkKey,
   balance,

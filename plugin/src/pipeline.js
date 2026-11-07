@@ -8,7 +8,13 @@ const { computeCrop, inputSize } = require("./geometry");
 const { resample, toRGB, dilate, coverage } = require("./image");
 const { taskFor } = require("./prompts");
 
-class UserError extends Error {}
+/** A message for the user. `code` names the cases the panel follows up on ("noDocument", "noSelection"). */
+class UserError extends Error {
+  constructor(message, code = "") {
+    super(message);
+    this.code = code;
+  }
+}
 
 /** Group name: the prompt, shortened; an empty prompt removes what is selected. */
 function layerName(prompt) {
@@ -28,7 +34,7 @@ const asUserError = (fn) => {
 /** Phase 1: read the selection and the pixels around it. */
 async function read(ps, doc, fit) {
   const selection = await ps.getSelectionBounds(doc.id);
-  if (!selection) throw new UserError("Make a selection first (any selection tool).");
+  if (!selection) throw new UserError("Make a selection first (any selection tool).", "noSelection");
   const geo = asUserError(() => computeCrop({ docWidth: doc.width, docHeight: doc.height, selection, fit }));
   const inp = inputSize(geo.target);
   const px = await ps.readComposite(doc.id, geo.crop, inp);
@@ -55,7 +61,8 @@ async function read(ps, doc, fit) {
  * @param {string} [o.prompt]    what to paint in the selection; empty removes what is selected
  * @param {number} [o.n=1]
  * @param {string} [o.quality]
- * @param {string} [o.maxTier="2K"]
+ * @param {string} [o.resolution="auto"]  "auto": the smallest size that covers the selection, up to 2K;
+ *   "1K" / "2K" / "4K": that size, when the model offers it
  * @param {(label: string) => void} [o.progress]
  * @param {() => boolean} [o.cancelled]
  * @param {(usage: object) => void} [o.onUsage]  token counts of each provider reply, even if the run then fails
@@ -70,8 +77,9 @@ async function runGeneration(o) {
 
   if (ps.ensureSupported) asUserError(() => ps.ensureSupported());
   const doc = await ps.getDocument();
-  if (!doc) throw new UserError("Open a document first.");
-  const fit = (w, h) => provider.fitSize(o.model, w, h, o.maxTier || "2K");
+  if (!doc) throw new UserError("Open a document first.", "noDocument");
+  const forced = o.resolution && o.resolution !== "auto";
+  const fit = (w, h) => provider.fitSize(o.model, w, h, forced ? o.resolution : "2K", { exact: forced });
 
   progress("Reading the image");
   const job = await ps.modal("Fulla: read", () => read(ps, doc, fit));

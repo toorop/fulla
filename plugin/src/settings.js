@@ -7,7 +7,7 @@ const DEFAULTS = {
   models: { openrouter: "google/gemini-nano-banana-2.1", openai: "gpt-image-2.5-sunburst", gemini: "gemini-nano-banana-2.1" },
   n: 1,
   quality: "auto",
-  maxTier: "2K",
+  resolution: "auto", // or "1K" / "2K" / "4K" when the model offers it
 };
 
 function secure() {
@@ -71,6 +71,7 @@ function loadPrefs() {
     const raw = JSON.parse(localStorage.getItem(PREFS_KEY) || "{}");
     const prefs = { ...DEFAULTS, ...raw, models: { ...DEFAULTS.models, ...(raw.models || {}) } };
     delete prefs.customModel; // custom model IDs are gone (2026-11-07); such a choice falls back to the default model
+    delete prefs.maxTier; // the old size cap (until 2026-11-07); "resolution" starts at Auto
     return prefs;
   } catch (_) {
     return JSON.parse(JSON.stringify(DEFAULTS));

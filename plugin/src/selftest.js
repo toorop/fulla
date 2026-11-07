@@ -185,7 +185,7 @@ async function snapshot(doc, name) {
 }
 
 function run(provider, extra) {
-  return runGeneration({ ps, provider, fetch: (u, i) => fetch(u, i), apiKey: "selftest", model: "selftest-model", maxTier: "2K", n: 1, ...extra });
+  return runGeneration({ ps, provider, fetch: (u, i) => fetch(u, i), apiKey: "selftest", model: "selftest-model", resolution: "auto", n: 1, ...extra });
 }
 
 // ---------- scenarios ----------
@@ -453,8 +453,8 @@ const SCENARIOS = {
   },
 
   async panelPickers() {
-    // The model chip (roadmap 2.3) and the provisional Variations / Resolution pickers, driven the way
-    // the UI does. Only providers with a key are listed; nothing here makes a network call.
+    // The model button and the settings popup, driven the way the UI does. Only providers with a key
+    // are listed; nothing here makes a network call.
     const $ = (id) => document.getElementById(id);
     const tick = (ms = 150) => new Promise((r) => setTimeout(r, ms));
     const labels = (id) => Array.from($(id).querySelectorAll("sp-menu-item")).map((m) => m.textContent);
@@ -477,20 +477,22 @@ const SCENARIOS = {
       await tick();
     };
     const log = {};
-    expect(!$("provider") && !$("model") && !$("customModelRow"), "the old Provider / Model pickers or the custom model row are still there");
+    const chipText = () => `${$("modelBadge").textContent} ${$("modelName").textContent}`;
+    expect(!document.querySelector("sp-picker") && !$("customModelRow"), "an old picker or the custom model row is still there");
     const keyed = [];
     for (const p of PROVIDERS) if (await settings.getKey(p.id)) keyed.push(p);
     if (keyed.length) {
       const chip = $("modelChip");
       const before = { provider: prefs().provider, model: (prefs().models || {})[prefs().provider] };
-      const beforeLabel = chip.textContent;
+      const beforeLabel = chipText();
+      const beforeName = $("modelName").textContent;
       chip.dispatchEvent(new Event("click"));
       await tick(400);
       expect($("menu"), "the model chip did not open its menu");
       log.groups = groups();
       expect(groups().join() === keyed.map((p) => p.name).join(), `groups ${groups()} but keys for ${keyed.map((p) => p.name)}`);
       const checked = rows().filter((r) => r.querySelector(".check").textContent === "✓").map(text);
-      expect(checked.length === 1 && beforeLabel.endsWith(`· ${checked[0]} ▾`), `checked ${checked}, chip "${beforeLabel}"`);
+      expect(checked.length === 1 && beforeName === checked[0], `checked ${checked}, button "${beforeLabel}"`);
       expect(rows().every((r) => !/\(/.test(text(r))), "a model name still carries a (...) note");
       await search("banana");
       expect(rows().length > 0 && rows().every((r) => /banana/i.test(text(r))), `"banana" kept ${rows().map(text)}`);
@@ -503,27 +505,48 @@ const SCENARIOS = {
       target.dispatchEvent(new Event("click"));
       await tick();
       expect(!$("menu"), "picking a model did not close the menu");
-      expect(chip.textContent === `${keyed[0].name} · ${targetName} ▾`, `chip "${chip.textContent}" after picking ${targetName} (provider · model)`);
+      expect(chipText() === `${keyed[0].badge} ${targetName}`, `button "${chipText()}" after picking ${targetName} (badge, model)`);
       expect(prefs().provider === keyed[0].id && prefs().models[keyed[0].id] !== before.model, "the picked model was not saved");
       log.picked = targetName;
       // Back to the original model with Enter on a search (Enter picks the first match).
       chip.dispatchEvent(new Event("click"));
       await tick(400);
-      await search(beforeLabel.replace(" ▾", "").replace(" · ", " "));
+      await search(`${beforeName} ${PROVIDERS.find((p) => p.id === before.provider).name}`);
       const enter = new Event("keydown");
       Object.defineProperty(enter, "key", { value: "Enter" });
       $("menuSearch").dispatchEvent(enter);
       await tick();
-      expect(!$("menu") && chip.textContent === beforeLabel, `Enter did not pick back "${beforeLabel}" (chip "${chip.textContent}")`);
+      expect(!$("menu") && chipText() === beforeLabel, `Enter did not pick back "${beforeLabel}" (button "${chipText()}")`);
       expect(prefs().provider === before.provider && prefs().models[before.provider] === before.model, "the original model was not restored");
     } else log.skipped = "no provider has a key";
-    const n0 = String(prefs().n || 1);
-    const t0 = prefs().maxTier || "2K";
-    await choose("n", "3");
-    await choose("maxTier", "1K (fast)");
-    expect(prefs().n === 3 && prefs().maxTier === "1K", "Variations / Resolution choices not saved");
-    await choose("n", n0);
-    await choose("maxTier", { "1K": "1K (fast)", "4K": "4K (slow, costly)" }[t0] || "2K");
+    // The settings popup: Variations always; Resolution only when the model offers a choice. It
+    // stays open while choosing.
+    const seg = (rowId, value) => $(rowId) && Array.from($(rowId).querySelectorAll(".seg-btn")).find((b) => b.getAttribute("data-value") === value);
+    const p0 = prefs();
+    const opt = $("optionsChip");
+    opt.dispatchEvent(new Event("click"));
+    await tick();
+    expect($("menu") && $("optVariations"), "the settings button did not open its popup");
+    log.settings = Array.from($("menu").querySelectorAll(".opt-title")).map((t) => t.textContent);
+    seg("optVariations", "3").dispatchEvent(new Event("click"));
+    await tick();
+    expect(prefs().n === 3 && $("optVariations").querySelector(".seg-btn.on").textContent === "3", `variations: n ${prefs().n}`);
+    expect($("menu"), "a choice closed the popup (it should stay open)");
+    if ($("optResolution")) {
+      log.sizes = Array.from($("optResolution").querySelectorAll(".seg-btn")).map((b) => b.textContent);
+      const pick = seg("optResolution", "1K") || seg("optResolution", "2K");
+      const v = pick.getAttribute("data-value");
+      pick.dispatchEvent(new Event("click"));
+      await tick();
+      expect(prefs().resolution === v && $("optResolution").querySelector(".seg-btn.on").textContent === v, `resolution: ${prefs().resolution}`);
+      (seg("optResolution", p0.resolution || "auto") || seg("optResolution", "auto")).dispatchEvent(new Event("click"));
+      await tick();
+    } else log.sizes = "no choice for this model";
+    seg("optVariations", String(p0.n || 1)).dispatchEvent(new Event("click"));
+    await tick();
+    opt.dispatchEvent(new Event("click"));
+    await tick();
+    expect(!$("menu"), "clicking the settings button again did not close the popup");
     return log;
   },
 
@@ -558,9 +581,9 @@ const SCENARIOS = {
   },
 
   async panelLayout() {
-    // Roadmap 2.1. The prompt box stays at the bottom of the panel and the area above scrolls; the
-    // chip's floating menu opens above the box, inside the panel, and its list scrolls and filters.
-    // Whether UXP draws a native text field over the menu can't be measured: checked by eye.
+    // The prompt box sits at the top of the Generate page and the area under it scrolls, without a
+    // scroll bar when nothing overflows; the floating menu opens under the box, inside the panel, and
+    // its list scrolls and filters. The handle under the prompt resizes it.
     const $ = (id) => document.getElementById(id);
     const tick = () => new Promise((r) => setTimeout(r, 150));
     const click = async (node, bubbles = false) => {
@@ -571,9 +594,16 @@ const SCENARIOS = {
     const span = (b) => `${Math.round(b.top)}..${Math.round(b.bottom)}`;
     await click($("tab-generate"));
     const app = rect("app");
-    const pinned = () => Math.abs(rect("promptBox").bottom - (app.bottom - 12)) <= 2;
+    const pageTop = rect("page-generate").top;
+    const pinned = () => Math.abs(rect("promptBox").top - pageTop) <= 2;
     const info = { panel: `${Math.round(app.width)}x${Math.round(app.height)}` };
-    expect(pinned(), `prompt box at ${span(rect("promptBox"))}, panel bottom ${Math.round(app.bottom)}`);
+    expect(pinned(), `prompt box at ${span(rect("promptBox"))}, page top ${Math.round(pageTop)}`);
+    const scrollIdle = $("genScroll");
+    expect(scrollIdle.scrollHeight <= scrollIdle.clientHeight + 1, `the area under the prompt overflows with nothing in it (${scrollIdle.scrollHeight}/${scrollIdle.clientHeight}): a needless scroll bar`);
+    // The model button and the settings button sit on one row with Generate.
+    const row = [rect("modelChip"), rect("optionsChip"), rect("generate")].map((b) => Math.round(b.top));
+    info.buttonRow = row;
+    expect(Math.max(...row) - Math.min(...row) <= 8, `model, settings and Generate are not on one row (tops ${row})`);
 
     // Overfill the scrolling area: the box must not move, and the area must scroll.
     const scroll = $("genScroll");
@@ -582,11 +612,11 @@ const SCENARIOS = {
     scroll.appendChild(filler);
     await tick();
     try {
-      expect(pinned(), `with tall content the prompt box moved to ${span(rect("promptBox"))}`);
+      expect(pinned(), `with tall content the prompt box moved to ${span(rect("promptBox"))} (page ${span(rect("page-generate"))}, was top ${Math.round(pageTop)}; area ${span(rect("genScroll"))}; app ${span(app)})`);
       expect(scroll.scrollHeight > scroll.clientHeight, `the area does not overflow (${scroll.scrollHeight}/${scroll.clientHeight})`);
       scroll.scrollTop = 200;
       await tick();
-      expect(scroll.scrollTop > 0, "the area above the prompt box does not scroll");
+      expect(scroll.scrollTop > 0, "the area under the prompt box does not scroll");
     } finally {
       scroll.scrollTop = 0;
       scroll.removeChild(filler);
@@ -607,9 +637,9 @@ const SCENARIOS = {
       const box = rect("promptBox");
       info.menu = span(m);
       expect(m.top >= app.top - 1 && m.left >= app.left - 1 && m.right <= app.right + 1, `menu ${span(m)} leaves the panel`);
-      expect(m.bottom <= box.top + 1, `menu ${span(m)} covers the prompt box ${span(box)}`);
-      // The test list is longer than any panel: the menu should use the height above the box.
-      expect(m.top <= app.top + 40, `menu ${span(m)} uses too little of the height above the box ${span(box)}`);
+      expect(m.top >= box.bottom - 1, `menu ${span(m)} covers the prompt box ${span(box)}`);
+      // The test list is longer than any panel: the menu should use the height under the box.
+      expect(m.bottom >= app.bottom - 40 && m.bottom <= app.bottom + 1, `menu ${span(m)} does not fill the height under the box (panel bottom ${Math.round(app.bottom)})`);
       const list = $("menuList");
       const total = list.querySelectorAll(".menu-item").length;
       expect(list.scrollHeight > list.clientHeight, `menu list does not overflow (${list.scrollHeight}/${list.clientHeight})`);
@@ -638,6 +668,35 @@ const SCENARIOS = {
       }
     } finally {
       panelHooks.closeMenu();
+    }
+
+    // Drag the handle 40 px down: the prompt grows by about that much, and the height is remembered.
+    // An open menu closes when the drag starts (it was placed under the old prompt height).
+    const grip = $("promptGrip");
+    await openLong();
+    const h0 = rect("prompt").height;
+    const fire = (type, target, y) => {
+      const e = new Event(type, { bubbles: true });
+      Object.defineProperty(e, "clientY", { value: y });
+      Object.defineProperty(e, "pointerId", { value: 1 });
+      target.dispatchEvent(e);
+    };
+    const g = rect("promptGrip");
+    fire("pointerdown", grip, g.top);
+    expect(!$("menu"), "the open menu stayed while the prompt was being resized");
+    fire("pointermove", document, g.top + 40);
+    fire("pointerup", document, g.top + 40);
+    await tick();
+    const h1 = rect("prompt").height;
+    const saved = JSON.parse(localStorage.getItem("fulla.prefs.v1") || "{}").promptHeight;
+    info.prompt = `${Math.round(h0)} -> ${Math.round(h1)} px`;
+    try {
+      expect(Math.abs(h1 - h0 - 40) <= 4 && Math.abs(saved - h1) <= 2, `dragging the handle: prompt ${Math.round(h0)} -> ${Math.round(h1)} px, saved ${saved}`);
+    } finally {
+      fire("pointerdown", grip, g.top + 40);
+      fire("pointermove", document, g.top + 40 - (h1 - h0));
+      fire("pointerup", document, g.top + 40 - (h1 - h0));
+      await tick();
     }
     return info;
   },
@@ -706,6 +765,10 @@ const SCENARIOS = {
     expect(await idle(10), "no-selection run did not end");
     expect(/Make a selection first/.test($("status").textContent) && /error/.test($("status").className), `no selection: "${$("status").textContent}"`);
     info.error = $("status").textContent;
+    // Once there is a selection, the message goes away by itself (the panel checks every second).
+    await select(doc, "rect", { left: 450, top: 250, right: 750, bottom: 550 });
+    for (let i = 0; i < 15 && !$("runCard").hidden; i++) await tick(200);
+    expect($("runCard").hidden && !$("idleHint").hidden, "the no-selection message stayed after a selection was made");
     return info;
   },
 
@@ -720,7 +783,7 @@ const SCENARIOS = {
       await tick();
     };
     const buttonIn = (id, label) => {
-      const b = Array.from($(id).querySelectorAll("sp-action-button")).find((x) => x.textContent === label);
+      const b = Array.from($(id).querySelectorAll(".obtn")).find((x) => x.textContent === label);
       expect(b, `no "${label}" button in ${id}`);
       return b;
     };
@@ -983,7 +1046,7 @@ async function live(providerId, model) {
   const apiKey = await settings.getKey(provider.id);
   expect(apiKey, `no ${provider.name} key saved in the panel`);
   let usages = [];
-  const base = { ps, provider, fetch: (u, i) => fetch(u, i), apiKey, model: model || provider.defaultModel, n: 1, quality: "low", maxTier: "1K", onUsage: (u) => usages.push(u) };
+  const base = { ps, provider, fetch: (u, i) => fetch(u, i), apiKey, model: model || provider.defaultModel, n: 1, quality: "low", resolution: "1K", onUsage: (u) => usages.push(u) };
   const report = { model: base.model };
   const step = async (name, fn) => {
     const t0 = Date.now();

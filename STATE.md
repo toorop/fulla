@@ -6,17 +6,61 @@
 
 ## Next action
 
-- **Key page button (outside the steps, agreed 2026-11-07) coded, not committed.** The Providers
-  tab's "Add a key" form starts with "Get a key on <site>" (opens `https://<keyHelp>`), then
-  "Then paste it here"; Gemini adds `keyNote` (billing needed for images). README: models are
-  catalogue-only now (the "or any model ID" left over from 2.3 removed). 61/61, package builds.
-  `panelProviders` passes. On his remark the model chip now reads "OpenRouter · Nano Banana 2.1" (his order); the Google provider is named "Google" (was "Google Gemini") so the chip fits one
-  line. Free panel scenarios 5/5 (`panelPickers`, `panelTabs`, `panelLayout`, `panelRun`,
-  `panelProviders`).
-  (a model may come from several providers). Left: self-test `panelPickers` (free; warn him),
-  his look, commit (ask).
-  Then propose 2.4 (options chip; his remark: show resolution only where the model offers a
-  real choice, e.g. Qwen always renders 2K, see roadmap).
+- **Roadmap 2.4 (options chip) coded, not committed.** Second chip row: options chip ("Auto · ×1")
+  + Generate. It opens a sheet (same floating spot as the menu) with button rows: Variations 1-4,
+  Resolution Auto + the model's sizes (only when more than one), Quality (OpenAI direct). Pref
+  `resolution` ("auto" or a size) replaces `maxTier`: Auto = smallest covering size up to 2K;
+  a chosen size is asked exactly (`fitSize(..., { exact })`); providers expose `resolutions(model)`.
+  Catalogue: Nano Banana Pro 2K/4K (1K bills like 2K, Google pricing checked), Qwen 2K only.
+  All sp-pickers gone. Scroll areas reach into the right padding so the scroll bar no longer
+  covers text. 63/63, package builds. Reworked after his UI review (agreed, coded): chips
+  `resolutionChip` / `variationsChip` / `qualityChip`, labels from `optionLabels` (`menu.js`),
+  each opens a one-setting sheet (`toggleSheet`); chip rows 2 px apart; `.page` bottom padding
+  2 px; sheet rows don't shrink. Sheet buttons: UXP never drew their bottom border (padding
+  did not help), so they are filled (grey, blue when chosen), no border. 63/63, package builds.
+  Self-test: every scenario but `geminiRaw` 25/26 (openaiRaw: no key). He approved the look.
+  His two points, one at a time: (1) "Make a selection first" stayed after selecting → fixed:
+  `UserError` carries a code (`noSelection` / `noDocument`); the panel checks Photoshop every
+  second while that message shows and hides it once ready (`watchUntilReady`); `panelRun`
+  checks it. Checked by him: works. (2) New UI round (his captures, panel at minimum height):
+  why the empty space on top (it is where the card and, in 2.5, the thumbnails go; plus a
+  needless scroll bar shows there: bug to fix); too much empty space around the chip rows;
+  he likes Adobe's mini box (outlined buttons with icon + title, one line, popups); the prompt
+  must be resizable (handle bottom-right). Proposal sent, waiting for his OK: one row under
+  the prompt: [provider badge + model ▾] [sliders icon: one popup with Resolution, Variations,
+  Quality] [Generate], native outlined `sp-action-button`s with SVG icons (no brand logos;
+  provider as a small initials badge), min panel width raised if needed; drag handle that
+  resizes the prompt, height remembered. Agreed by him ("parfait"), except the top space: he
+  thought the panel could fit its content; it can't (Photoshop/the user sets a panel's height),
+  so the space only moves. He chose: prompt on top. Coded, not committed: prompt box at the top
+  of Generate, the run card and hint under it (`genScroll`), extra height empty at the bottom;
+  one row under the prompt: model button (div "obtn": outline = outer background through a 1 px
+  gap; provider `badge` OR/G/OA + model name), settings button (icons/sliders.svg) opening one
+  popup with Resolution / Variations / Quality rows, Generate; menus open under the box; a grip
+  (icons/grip.svg, pointer events) resizes the prompt 40-400 px, `prefs.promptHeight`. 62/62,
+  package builds. His look: fine, two bugs fixed since: the settings popup lost its bottom
+  border when it fit (scrolling moved to an inner `.sheet-body`; if still lost, use the outline
+  trick on `.menu`), and a grip drag left an open menu at the old place under the native text
+  field (the drag now closes it; `panelLayout` checks). Border back but thinner; he asked to
+  try without frames everywhere: prompt box, run card and menus lost their 1 px border (button
+  outlines kept): "beaucoup mieux". Providers tab buttons now use the same outlined `obtn`
+  (static ones in index.html and `button()` in main.js; `panelProviders` finds `.obtn`), with an
+  icon only where it tells something (icons/external.svg for browser-opening buttons, check for
+  Test, trash for Remove, plus for Add a key / Connect; form buttons stay text). Self-test
+  fixes: tall content squeezed the tabs (page and scroll area now `flex: 1 1 0`, tabs don't
+  shrink); the grip saved a stale height (now saves the dragged value). Last `panelLayout`
+  run invalid (he resized the panel during it): rerun, then commit (ask). He asked about a real separate window for the popup: Claude
+  advises against (UXP dialogs open centred, not by the button, need closing; modal ones block
+  Photoshop). Left: his look again, free panel
+  self-test (warn him), commit (ask).
+  his look, commit (ask). His review was: "Auto · ×1" means nothing to a beginner → one chip per setting, "Resolution: Auto ▾",
+  "Variations: 1 ▾" (and "Quality: Auto ▾" for OpenAI), each opening a sheet with its own row;
+  too much space between chip rows; bottom borders cut (sheet buttons, prompt box) and a
+  needless scroll bar in the sheet (cause: flex children shrink inside the max-height sheet →
+  `flex-shrink: 0`, and 1-2 px bottom padding on the page). Proposed rows: model chip;
+  Resolution + Variations; Quality (OpenAI only) on the left of Generate.
+- Done 2026-11-07 (`20dbb07`): "Get a key on <site>" button in Add a key; chip reads
+  "provider · model" (his order); the Google provider is named "Google".
 - Roadmap 2.3 done and committed (`6e26e16`): model chip, custom model IDs removed.
 - Roadmap 2.2 done and committed (`c133b51`).
 - Remaining step 2 sub-steps, in order: options chip; results like Adobe's (open

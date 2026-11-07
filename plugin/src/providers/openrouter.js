@@ -192,7 +192,6 @@ module.exports = {
   name: "OpenRouter",
   host: HOST,
   keyHelp: "openrouter.ai/settings/keys",
-  tagline: "One key for every model.",
   models: MODELS.map(({ id, label, note }) => ({ id, label, note })),
   defaultModel: MODELS[0].id,
   qualities: null,

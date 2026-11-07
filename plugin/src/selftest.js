@@ -490,7 +490,7 @@ const SCENARIOS = {
       log.groups = groups();
       expect(groups().join() === keyed.map((p) => p.name).join(), `groups ${groups()} but keys for ${keyed.map((p) => p.name)}`);
       const checked = rows().filter((r) => r.querySelector(".check").textContent === "✓").map(text);
-      expect(checked.length === 1 && beforeLabel.startsWith(checked[0]), `checked ${checked}, chip "${beforeLabel}"`);
+      expect(checked.length === 1 && beforeLabel.endsWith(`· ${checked[0]} ▾`), `checked ${checked}, chip "${beforeLabel}"`);
       expect(rows().every((r) => !/\(/.test(text(r))), "a model name still carries a (...) note");
       await search("banana");
       expect(rows().length > 0 && rows().every((r) => /banana/i.test(text(r))), `"banana" kept ${rows().map(text)}`);
@@ -503,13 +503,13 @@ const SCENARIOS = {
       target.dispatchEvent(new Event("click"));
       await tick();
       expect(!$("menu"), "picking a model did not close the menu");
-      expect(chip.textContent.startsWith(targetName), `chip "${chip.textContent}" after picking ${targetName}`);
+      expect(chip.textContent === `${keyed[0].name} · ${targetName} ▾`, `chip "${chip.textContent}" after picking ${targetName} (provider · model)`);
       expect(prefs().provider === keyed[0].id && prefs().models[keyed[0].id] !== before.model, "the picked model was not saved");
       log.picked = targetName;
       // Back to the original model with Enter on a search (Enter picks the first match).
       chip.dispatchEvent(new Event("click"));
       await tick(400);
-      await search(beforeLabel.replace(" ▾", ""));
+      await search(beforeLabel.replace(" ▾", "").replace(" · ", " "));
       const enter = new Event("keydown");
       Object.defineProperty(enter, "key", { value: "Enter" });
       $("menuSearch").dispatchEvent(enter);
@@ -743,6 +743,8 @@ const SCENARIOS = {
       await click(buttonIn(`pactions-${id}`, "Add a key"));
       expect($(`padd-${id}`).children.length > 0 && $(`pactions-${id}`).hidden, "Add a key did not open the form");
       expect(!$(`key-${id}`).getAttribute("placeholder"), "the key field must have no placeholder (its masked length would show)");
+      // The page where the key is created is one click away (not clicked: it would open the browser).
+      buttonIn(`padd-${id}`, `Get a key on ${p.keyHelp.split("/")[0]}`);
       $(`key-${id}`).value = "fulla-selftest-invalid";
       await click(buttonIn(`padd-${id}`, "Save"));
       for (let i = 0; i < 50 && /Checking/.test($(`pmsg-${id}`).textContent); i++) await tick(200);

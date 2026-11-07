@@ -1,6 +1,6 @@
 # Fulla
 
-Fulla brings generative fill to Photoshop 2026 (27.11 or newer), powered by your own account with an AI provider (OpenRouter, OpenAI or Google Gemini). It is a UXP plugin that talks to the provider directly: no server, no subscription, and it works without the Creative Cloud app. MIT licensed.
+Fulla brings generative fill to Photoshop 2026 (27.11 or newer), powered by your own account with an AI provider (OpenRouter, OpenAI or Google). It is a UXP plugin that talks to the provider directly: no server, no subscription, and it works without the Creative Cloud app. MIT licensed.
 
 [Releases](../../releases) · [![CI](https://github.com/toorop/fulla/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/toorop/fulla/actions/workflows/ci.yml)
 
@@ -25,9 +25,11 @@ This only works if Photoshop keeps embedded profiles. Check **Edit > Color Setti
 
 | Provider | Models | Get a key |
 |---|---|---|
-| OpenRouter (one account for every model, recommended) | Nano Banana 2.1 (default), Nano Banana Pro, Qwen Image 3, Qwen Image 2.1 Pro, GPT Image 2.6 and 2.5 Sunburst, or any model ID | No key to create: **Connect with OpenRouter** in the panel |
-| OpenAI | GPT Image 2.5 Sunburst (default), GPT Image 2.5 Flare, GPT Image 2, or any model ID | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
-| Google Gemini | Nano Banana 2.1 (default), Nano Banana Pro, Nano Banana 2 Lite, or any model ID | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
+| OpenRouter (one account for every model, recommended) | Nano Banana 2.1 (default), Nano Banana Pro, Qwen Image 3, Qwen Image 2.1 Pro, GPT Image 2.6 and 2.5 Sunburst | No key to create: **Connect with OpenRouter** in the panel |
+| OpenAI | GPT Image 2.5 Sunburst (default), GPT Image 2.5 Flare, GPT Image 2 | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
+| Google (Gemini API) | Nano Banana 2.1 (default), Nano Banana Pro, Nano Banana 2 Lite | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
+
+For OpenAI and Google, **Add a key** in the Providers tab has a button that opens the page where the key is created. Fulla offers a tested catalogue of models; to ask for another one, open an issue.
 
 You pay the provider directly, per image. Each needs a funded account: OpenRouter needs credits (it shows the exact amount billed for each run), OpenAI needs credits, and Gemini's free tier allows 0 image generations, so billing must be on. OpenAI image models may also need your organization verified. When one of these blocks a run, Fulla names it and links the page that fixes it.
 
@@ -51,7 +53,7 @@ You pay the provider directly, per image. Each needs a funded account: OpenRoute
 Start Photoshop and open **Plugins > Fulla**. With no provider yet, the panel opens on its **Providers** tab:
 
 - **Connect with OpenRouter** (recommended): Photoshop asks to open your browser (the window may open behind Photoshop). On openrouter.ai, sign in or create an account; you can set a spending limit and an expiry for the key there. Click **Authorize**, then paste the code it shows into the panel. OpenRouter's page says "terminal": it means the panel. A new account needs credits before its first image; the panel says so and links the page. If, after creating your OpenRouter account, you don't land on the page with the **Authorize** button, go back to the panel and click **Open the page again**: you are signed in by then, so it goes straight there.
-- **Already have a key?** Add a Google Gemini or OpenAI key. Fulla checks it with a free request before saving it.
+- **Already have a key?** Add a Google (Gemini API) or OpenAI key. Fulla checks it with a free request before saving it.
 
 Keys stay on your computer, in Photoshop's secure storage, and go only to their provider. **Test** checks a saved key again; **Remove** deletes it.
 

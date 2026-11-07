@@ -230,9 +230,11 @@ async function generate(req) {
 
 module.exports = {
   id: "gemini",
-  name: "Google Gemini",
+  name: "Google",
   host: HOST,
   keyHelp: "aistudio.google.com/apikey",
+  // Google's free tier allows no image generation: without billing, every run is refused.
+  keyNote: "Image generation needs billing turned on for the key's Google Cloud project.",
   models: MODELS.map(({ id, label, note }) => ({ id, label, note })),
   defaultModel: MODELS[0].id,
   qualities: null,

@@ -6,18 +6,18 @@
 
 ## Next action
 
-- **Roadmap 2.3 (model chip) coded, not committed.** `#modelChip` in the prompt box opens the
-  floating menu built by `modelMenuItems` (`src/menu.js`): providers with a key, registry order,
-  ✓ on the model in use, Enter picks the first match. Catalogue labels lost their "(...)"; a
-  `note` field carries "Recommended" (Nano Banana 2.1 via OpenRouter) or "Fast". Old Provider /
-  Model pickers, custom model row, `CUSTOM` and `prefs.customModel` removed (a saved custom ID
-  falls back to the default). Self-test: `panelPickers` drives the chip; `panelLayout` uses a
-  40-item list through the `openMenu` hook. 61/61, package builds, self-test 26/28 (only
-  `geminiRaw`/`openaiRaw`). Stéphane checked it (works); he is adding a Google key to see a
-  model offered by two providers. Careful: with a working Google key, a full self-test's
-  `geminiRaw` sends 5 real 1K generations (billed): run with `only` lists, or ask first.
-  Checked by him with OpenRouter + Google keys: fine. Left: commit (ask). Then (agreed 2026-11-07): in the Providers tab's
-  "Add a key" form, a button that opens the provider's key page (`keyHelp`; today plain text).
+- **Key page button (outside the steps, agreed 2026-11-07) coded, not committed.** The Providers
+  tab's "Add a key" form starts with "Get a key on <site>" (opens `https://<keyHelp>`), then
+  "Then paste it here"; Gemini adds `keyNote` (billing needed for images). README: models are
+  catalogue-only now (the "or any model ID" left over from 2.3 removed). 61/61, package builds.
+  `panelProviders` passes. On his remark the model chip now reads "OpenRouter · Nano Banana 2.1" (his order); the Google provider is named "Google" (was "Google Gemini") so the chip fits one
+  line. Free panel scenarios 5/5 (`panelPickers`, `panelTabs`, `panelLayout`, `panelRun`,
+  `panelProviders`).
+  (a model may come from several providers). Left: self-test `panelPickers` (free; warn him),
+  his look, commit (ask).
+  Then propose 2.4 (options chip; his remark: show resolution only where the model offers a
+  real choice, e.g. Qwen always renders 2K, see roadmap).
+- Roadmap 2.3 done and committed (`6e26e16`): model chip, custom model IDs removed.
 - Roadmap 2.2 done and committed (`c133b51`).
 - Remaining step 2 sub-steps, in order: options chip; results like Adobe's (open
   point: Adobe creates the layer at once and a thumbnail click swaps its content, no "validate";

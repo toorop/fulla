@@ -71,10 +71,10 @@ function buildStaticPickers() {
   });
 }
 
-/** The model chip's label, and the quality list, which depends on the provider. */
+/** The model chip's label ("OpenRouter · Nano Banana 2.1": a model may come from several providers), and the quality list, which depends on the provider. */
 function buildProviderPickers() {
   const provider = getProvider(prefs.provider);
-  $("modelChip").textContent = `${modelLabel(provider, currentModel())} ▾`;
+  $("modelChip").textContent = `${provider.name} · ${modelLabel(provider, currentModel())} ▾`;
   $("qualityCell").hidden = !provider.qualities;
   if (provider.qualities) {
     if (!provider.qualities.includes(prefs.quality)) prefs.quality = provider.qualities[0];
@@ -542,13 +542,23 @@ function useProviderIfNeeded(p, keys) {
 function openAdd(p) {
   const add = $(`padd-${p.id}`);
   add.innerHTML = "";
-  add.appendChild(el("sp-label", {}, `Paste your ${p.name} API key`));
+  // First the page where the key is created, then the field to paste it in.
+  const site = p.keyHelp.split("/")[0];
+  const get = el("div", { class: "row" });
+  get.appendChild(
+    button(`Get a key on ${site}`, async () => {
+      const err = await openBrowser(`https://${p.keyHelp}`, `Fulla opens ${site} so you can create a ${p.name} API key.`);
+      if (err) providerMessage(p, `Couldn't open the browser (${err}). Go to ${p.keyHelp}`, "error");
+    })
+  );
+  add.appendChild(get);
+  if (p.keyNote) add.appendChild(el("div", { class: "hint" }, p.keyNote));
+  add.appendChild(el("sp-label", {}, "Then paste it here"));
   const line = el("div", { class: "row" });
   line.appendChild(el("sp-textfield", { id: `key-${p.id}`, type: "password" }));
   line.appendChild(button("Save", () => saveKey(p)));
   line.appendChild(button("Cancel", () => closeAdd(p)));
   add.appendChild(line);
-  add.appendChild(el("div", { class: "hint" }, `${p.tagline ? `${p.tagline} ` : ""}Get one at ${p.keyHelp}`));
   $(`pactions-${p.id}`).hidden = true;
   providerMessage(p, "");
 }

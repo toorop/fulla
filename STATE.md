@@ -6,16 +6,15 @@
 
 ## Next action
 
-- **Step 2, prompt sub-step: agreed and coded, not committed.** Placeholder bug: gone (original
-  panel). Placeholder = Photoshop's own "Describe what you want to generate (optional)" (his
-  rule: the user stays on familiar ground). `prompts.js` (English): with a prompt "Edit the area
-  to change as asked: "<prompt>"" + blend; without, fill so it continues the image (remove, or
-  extend into an empty area), no new objects. Empty-prompt layer: "Fulla: Fill". README and
-  spec aligned. 62/62, package builds, free self-test 25/26 (only `openaiRaw`). His real tries
-  (a sad face, an extended canvas): work; slight colour shift and a visible seam, noted for step 3.
-  Committed. Next: the "Open an issue" link (GitHub: ask), then end of step 2. (Was: left free self-test (`fill`, `remove`,
-  `transparentEmptyArea`, panel; warn him), optional real tries (a face's expression, an
-  extended canvas), commit (ask). Then the "Open an issue" link (GitHub: ask), end of step 2.
+- **Step 2 next: the "Open an issue" link** (discuss first; GitHub files: ask). Proposal to make:
+  "Another model? Open an issue ↗" at the bottom of the model menu, opening
+  `issues/new?template=model-request.yml`; new `.github/ISSUE_TEMPLATE/model-request.yml`; also
+  bring `bug.yml` up to date (it still says "Google Gemini", "Remove (empty prompt)", "the message
+  under the Generate button"). Then end of step 2 (README captures, his walk-through).
+- Prompt sub-step done (`16d37cc`): placeholder = Photoshop's "Describe what you want to generate
+  (optional)" (his rule: familiar ground); `prompts.js` (English) covers add/change and, with no
+  prompt, remove or extend; "Fulla: Fill" layers. His real tries work; slight colour shift and a
+  visible seam noted for step 3 (captures in his notes). The old placeholder bug is gone.
 - Roadmap 2.5 done (`54f1c90`): one top-level layer per run (smart object named after the
   prompt, selection as its mask, no group); thumbnails in the run card swap its content
   (`placedLayerReplaceContents`, one undo step); card head "model · size · time" + Done (clears

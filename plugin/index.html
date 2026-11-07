@@ -51,16 +51,26 @@
         </div>
       </section>
 
-      <div id="status" class="status" aria-live="polite"></div>
-      <div id="cost" class="hint" hidden>
-        <div id="costRun"></div>
-        <div id="costSession"></div>
-      </div>
+      <!-- Pushes the hint or the run card down against the prompt box, like a chat's last message. -->
+      <div class="grow"></div>
 
-      <section id="results" hidden>
-        <sp-label>Variations</sp-label>
-        <div id="thumbs" class="thumbs"></div>
-      </section>
+      <div id="idleHint" class="hint idle">Select an area in the image, then describe what to add or change. Leave it empty to remove what is selected, or to fill an empty area.</div>
+
+      <!-- The last run, filled by main.js: running, done, or failed. -->
+      <div id="runCard" class="card" hidden>
+        <div id="runTitle" class="card-title"></div>
+        <div id="runProgress" class="stack">
+          <div class="row"><span id="runStage" class="grow"></span><span id="runTime"></span></div>
+          <div id="runBar" class="bar"><div id="runBarFill" class="bar-fill"></div></div>
+          <div class="hint">You can keep working.</div>
+        </div>
+        <section id="results" hidden>
+          <div id="thumbs" class="thumbs"></div>
+        </section>
+        <div id="runMeta" class="hint" hidden></div>
+        <div id="runCost" class="hint" hidden></div>
+        <div id="status" class="status" aria-live="polite"></div>
+      </div>
       </div>
 
       <div id="promptBox" class="promptbox">

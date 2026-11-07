@@ -17,9 +17,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 /**
  * POST JSON and parse JSON. `classify(status, body)` turns an error response into a ProviderError.
  * Retries retryable errors up to `retries` times with exponential backoff + jitter.
+ * Once `cancelled()` is true no new request is sent (each one may be billed): it throws instead.
  */
-async function postJson({ fetch, url, headers, body, classify, retries = 2, host }) {
-  return requestJson({ fetch, url, headers, body, classify, retries, host, method: "POST" });
+async function postJson({ fetch, url, headers, body, classify, retries = 2, host, cancelled }) {
+  return requestJson({ fetch, url, headers, body, classify, retries, host, method: "POST", cancelled });
 }
 
 /** GET JSON, no retries: used for quick checks the user is waiting on (is this key valid?). */
@@ -27,9 +28,10 @@ async function getJson({ fetch, url, headers, classify, host }) {
   return requestJson({ fetch, url, headers, classify, retries: 0, host, method: "GET" });
 }
 
-async function requestJson({ fetch, url, headers, body, classify, retries, host, method }) {
+async function requestJson({ fetch, url, headers, body, classify, retries, host, method, cancelled }) {
   let attempt = 0;
   for (;;) {
+    if (cancelled && cancelled()) throw new ProviderError("Cancelled. Nothing was changed.", { code: "cancelled" });
     let res;
     try {
       res = await fetch(

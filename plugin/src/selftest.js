@@ -89,6 +89,7 @@ function gradAt(x, y, crop, W, H) {
 // ---------- Photoshop helpers (each in its own modal scope) ----------
 
 const made = [];
+let panelHooks = {};
 
 /** Pattern image, left half red, right half blue, written as a PNG and opened like a user would. */
 async function newDoc({ width = 1200, height = 800, resolution = 72, transparent = false, bits16 = false, opaque = null, profile = "sRGB IEC61966-2.1" } = {}) {
@@ -600,6 +601,73 @@ const SCENARIOS = {
     return info;
   },
 
+  async panelRun() {
+    // Roadmap 2.2, the run card. Free: every request goes to a fake fetch that answers nothing until
+    // Cancel, then fails. Running: card, stage, seconds and bar move, prompt and chip locked, Cancel.
+    // After Cancel: "Cancelled", unlocked. Then an error card (no selection).
+    const $ = (id) => document.getElementById(id);
+    const tick = (ms = 150) => new Promise((r) => setTimeout(r, ms));
+    const prefs = JSON.parse(localStorage.getItem("fulla.prefs.v1") || "{}");
+    const current = prefs.provider || settings.DEFAULTS.provider;
+    if (!(await settings.getKey(current))) return { skipped: `${current} has no key` };
+    const net = panelHooks.generationNet;
+    expect(net, "main.js did not pass generationNet to the self-test");
+    $("tab-generate").dispatchEvent(new Event("click"));
+    const doc = await newDoc();
+    await select(doc, "rect", { left: 450, top: 250, right: 750, bottom: 550 });
+    const h0 = historyCount(doc);
+    const realFetch = net.fetch;
+    let calls = 0;
+    let release;
+    const gate = new Promise((r) => (release = r));
+    net.fetch = async () => {
+      calls++;
+      await gate;
+      throw new Error("selftest: request dropped");
+    };
+    const idle = async (seconds) => {
+      for (let i = 0; i < seconds * 5 && $("generate").textContent !== "Generate"; i++) await tick(200);
+      return $("generate").textContent === "Generate";
+    };
+    const info = {};
+    try {
+      $("generate").dispatchEvent(new Event("click"));
+      for (let i = 0; i < 50 && !calls; i++) await tick(200);
+      expect(calls > 0, "the run never reached the provider");
+      expect(!$("runCard").hidden && $("idleHint").hidden && !$("runProgress").hidden, "running: card or progress not shown");
+      expect(/^Generating with /.test($("runStage").textContent) && !$("runStage").textContent.includes($("runTitle").textContent), `running: title "${$("runTitle").textContent}", stage "${$("runStage").textContent}" (provider on top, model in the stage)`);
+      expect($("generate").textContent === "Cancel", `running: button "${$("generate").textContent}"`);
+      expect($("prompt").hasAttribute("disabled") && $("testChip").hasAttribute("disabled"), "running: prompt or chip not locked");
+      const bar = $("runBarFill").style.marginLeft;
+      const time = $("runTime").textContent;
+      await tick(1200);
+      expect($("runBarFill").style.marginLeft !== bar, "running: the bar does not move");
+      expect($("runTime").textContent !== time, `running: seconds stuck at "${time}"`);
+      info.running = `${$("runTitle").textContent} | ${$("runStage").textContent} ${$("runTime").textContent}`;
+      $("generate").dispatchEvent(new Event("click"));
+      await tick();
+      expect(/Cancelling/.test($("runStage").textContent), `cancelling: stage "${$("runStage").textContent}"`);
+      release();
+      expect(await idle(30), "still running 30 s after Cancel");
+      expect($("status").textContent === "Cancelled. Nothing was changed." && !/error/.test($("status").className), `cancelled: "${$("status").textContent}"`);
+      expect($("runProgress").hidden && !$("prompt").hasAttribute("disabled"), "cancelled: progress shown or prompt still locked");
+      expect(historyCount(doc) === h0, "cancelled: the document changed");
+    } finally {
+      release();
+      // Never hand the real network back while the run could still retry: that would be a paid request.
+      if (await idle(30)) net.fetch = realFetch;
+      else throw new Error("run still going after 60 s; fetch left faked, reload the plugin");
+    }
+
+    await select(doc, "none");
+    $("generate").dispatchEvent(new Event("click"));
+    for (let i = 0; i < 25 && !$("status").textContent; i++) await tick(200);
+    expect(await idle(10), "no-selection run did not end");
+    expect(/Make a selection first/.test($("status").textContent) && /error/.test($("status").className), `no selection: "${$("status").textContent}"`);
+    info.error = $("status").textContent;
+    return info;
+  },
+
   async panelProviders() {
     // The Providers tab with a provider that has no key: a refused key is not saved, Cancel closes
     // the form, a saved key shows as "Connected · ...last 4", Remove deletes it. Free: the only
@@ -958,7 +1026,9 @@ async function getOrCreateFolder(parent, name) {
 let running = false;
 
 /** Poll the data folder for selftest.json; run once per file. */
-function watch() {
+/** @param {object} [hooks] from main.js: `generationNet` ({ fetch }) carries the panel's generation requests. */
+function watch(hooks = {}) {
+  panelHooks = hooks;
   setInterval(async () => {
     if (running) return;
     try {

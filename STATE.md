@@ -6,24 +6,22 @@
 
 ## Next action
 
-- **Roadmap step 2, sub-step 2.1 (feasibility)**: coded, not committed. `#app` fills the panel
-  (absolute), Generate = `#genScroll` (scrolls; old pickers kept there for now) + `#promptBox`
-  pinned at the bottom (prompt, provisional "Test menu ▾" chip, Generate). Floating menu
-  (`openMenu` in `main.js`, search in `src/menu.js`) opens above the box with real catalogue
-  names + 30 filler items. Providers page scrolls too. 59/59 tests, package builds, self-test
-  25/27 (only `geminiRaw`/`openaiRaw`, no keys). Learned: UXP lays out a new element only after
-  the handler returns (rects read zero), so the menu fit is corrected in a `setTimeout`. Stéphane
-  checked it in Photoshop (small/large, light/dark): OK. Left: commit (ask). Seen on his capture:
-  the menu's search field shows no "Search" placeholder (look at it in 2.3). Noted for a later sub-step (Stéphane, 2026-11-07):
-  the prompt placeholder and `prompts.js` must cover modify (e.g. a face's expression) and, with
-  no prompt, filling an empty area, not only add/remove. Sub-step order after that: layout + Generate/Cancel +
-  "generation running" feedback; model chip; options chip; results (open point: Adobe creates
-  the layer at once and a thumbnail click swaps its content, no "validate"; recommended);
-  placeholder bug; "Open an issue" link. Principle: stay as close as possible to Photoshop's own
-  Generative Fill (look at how Adobe does it first). Items already noted for step 2: show clearly
-  that a generation is running; results like Adobe's (1 variation → 1 layer, no group; several →
-  thumbnails, click to try, validate to create the layer); prompt placeholder bug; "Open an
-  issue" link + `model-request.yml` template; check early that a popover fits in the panel.
+- **Roadmap 2.2 done, waiting for Stéphane's OK to commit.** Then propose sub-step 2.3 (model
+  chip: one searchable menu grouped by provider, "model · provider" entries, Nano Banana 2.1
+  "Recommended", "Custom model ID..." at the bottom, only configured providers; replaces the
+  provisional "Test menu" chip and the old Provider/Model pickers; the menu's search field showed
+  no "Search" placeholder, look at it). Discuss first, no code before he agrees.
+- Remaining step 2 sub-steps, in order: model chip; options chip; results like Adobe's (open
+  point: Adobe creates the layer at once and a thumbnail click swaps its content, no "validate";
+  recommended); prompt placeholder bug + wording and `prompts.js` (must cover add, modify, e.g. a
+  face's expression, remove, and with no prompt fill an empty area); "Open an issue" link +
+  `model-request.yml`. Principle: look at how Adobe's Generative Fill does it first.
+- **Tile offset to dig into later** (Stéphane's call; details and captures in his notes): pier
+  photo, Nano Banana 2.1 via OpenRouter, a removal came out shifted up-right while the morning's
+  one did not; after deleting every layer but the base, the same removal had no offset, so the
+  earlier test layers (hidden) seem to matter. Nothing in the pixel path changed since `63384be`.
+  Plan: reproduce, save sent/received images (dev only), measure; then fix the cause, or register
+  the tile onto the original in the ring around the selection (roadmap step 3).
 - **Push**: every commit after `63384be` is local only. Ask Stéphane before
   pushing (he pushes once per session to spare the CI).
 - The detailed roadmap with checkboxes lives in Stéphane's notes (not in the repo); tick it as
@@ -66,6 +64,13 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Recently done
 
+- 2026-11-07 — Roadmap 2.2: run card above the prompt box (provider; "Generating with <model>",
+  seconds, looping bar; done: prompt, model · tier · time, run and session cost; errors red),
+  idle hint, prompt and pickers locked while running, Generate ↔ Cancel. Cancel now stops any
+  further request (retries were billed). Self-test `panelRun` (fake network, free). 60/60, 26/28.
+- 2026-11-07 — Roadmap 2.1 (`678ef19`): prompt box pinned at the bottom, scrolling area above
+  (Providers scrolls too), hand-built floating menu with search (`src/menu.js`); self-test
+  `panelLayout`, 25/27; checked by Stéphane.
 - 2026-11-07 — Step 2 overall mock-up of the Generate tab agreed (details in Stéphane's notes).
 - 2026-11-07 — Roadmap 1.4 (`4d6963a`): first run. No key → Providers opens on a welcome screen
   ("Connect with OpenRouter", Google/OpenAI rows under "Already have a key?"); Generate shows
@@ -101,6 +106,8 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Decisions taken
 
+- After Cancel no new request is sent (2026-11-07): each one may be billed; the one already out
+  can't be recalled, its result is dropped.
 - Generate tab layout (2026-11-07): prompt box pinned at the bottom (model chip showing the
   model name only, options chip "2K · ×1", a "Generate" button, Adobe's word, that becomes
   "Cancel"); above it a scrolling card for the last run only (prompt, thumbnails when > 1,

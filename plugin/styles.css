@@ -191,8 +191,43 @@ sp-textarea {
 }
 
 .status {
-  min-height: 16px;
   color: var(--uxp-host-text-color-secondary);
+}
+
+.idle {
+  padding: 0 4px;
+}
+
+/* The last run, just above the prompt box. */
+.card {
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  border: 1px solid var(--uxp-host-text-color-secondary);
+  border-radius: 6px;
+}
+
+.card > * + * {
+  margin-top: 6px;
+}
+
+.card-title {
+  color: var(--uxp-host-text-color);
+}
+
+/* Looping activity bar: providers report no progress, so it shows activity, not a percentage. */
+.bar {
+  height: 4px;
+  border-radius: 2px;
+  overflow: hidden;
+  background-color: rgba(128, 128, 128, 0.35);
+}
+
+.bar-fill {
+  width: 30%;
+  height: 4px;
+  border-radius: 2px;
+  background-color: #378ef0;
 }
 
 .status.error {

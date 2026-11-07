@@ -114,6 +114,7 @@ async function checkKey({ fetch, apiKey }) {
  * @param {string} [req.quality]
  * @param {Function} req.fetch
  * @param {(usage: object) => void} [req.onUsage]  called with the token counts of each reply
+ * @param {() => boolean} [req.cancelled]  true once the user cancelled: send no further request
  * @returns {Promise<Array<{bytes: Uint8Array, mime: string}>>}
  */
 async function generate(req) {
@@ -138,6 +139,7 @@ async function generate(req) {
     body,
     classify,
     host: HOST,
+    cancelled: req.cancelled,
   });
   // Reported before the image check: a reply without an image may still be billed.
   const usage = usageFrom(json);

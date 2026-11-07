@@ -321,7 +321,7 @@ test("pipeline: read in one modal, network outside, commit as one undo step", as
   const ps = fakePs();
   const provider = fakeProvider(2);
   const stages = [];
-  const r = await runGeneration({ ps, provider, apiKey: "k", model: "m", prompt: "a cat", n: 2, progress: (s) => stages.push(s) });
+  const r = await runGeneration({ ps, provider, apiKey: "k", model: "m", modelName: "Model M", prompt: "a cat", n: 2, progress: (s) => stages.push(s) });
   const seen = provider.seen;
   assert.equal(seen.n, 2);
   assert.equal(seen.image.rgb.length, seen.image.width * seen.image.height * 3, "resampled to exact input size, RGB");
@@ -337,7 +337,7 @@ test("pipeline: read in one modal, network outside, commit as one undo step", as
   assert.equal(commit.selection.width, r.crop.right - r.crop.left, "full-resolution selection kept for the mask");
   assert.equal(commit.selection.left, r.crop.left);
   assert.ok(commit.feather >= 2);
-  assert.deepEqual(stages, ["Reading the image", "Generating with Fake", "Placing the result"]);
+  assert.deepEqual(stages, ["Reading the image", "Generating with Model M", "Placing the result"]);
 });
 
 test("pipeline errors are user-friendly and leave the document alone", async () => {
@@ -469,4 +469,17 @@ test("pipeline passes usage through, even when the run is then cancelled", async
   // without a listener, nothing breaks
   const quiet = { ...fakeProvider(1), async generate(r) { if (r.onUsage) r.onUsage({ total: 1 }); return [{ bytes: tinyPng(), mime: "image/png" }]; } };
   await runGeneration({ ps: fakePs(), provider: quiet, apiKey: "k", model: "m", mode: "fill" });
+});
+
+test("after Cancel no new request is sent: a failed request is not retried (each one may be billed)", async () => {
+  let cancel = false;
+  const fetch = fakeFetch(() => {
+    cancel = true; // the user clicks Cancel while the request is out; it then fails with a retryable error
+    return { status: 503, json: { error: { message: "busy" } }, headers: { "retry-after": "0.01" } };
+  });
+  await assert.rejects(
+    runGeneration({ ps: fakePs(), provider: openrouter, fetch, apiKey: "k", model: "qwen/qwen-image-3", prompt: "a red door", cancelled: () => cancel }),
+    /Cancelled/
+  );
+  assert.equal(fetch.calls.length, 1);
 });

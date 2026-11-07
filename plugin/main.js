@@ -5,7 +5,7 @@ const { PROVIDERS, getProvider } = require("./src/providers/index");
 const { runGeneration, UserError } = require("./src/pipeline");
 const settings = require("./src/settings");
 const { toBase64 } = require("./src/bytes");
-const { addUsage, estimateCost, formatCost } = require("./src/cost");
+const { addUsage, estimateCost, formatCost, formatUsd } = require("./src/cost");
 const connect = require("./src/connect");
 const { filterItems } = require("./src/menu");
 
@@ -106,11 +106,64 @@ function buildProviderPickers() {
 
 // ---------- render ----------
 
+// The Generate tab shows a hint until the first run, then one card for the last run, just above
+// the prompt box: running (stage, seconds, looping bar), done (prompt, model, time, cost), or failed.
+
+/** The message line of the run card; shows the card. */
 function setStatus(text, kind) {
-  const el = $("status");
-  el.textContent = text || "";
-  el.className = kind === "error" ? "status error" : "status";
+  const s = $("status");
+  s.textContent = text || "";
+  s.className = kind === "error" ? "status error" : "status";
+  s.hidden = !text;
+  if (text) showCard();
 }
+
+function showCard() {
+  $("runCard").hidden = false;
+  $("runTitle").hidden = !$("runTitle").textContent; // a message outside a run has no title
+  renderIdle();
+}
+
+function renderIdle() {
+  $("idleHint").hidden = !$("runCard").hidden || !$("noProvider").hidden;
+}
+
+/** Clear the card for a new run. */
+function resetCard(title) {
+  $("runTitle").textContent = title;
+  $("runStage").textContent = "";
+  $("runTime").textContent = "";
+  for (const id of ["runMeta", "runCost", "results"]) $(id).hidden = true;
+  animateBar(false);
+  setStatus("");
+  showCard();
+}
+
+// Providers report no progress, so the bar loops to show activity rather than a percentage.
+let barTimer = null;
+
+function animateBar(on) {
+  clearInterval(barTimer);
+  barTimer = null;
+  $("runProgress").hidden = !on;
+  if (!on) return;
+  const fill = $("runBarFill");
+  let pos = 0;
+  barTimer = setInterval(() => {
+    const w = $("runBar").getBoundingClientRect().width || 200;
+    pos = pos > w ? -w * 0.3 : pos + Math.max(2, w / 60);
+    fill.style.marginLeft = `${Math.round(pos)}px`;
+  }, 40);
+}
+
+/** "Nano Banana 2.1": the catalogue label without its "(recommended)"-style note; a custom ID as is. */
+function modelLabel(provider, id) {
+  const m = provider.models.find((x) => x.id === id);
+  return m ? m.label.replace(/\s*\(.*\)\s*$/, "") : id;
+}
+
+// Locked while a run is going: what was sent is what the card shows.
+const LOCKED = ["prompt", "testChip", "provider", "model", "customModel", "n", "maxTier", "quality"];
 
 function setBusy(b) {
   busy = b;
@@ -118,6 +171,11 @@ function setBusy(b) {
   const g = $("generate");
   g.textContent = b ? "Cancel" : "Generate";
   g.setAttribute("variant", b ? "secondary" : "cta");
+  for (const id of LOCKED) {
+    const e = $(id);
+    if (e && b) e.setAttribute("disabled", "");
+    else if (e) e.removeAttribute("disabled");
+  }
 }
 
 const TABS = ["generate", "providers"];
@@ -158,10 +216,11 @@ function spendText(spend) {
   return spend.priced && spend.unpriced ? `${text} (custom models not priced)` : text;
 }
 
+/** "≈ $0.041 · 4,011 tokens · session ≈ $0.120": this run, then since the panel opened. */
 function renderCost(run) {
-  $("costRun").textContent = `This run: ${spendText(run)}`;
-  $("costSession").textContent = `Since the panel opened: ${spendText(sessionSpend)}`;
-  $("cost").hidden = false;
+  const session = sessionSpend.priced ? `≈ ${formatUsd(sessionSpend.cost)}` : spendText(sessionSpend);
+  $("runCost").textContent = `${spendText(run)} · session ${session}`;
+  $("runCost").hidden = false;
 }
 
 // ---------- results ----------
@@ -199,17 +258,20 @@ async function chooseVariation(i) {
 // ---------- generate ----------
 
 let cancelRequested = false;
+// The network used by generations; the self-test swaps it for a fake so its runs are free.
+const generationNet = { fetch: (url, init) => fetch(url, init) };
 
 async function generate() {
   if (busy) {
     // While running, the button is Cancel. The request already sent can't be recalled,
     // but its result is thrown away and the document is left untouched.
     cancelRequested = true;
-    setStatus("Cancelling... the document will not be changed.");
+    $("runStage").textContent = "Cancelling... the document will not be changed.";
     return;
   }
   const provider = getProvider(prefs.provider);
   const model = currentModel();
+  resetCard(provider.name); // the model is named in the stage line: "Generating with Nano Banana 2.1"
   if (!model) return setStatus("Enter a model ID first.", "error");
   const apiKey = await settings.getKey(provider.id);
   if (!apiKey) {
@@ -223,10 +285,13 @@ async function generate() {
 
   cancelRequested = false;
   setBusy(true);
+  animateBar(true);
   const started = Date.now();
+  const seconds = () => Math.round((Date.now() - started) / 1000);
   let stage = "Starting";
   const tick = () => {
-    if (!cancelRequested) setStatus(`${stage}... ${Math.round((Date.now() - started) / 1000)}s`);
+    if (!cancelRequested) $("runStage").textContent = `${stage}...`;
+    $("runTime").textContent = `${seconds()} s`;
   };
   tick();
   const timer = setInterval(tick, 1000);
@@ -241,9 +306,10 @@ async function generate() {
     const out = await runGeneration({
       ps,
       provider,
-      fetch: (url, init) => fetch(url, init),
+      fetch: (url, init) => generationNet.fetch(url, init),
       apiKey,
       model,
+      modelName: modelLabel(provider, model),
       prompt,
       n: prefs.n,
       quality: prefs.quality,
@@ -255,16 +321,26 @@ async function generate() {
       cancelled: () => cancelRequested,
       onUsage,
     });
+    animateBar(false);
     lastRun = { placed: out.placed, count: out.results.length, active: 0 };
+    const p = prompt.trim().replace(/\s+/g, " ");
+    $("runTitle").textContent = p ? `"${p.length > 120 ? p.slice(0, 119) + "…" : p}"` : "No prompt: remove or fill";
+    $("runMeta").textContent = `${modelLabel(provider, model)} · ${prefs.maxTier} · ${seconds()} s`;
+    $("runMeta").hidden = false;
     renderThumbs(out.results);
-    let msg = `Done in ${Math.round((Date.now() - started) / 1000)}s.`;
-    if (out.results.length < prefs.n) msg += ` ${prefs.n - out.results.length} variation(s) were blocked or failed.`;
-    if (out.softness > 1.6) msg += ` Large area: enlarged ${out.softness.toFixed(1)}x, may look soft. Try a higher resolution or a smaller selection.`;
-    setStatus(msg);
+    const notes = [];
+    if (out.results.length < prefs.n) notes.push(`${prefs.n - out.results.length} variation(s) were blocked or failed.`);
+    if (out.softness > 1.6) notes.push(`Large area: enlarged ${out.softness.toFixed(1)}x, may look soft. Try a higher resolution or a smaller selection.`);
+    setStatus(notes.join(" "));
   } catch (e) {
     console.error(e);
-    const known = e instanceof UserError || e.name === "ProviderError" || e instanceof ps.HostError;
-    setStatus(known ? e.message : `Something went wrong: ${e.message || e}`, "error");
+    animateBar(false);
+    // Once Cancel is clicked, whatever ends the run (often the dropped request) means "cancelled".
+    if (cancelRequested) setStatus("Cancelled. Nothing was changed.");
+    else {
+      const known = e instanceof UserError || e.name === "ProviderError" || e instanceof ps.HostError;
+      setStatus(known ? e.message : `Something went wrong: ${e.message || e}`, "error");
+    }
   } finally {
     clearInterval(timer);
     setBusy(false);
@@ -441,6 +517,7 @@ async function renderProviders() {
   $("connect").hidden = !connecting;
   $("providerList").hidden = connecting;
   $("noProvider").hidden = any;
+  renderIdle();
   for (const p of PROVIDERS) {
     const key = await settings.getKey(p.id);
     $(`prow-${p.id}`).hidden = !any && p.id === "openrouter";
@@ -671,7 +748,7 @@ renderProviders().then((any) => {
 
 // Developer self-test hook. selftest.js is left out of release builds, so this is a no-op for users.
 try {
-  require("./src/selftest").watch();
+  require("./src/selftest").watch({ generationNet });
 } catch (_) {
   /* release build */
 }

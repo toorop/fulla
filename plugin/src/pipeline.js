@@ -51,6 +51,7 @@ async function read(ps, doc, fit) {
  * @param {Function} o.fetch
  * @param {string} o.apiKey
  * @param {string} o.model
+ * @param {string} [o.modelName]  shown in progress ("Generating with Nano Banana 2.1"); the provider's name if absent
  * @param {string} [o.prompt]    what to paint in the selection; empty removes what is selected
  * @param {number} [o.n=1]
  * @param {string} [o.quality]
@@ -79,7 +80,7 @@ async function runGeneration(o) {
   // A little extra room so the model can blend; the Photoshop layer mask still uses the exact selection.
   const modelMask = dilate(job.mask, job.inp.width, job.inp.height, Math.max(2, Math.round(Math.max(job.inp.width, job.inp.height) * 0.01)));
 
-  progress(`Generating with ${provider.name}`);
+  progress(`Generating with ${o.modelName || provider.name}`);
   const results = await provider.generate({
     fetch: o.fetch,
     apiKey: o.apiKey,
@@ -91,6 +92,7 @@ async function runGeneration(o) {
     target: job.geo.target,
     quality: o.quality,
     onUsage: o.onUsage,
+    cancelled,
   });
   checkCancel();
 

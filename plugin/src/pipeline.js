@@ -16,10 +16,10 @@ class UserError extends Error {
   }
 }
 
-/** Group name: the prompt, shortened; an empty prompt removes what is selected. */
+/** Layer name: the prompt, shortened; an empty prompt fills the selection (remove or extend). */
 function layerName(prompt) {
   const p = (prompt || "").trim().replace(/\s+/g, " ");
-  if (!p) return "Fulla: Remove";
+  if (!p) return "Fulla: Fill";
   return `Fulla: ${p.length > 40 ? p.slice(0, 39) + "…" : p}`;
 }
 

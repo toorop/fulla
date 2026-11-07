@@ -6,11 +6,16 @@
 
 ## Next action
 
-- **Step 2 next: the prompt sub-step** (discuss first): placeholder bug (reproduce first) and
-  wording, plus `prompts.js`: cover add, modify (e.g. a face's expression), remove, and with no
-  prompt fill an empty area; Adobe's placeholder is "Describe what you want to generate
-  (optional)". Then "Open an issue" link + `model-request.yml` (GitHub: ask), then end of step 2
-  (README captures, his full walk-through).
+- **Step 2, prompt sub-step: agreed and coded, not committed.** Placeholder bug: gone (original
+  panel). Placeholder = Photoshop's own "Describe what you want to generate (optional)" (his
+  rule: the user stays on familiar ground). `prompts.js` (English): with a prompt "Edit the area
+  to change as asked: "<prompt>"" + blend; without, fill so it continues the image (remove, or
+  extend into an empty area), no new objects. Empty-prompt layer: "Fulla: Fill". README and
+  spec aligned. 62/62, package builds, free self-test 25/26 (only `openaiRaw`). His real tries
+  (a sad face, an extended canvas): work; slight colour shift and a visible seam, noted for step 3.
+  Committed. Next: the "Open an issue" link (GitHub: ask), then end of step 2. (Was: left free self-test (`fill`, `remove`,
+  `transparentEmptyArea`, panel; warn him), optional real tries (a face's expression, an
+  extended canvas), commit (ask). Then the "Open an issue" link (GitHub: ask), end of step 2.
 - Roadmap 2.5 done (`54f1c90`): one top-level layer per run (smart object named after the
   prompt, selection as its mask, no group); thumbnails in the run card swap its content
   (`placedLayerReplaceContents`, one undo step); card head "model · size · time" + Done (clears

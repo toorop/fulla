@@ -222,7 +222,7 @@ async function fillScenario(name, docOpts, sel, { shape = "rect", base = openai,
     near(s.rgb, RED, 12, "image sent to provider (left of selection)");
     expect(s.mask === 0, "mask sent to provider marks an unselected pixel");
   }
-  if (!prompt) expect(/Remove everything/.test(req.task), "an empty prompt did not send the remove instruction");
+  if (!prompt) expect(/^Fill the area to change/.test(req.task), "an empty prompt did not send the fill instruction");
 
   // Result placed exactly over the crop, clipped to the selection.
   const W = prov.outSize.W;

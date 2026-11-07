@@ -13,7 +13,7 @@ Fulla brings generative fill to Photoshop 2026 (27.11 or newer), powered by your
 2. **Generate.** It sends that crop and a mask to the provider you picked, using your key. Photoshop stays free to use meanwhile.
 3. **Place.** The result is scaled back exactly onto the crop, placed as a smart object and clipped to your exact selection with a soft edge, all in one undo step. If anything fails, the document is left as it was.
 
-Select an area and describe what goes there, or leave the prompt empty to remove what is selected. To extend a picture, enlarge the canvas in Photoshop, select the new area with a little overlap, and fill it. Ask for 1 to 4 variations and click a thumbnail to switch between them. The panel shows the estimated cost of each run.
+Select an area and describe what to add or change there, or leave the prompt empty: Fulla then removes what is selected, or fills an empty area from its surroundings. To extend a picture, enlarge the canvas in Photoshop, select the new area with a little overlap, and generate with an empty prompt. Each run makes one layer, masked by your selection. Ask for 1 to 4 variations and click a thumbnail to switch the layer between them; Done clears them once you have chosen. The panel shows the estimated cost of each run.
 
 ### Colours
 

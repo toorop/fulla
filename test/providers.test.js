@@ -359,9 +359,10 @@ test("an empty prompt removes what is selected; a prompt is painted and names th
   const provider = fakeProvider(1);
   const ps = fakePs();
   await runGeneration({ ps, provider, apiKey: "k", model: "m", prompt: "   " });
-  assert.match(provider.seen.task, /^Remove everything inside the area to change/);
-  assert.equal(ps.log.find((l) => l[0] === "commit")[1].name, "Fulla: Remove");
-  assert.match(taskFor("a red door"), /paint: a red door./);
+  // No prompt: fill the selection, removing what is there or extending the scene into an empty area.
+  assert.match(provider.seen.task, /^Fill the area to change.*remove it.*extend the scene/);
+  assert.equal(ps.log.find((l) => l[0] === "commit")[1].name, "Fulla: Fill");
+  assert.match(taskFor("make him smile"), /Edit the area to change as asked: "make him smile"\./);
   assert.equal(layerName("  a   very long prompt that keeps going and going forever "), "Fulla: a very long prompt that keeps going and…");
 });
 

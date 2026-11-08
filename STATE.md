@@ -6,12 +6,14 @@
 
 ## Next action
 
-- **Resume here: step 3, 3.3 (whole photo as a scene reference) done, kept always on (his call,
-  2026-11-08), not committed yet**: free self-test 29/29 passed; next, commit 3.3 + the paste fix
-  (ask), then push the session's commits (ask).
-  Grain matching is out of scope for the public release (random grain, too complex). Left in
-  step 3: the tile offset (reproduce first), the B&W boat check, and maybe the clipped-addition
-  prompt line below.
+- **Resume here: step 5, local models** (his call, 2026-11-08: step 5 before step 4, the code
+  review comes later). Discussion first, no code before he validates: check that UXP allows
+  `http://127.0.0.1`, then research which local tools to target (ComfyUI managed by the plugin vs
+  own server; candidates in his notes, "modèles locaux (pistes)"), and which models fit his GPU.
+- Step 3 closed for now (2026-11-08): 3.1, 3.2, 3.3 committed (`634c9d9` last, self-test 29/29).
+  On hold until they show up again (he will report): the B&W border (barely visible since tone
+  matching) and the tile offset. Grain out of the public release. The clipped-addition prompt
+  line is not urgent (seen once).
 - 3.1 Auto resolution: smallest tier covering the crop on both sides, never below 2K (his call
   after a 1K/2K test: generated pixels hold less detail than camera pixels, ~2x oversampling is as
   sharp as the photo and needs less tone correction), up to 4K (`provider.autoMax || "4K"`;
@@ -70,10 +72,9 @@
 
 ## Current step
 
-Step 3 (resolution, tones, grain): 3.1 Auto resolution, 3.2 global tone matching and 3.3 scene
-reference done (2026-11-08). Left: the tile offset, the B&W boat check (border gone?); grain is
-out of the public release. Step 1 left to test some day, not blocking: sign-up with a fresh
-OpenRouter account; a real OpenAI key.
+Step 5 (local models), started after step 3 (closed for now, 2026-11-08). Step 4 (code review)
+comes after it. Step 1 left to test some day, not blocking: sign-up with a fresh OpenRouter
+account; a real OpenAI key.
 
 ## Roadmap (order agreed 2026-11-07, revised that evening; details and checkboxes in Stéphane's notes)
 
@@ -81,7 +82,7 @@ OpenRouter account; a real OpenAI key.
 2. Prompt box. Done (README done; panel captures moved to step 6; his walk-through not done).
 3. Automatic resolution, tone matching (global), whole image as a scene reference (all done);
    the tile offset seen with earlier test layers present; grain later (not in the public release).
-4. Full code review.
+4. Full code review (after step 5, his call 2026-11-08).
 5. Local models, **before the website and the public release** (his decision, 2026-11-07): with
    cost, privacy (nothing leaves the computer) is the big argument against Photoshop for many
    photographers. First check UXP allows `http://127.0.0.1`; ComfyUI managed by the plugin vs own
@@ -98,8 +99,8 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Recently done
 
-- 2026-11-08 — Scene reference kept always on (3.3) and pasted-prompt placeholder fix (not
-  committed yet).
+- 2026-11-08 — Scene reference kept always on (3.3) and pasted-prompt placeholder fix
+  (`634c9d9`).
 - 2026-11-08 — README "Using Fulla" (`7059fce`); Auto resolution up to 4K (`3b7c47a`); tone
   matching with a Curves smart filter (`c2a05b3`). Panel captures moved to the website step.
 - 2026-11-07 — Steps 1 and 2 (onboarding, prompt box, model button, settings popup, one layer

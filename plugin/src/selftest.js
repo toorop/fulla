@@ -18,7 +18,7 @@ const openrouter = require("./providers/openrouter");
 const { PROVIDERS } = require("./providers/index");
 const { estimateCost } = require("./cost");
 const settings = require("./settings");
-const { encodePng } = require("./png");
+const { encodePng, imageSize } = require("./png");
 const { toRGB, resample } = require("./image");
 
 const lfs = uxp.storage.localFileSystem;
@@ -1290,12 +1290,67 @@ async function live(providerId, model) {
   return report;
 }
 
+/**
+ * Review item A1 (dev only, paid, run with {"abInput": {...}}): the same edit on a real photo, the
+ * area sent at the output size (today) and at its own pixels, per model. Records what each reply
+ * cost (OpenRouter's billed amount) and saves each result next to the report.
+ * @param {{photo?: string, selection: {left,top,right,bottom}, models: string[], provider?: string, prompt?: string}} o
+ *   photo: a file in this plugin's data folder (default "ab-photo.png")
+ */
+async function abInput(o) {
+  const provider = { gemini, openai, openrouter }[o.provider || "openrouter"];
+  expect(provider, `unknown provider "${o.provider}"`);
+  const apiKey = await settings.getKey(provider.id);
+  expect(apiKey, `no ${provider.name} key saved in the panel`);
+  const entry = await (await lfs.getDataFolder()).getEntry(o.photo || "ab-photo.png");
+  const doc = await ps.modal("Fulla self-test: open", () => app.open(entry));
+  made.push(doc);
+  const report = {};
+  for (const model of o.models) {
+    for (const upload of ["target", "crop"]) {
+      await select(doc, "rect", o.selection);
+      const h0 = historyCount(doc);
+      const usages = [];
+      let sent = null;
+      const spy = { ...provider, generate: (req) => ((sent = [req.image.width, req.image.height]), provider.generate(req)) };
+      const t0 = Date.now();
+      const key = `${model} ${upload}`;
+      try {
+        const out = await runGeneration({ ps, provider: spy, fetch: (u, i) => fetch(u, i), apiKey, model, n: 1, resolution: "auto", prompt: o.prompt || "", sceneRef: true, upload, onUsage: (u) => usages.push(u) });
+        const bytes = out.results[0].bytes;
+        const s = imageSize(bytes);
+        const name = `ab-${model.replace(/[^a-z0-9.]+/gi, "_")}-${upload}.${s && s.type === "jpeg" ? "jpg" : s && s.type === "webp" ? "webp" : "png"}`;
+        const f = await outFolder.createFile(name, { overwrite: true });
+        await f.write(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), { format: formats.binary });
+        report[key] = {
+          seconds: Math.round((Date.now() - t0) / 1000),
+          sent,
+          crop: [out.crop.right - out.crop.left, out.crop.bottom - out.crop.top],
+          target: out.target,
+          returned: s && [s.width, s.height],
+          usd: usages.reduce((a, u) => a + (estimateCost(model, u) || 0), 0),
+          tokens: usages.map((u) => ({ inputImage: u.inputImage, inputText: u.inputText, output: u.outputImage + u.outputText })),
+          file: name,
+        };
+      } catch (e) {
+        report[key] = { seconds: Math.round((Date.now() - t0) / 1000), sent, error: String((e && e.message) || e), detail: e && e.detail, usd: usages.reduce((a, u) => a + (estimateCost(model, u) || 0), 0) };
+      }
+      await undoTo(doc, h0);
+    }
+  }
+  return report;
+}
+
 async function runAll(opts = {}) {
   const startedAt = new Date().toISOString();
   const original = app.activeDocument;
   const results = [];
-  const names = opts.live ? [] : opts.only && opts.only.length ? opts.only : Object.keys(SCENARIOS);
-  const all = opts.live ? [[`live-${opts.live}`, () => live(opts.live, opts.model)]] : names.map((n) => [n, SCENARIOS[n]]);
+  const names = opts.live || opts.abInput ? [] : opts.only && opts.only.length ? opts.only : Object.keys(SCENARIOS);
+  const all = opts.live
+    ? [[`live-${opts.live}`, () => live(opts.live, opts.model)]]
+    : opts.abInput
+      ? [["abInput", () => abInput(opts.abInput)]]
+      : names.map((n) => [n, SCENARIOS[n]]);
   for (const [name, fn] of all) {
     const t0 = Date.now();
     try {

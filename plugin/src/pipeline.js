@@ -39,11 +39,15 @@ const asUserError = (fn) => {
 };
 
 /** Phase 1: read the selection and the pixels around it (and the whole photo, reduced, when asked). */
-async function read(ps, doc, fit, sceneRef) {
+async function read(ps, doc, fit, sceneRef, upload) {
   const selection = await ps.getSelectionBounds(doc.id);
   if (!selection) throw new UserError("Make a selection first (any selection tool).", "noSelection");
   const geo = asUserError(() => computeCrop({ docWidth: doc.width, docHeight: doc.height, selection, fit }));
-  const inp = inputSize(geo.target);
+  // Never more pixels than the area has: an upscaled image is soft, and the model copies that softness
+  // (review A1, 2026-11-08: about 15 % more fine detail sent at the area's own size, same price).
+  // "target" (the old way, kept for A/B tests): the output size.
+  const cw = geo.crop.right - geo.crop.left;
+  const inp = upload !== "target" && cw < geo.target.width ? inputSize({ width: cw, height: geo.crop.bottom - geo.crop.top }) : inputSize(geo.target);
   const px = await ps.readComposite(doc.id, geo.crop, inp);
   let rgb = toRGB(px.data, px.width, px.height, px.components);
   if (px.width !== inp.width || px.height !== inp.height) rgb = resample(rgb, px.width, px.height, 3, inp.width, inp.height);
@@ -79,6 +83,8 @@ async function read(ps, doc, fit, sceneRef) {
  * @param {string} [o.resolution="auto"]  "auto": the smallest size that covers the selection, at least 2K, up to 4K (provider.autoMax);
  *   "1K" / "2K" / "4K": that size, when the model offers it
  * @param {boolean} [o.sceneRef]  also send the whole photo, reduced, as a scene reference (roadmap 3.3)
+ * @param {"crop"|"target"} [o.upload="crop"]  size of the image sent: the area's own pixels at most
+ *   (default), or the output size, upscaling a smaller area (the old way, for A/B tests)
  * @param {(label: string) => void} [o.progress]
  * @param {() => boolean} [o.cancelled]
  * @param {Promise} [o.whenCancelled]  resolves on Cancel: the request in flight is dropped at once
@@ -101,7 +107,7 @@ async function runGeneration(o) {
   const fit = (w, h) => provider.fitSize(o.model, w, h, forced ? o.resolution : provider.autoMax || "4K", { exact: forced, minTier: forced ? null : "2K" });
 
   progress("Reading the image");
-  const job = await ps.modal("Fulla: read", () => read(ps, doc, fit, o.sceneRef));
+  const job = await ps.modal("Fulla: read", () => read(ps, doc, fit, o.sceneRef, o.upload));
   checkCancel();
 
   // A little extra room so the model can blend; the Photoshop layer mask still uses the exact selection.

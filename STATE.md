@@ -17,9 +17,13 @@
   tone fit; a variation sets it aside in a temporary channel around the tone refit, since a smart
   filter added under a selection takes it as its mask). Tests 72/72, package OK, self-test 28/28
   (fill scenarios and `toneMatch` check the selection after the run and after a variation, and no
-  leftover channel). Left: A1 (paid A/B: send the crop at its real size instead of upscaled to
-  the output size, ask him), then A2 "Copy details", A3 dated price estimates, R2 run controller.
-  A dropped request's cost is not counted (its reply never arrives).
+  leftover channel). **A1, his call (2026-11-08): the area is sent at its own pixels, never
+  upscaled** (pipeline `upload` default "crop"; "target", the old way, kept for the dev-only A/B
+  mode `{"abInput": {...}}` of the self-test). His eye saw a better acutance; measured on one
+  Nano Banana pair: +15 % fine detail in the new content, same price (fixed input tokens).
+  Rule now: output large (2K floor), input at its real size. Not committed yet. Tests 73/73,
+  package OK, self-test 28/28. Left: A2 "Copy details", A3 dated price estimates, R2 run
+  controller out of main.js, S3/B6 (minor).
 - **Step 5 (local models) on hold, his call (2026-11-08)**: good results need a high-end GPU
   (RTX 5080: ~20 s per edit at 1.5K, Qwen Image 2.1 Turbo), whose owners don't mind ~0.04 €/image
   through an API; Qwen 2.1's licence is research-only. Not put forward on the website. Tests,
@@ -44,11 +48,7 @@
   describe the change, not the photo's style.
 - A note listing what sets Fulla apart from Photoshop's Generative Fill (resolution, cost, BYOK,
   free, models; local now on hold) lives in his notes, for the website step.
-- Step 2 leftovers: panel captures moved to step 6 (website), his call; his full walk-through
-  not done yet.
-- Generate tab as of `1bd710d`: prompt box with resize grip, then model button (badge + name,
-  searchable menu), settings popup (Resolution, Variations, Quality), Generate; run card and hint
-  below. Buttons are `.obtn` (outline through a 1 px gap: UXP drops some bottom borders).
+- Step 2 leftovers: panel captures moved to step 6 (website); his walk-through not done yet.
 - UXP layout lessons (keep): an element's measured size updates only after the handler returns
   (measure in a `setTimeout`, or keep computed values); flex children shrink unless told not to
   (pages use `flex: 1 1 0`, tabs and sheet rows don't shrink); a div that scrolls itself or whose
@@ -97,7 +97,7 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 - 2026-11-08 — Step 4: code review (no serious flaw); fixed B2 double click, B1 request deadline
   + immediate Cancel, B3 retry rule, B4 unreadable replies, S1 plain-text keys, S2 installer id;
-  R1/R3/R4 refactors; B5 selection kept after a run.
+  R1/R3/R4 refactors; B5 selection kept after a run; A1 area sent at its own size.
 - 2026-11-08 — Step 5 researched and tested (UXP loopback, stable-diffusion.cpp vs ComfyUI,
   Qwen Image 2.1 on an RTX 5080), then put on hold.
 - 2026-11-08 — Scene reference kept always on (3.3) and pasted-prompt placeholder fix
@@ -145,6 +145,6 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Open questions / blockers
 
-- JPEG/WebP results get no colour profile yet (OpenAI always PNG; Gemini/Qwen via OpenRouter: check
-  the `media_type` of real replies).
+- JPEG/WebP results get no colour profile yet: confirmed 2026-11-08, OpenRouter returns Nano Banana
+  2.1 as JPEG (OpenAI always PNG).
 - GitHub "Forked from" label (optional, Stéphane): leave the fork network or ask Support.

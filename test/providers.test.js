@@ -371,6 +371,22 @@ test("pipeline: read in one modal, network outside, commit as one undo step", as
   assert.deepEqual(stages, ["Reading the image", "Generating with Model M", "Placing the result"]);
 });
 
+test("upload size: the area is sent at its own pixels, never upscaled; upload \"target\" (the old way) sends the output size", async () => {
+  const sizes = async (upload) => {
+    const ps = fakePs(); // a 400 x 300 selection in a 4000 x 3000 photo: a crop far smaller than the 2K output
+    const provider = fakeProvider(1);
+    const r = await runGeneration({ ps, provider, apiKey: "k", model: "m", upload });
+    const crop = r.crop;
+    return { sent: [provider.seen.image.width, provider.seen.image.height], crop: [crop.right - crop.left, crop.bottom - crop.top], target: r.target, mask: provider.seen.mask.length };
+  };
+  const big = await sizes("target");
+  assert.deepEqual(big.sent, [big.target.width, big.target.height].map((v) => Math.min(v, 2048)), "upscaled to the output size");
+  const small = await sizes();
+  assert.deepEqual(small.sent, small.crop, "the crop's own pixels");
+  assert.equal(small.mask, small.sent[0] * small.sent[1], "mask at the size sent");
+  assert.ok(Math.abs(small.sent[0] / small.sent[1] - big.sent[0] / big.sent[1]) < 0.01, "same aspect");
+});
+
 test("pipeline errors are user-friendly and leave the document alone", async () => {
   const provider = fakeProvider(1);
   const none = fakePs({ selection: null });

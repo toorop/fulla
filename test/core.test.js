@@ -136,8 +136,31 @@ test("result PNGs get an embedded sRGB profile, once; other formats are left alo
   assert.equal(icc.toString("latin1", 36, 40), "acsp");
   assert.ok(icc.includes(Buffer.from("sRGB IEC61966-2.1")));
   assert.deepEqual(tagSrgb(tagged), tagged, "already tagged: unchanged");
-  const jpg = Uint8Array.of(0xff, 0xd8, 0xff, 0xd9);
-  assert.equal(tagSrgb(jpg), jpg);
+  const webp = Uint8Array.from([82, 73, 70, 70, 0, 0, 0, 0, 87, 69, 66, 80]);
+  assert.equal(tagSrgb(webp), webp, "other formats unchanged");
+});
+
+test("result JPEGs get an sRGB profile too (APP2 ICC_PROFILE, after the JFIF header), once", () => {
+  // SOI, APP0 JFIF (len 16), SOF0 640 x 480, EOI
+  const app0 = [0xff, 0xe0, 0, 16, 74, 70, 73, 70, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0];
+  const sof = [0xff, 0xc0, 0, 17, 8, 0x01, 0xe0, 0x02, 0x80, 3, 1, 0x22, 0, 2, 0x11, 1, 3, 0x11, 1];
+  const jpg = Uint8Array.from([0xff, 0xd8, ...app0, ...sof, 0xff, 0xd9]);
+  const tagged = Buffer.from(tagSrgb(jpg));
+  assert.deepEqual([...tagged.subarray(0, 2 + app0.length)], [0xff, 0xd8, ...app0], "SOI and JFIF stay first");
+  const at = 2 + app0.length;
+  assert.deepEqual([tagged[at], tagged[at + 1]], [0xff, 0xe2], "then APP2");
+  const len = tagged.readUInt16BE(at + 2);
+  assert.equal(tagged.toString("latin1", at + 4, at + 16), "ICC_PROFILE\0");
+  assert.deepEqual([tagged[at + 16], tagged[at + 17]], [1, 1], "one segment of one");
+  const icc = tagged.subarray(at + 18, at + 2 + len);
+  assert.equal(icc.readUInt32BE(0), icc.length, "profile size field");
+  assert.equal(icc.toString("latin1", 36, 40), "acsp");
+  assert.deepEqual([...tagged.subarray(at + 2 + len)], [...sof, 0xff, 0xd9], "the image itself untouched");
+  assert.deepEqual(imageSize(new Uint8Array(tagged)), { width: 640, height: 480, type: "jpeg" });
+  assert.deepEqual(tagSrgb(new Uint8Array(tagged)), new Uint8Array(tagged), "already has a profile: unchanged");
+  // Without a JFIF header the profile goes right after the start marker.
+  const bare = tagSrgb(Uint8Array.from([0xff, 0xd8, ...sof, 0xff, 0xd9]));
+  assert.deepEqual([bare[2], bare[3]], [0xff, 0xe2]);
 });
 
 test("imageSize reads JPEG dimensions", () => {

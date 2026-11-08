@@ -236,11 +236,35 @@ function imageSize(bytes) {
 }
 
 /**
- * Embed an sRGB ICC profile (iCCP chunk after IHDR) in a PNG that does not say what colour space it
- * is in. The providers return sRGB without saying so, and Photoshop would read the pixels in the
- * document's profile instead (it ignores the lighter sRGB chunk). Other formats come back unchanged.
+ * Embed an sRGB ICC profile in a JPEG without one: an APP2 "ICC_PROFILE" segment, after the JFIF
+ * header (which must come first) or right after the start marker. A JPEG that already has a
+ * profile comes back unchanged.
+ */
+function tagJpegSrgb(bytes) {
+  const ICC = "ICC_PROFILE\0";
+  let at = 2;
+  let insertAt = 2;
+  // Only the APPn and COM segments that open the file can hold a profile.
+  while (at + 4 <= bytes.length && bytes[at] === 0xff && ((bytes[at + 1] >= 0xe0 && bytes[at + 1] <= 0xef) || bytes[at + 1] === 0xfe)) {
+    const len = (bytes[at + 2] << 8) | bytes[at + 3];
+    if (bytes[at + 1] === 0xe2 && String.fromCharCode(...bytes.subarray(at + 4, at + 16)) === ICC) return bytes;
+    if (bytes[at + 1] === 0xe0 && at === 2) insertAt = at + 2 + len; // JFIF stays first
+    at += 2 + len;
+  }
+  const profile = srgbProfile();
+  const len = 2 + ICC.length + 2 + profile.length;
+  const app2 = concat([Uint8Array.of(0xff, 0xe2, len >> 8, len & 255), Uint8Array.from(ICC, (c) => c.charCodeAt(0)), Uint8Array.of(1, 1), profile]);
+  return concat([bytes.subarray(0, insertAt), app2, bytes.subarray(insertAt)]);
+}
+
+/**
+ * Embed an sRGB ICC profile in a PNG (iCCP chunk after IHDR) or a JPEG (APP2) that does not say
+ * what colour space it is in. The providers return sRGB without saying so, and Photoshop would read
+ * the pixels in the document's profile instead (it ignores PNG's lighter sRGB chunk). Other formats
+ * come back unchanged.
  */
 function tagSrgb(bytes) {
+  if (bytes.length > 4 && bytes[0] === 0xff && bytes[1] === 0xd8) return tagJpegSrgb(bytes);
   if (!(bytes.length > 33 && bytes[0] === 137 && bytes[1] === 80 && bytes[2] === 78 && bytes[3] === 71)) return bytes;
   const r = (o) => ((bytes[o] << 24) | (bytes[o + 1] << 16) | (bytes[o + 2] << 8) | bytes[o + 3]) >>> 0;
   for (let o = 8; o + 8 <= bytes.length; ) {

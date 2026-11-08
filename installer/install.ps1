@@ -24,6 +24,10 @@ $manifest = Get-Content $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
 $id = $manifest.id
 $version = $manifest.version
 $minPs = $manifest.host.minVersion
+# The id names the folder this script replaces: refuse anything but a plain name (no "", "..", "\").
+if (-not ($id -is [string]) -or $id -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]*$' -or $id.Contains('..')) {
+  throw "Invalid plugin id in $manifestPath`: '$id'. Nothing was changed."
+}
 
 if (Get-Process -Name "Photoshop" -ErrorAction SilentlyContinue) {
   Write-Host "Photoshop is running. Close it before installing, then run this again." -ForegroundColor Yellow

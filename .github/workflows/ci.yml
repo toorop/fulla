@@ -49,6 +49,13 @@ jobs:
           if (-not (Test-Path "$root\Adobe\UXP\Plugins\External\io.github.toorop.fulla\manifest.json")) { throw "plugin files missing" }
           $bytes = [IO.File]::ReadAllBytes("$root\Adobe\UXP\PluginsInfo\v1\PS.json")
           if ($bytes[0] -eq 0xEF) { throw "PS.json written with a BOM" }
+          # An id that is not a plain name is refused before anything is deleted.
+          $PSNativeCommandUseErrorActionPreference = $false
+          foreach ($bad in @("..", "")) {
+            powershell -NoProfile -ExecutionPolicy Bypass -File installer/uninstall.ps1 -Id $bad -AppDataRoot $root
+            if ($LASTEXITCODE -eq 0) { throw "uninstall accepted the id '$bad'" }
+          }
+          if (-not (Test-Path "$root\Adobe\UXP\Plugins\External\io.github.toorop.fulla\manifest.json")) { throw "a refused id deleted files" }
           powershell -NoProfile -ExecutionPolicy Bypass -File installer/uninstall.ps1 -AppDataRoot $root
           $after = Get-Content "$root\Adobe\UXP\PluginsInfo\v1\PS.json" -Raw | ConvertFrom-Json
           if (@($after.plugins | Where-Object pluginId -eq "io.github.toorop.fulla").Count) { throw "uninstall left the entry" }

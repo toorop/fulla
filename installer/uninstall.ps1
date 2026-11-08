@@ -10,6 +10,11 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# The id names the folder this script deletes: refuse anything but a plain name (no "", "..", "\").
+if ($Id -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]*$' -or $Id.Contains('..')) {
+  throw "Invalid plugin id: '$Id'. Nothing was changed."
+}
+
 if (Get-Process -Name "Photoshop" -ErrorAction SilentlyContinue) {
   Write-Host "Photoshop is running. Close it first, then run this again." -ForegroundColor Yellow
   exit 2
@@ -29,7 +34,7 @@ if (Test-Path $infoPath) {
     Copy-Item $infoPath "$infoPath.fulla-backup-$stamp"
     $info.plugins = $kept
     [System.IO.File]::WriteAllText($infoPath, (ConvertTo-Json -InputObject $info -Depth 20), (New-Object System.Text.UTF8Encoding($false)))
-    Write-Host "Removed Fulla from PS.json"
+    Write-Host "Removed $Id from PS.json"
   }
 }
-Write-Host "Fulla uninstalled." -ForegroundColor Green
+Write-Host "$Id uninstalled." -ForegroundColor Green

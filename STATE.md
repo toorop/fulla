@@ -7,15 +7,16 @@
 ## Next action
 
 - **Resume here: step 4, fixes from the code review** (review 2026-11-08; findings in his vault,
-  "relecture du code (novembre 2026)"). **B2 and B1 fixed (2026-11-08, not committed yet)**:
-  Generate locks before the first `await` and ignores a Cancel click within 500 ms (second half
-  of a double click); every request has a deadline (`http.js` `TIMEOUT_MS`: POST 5 min, GET 20 s,
-  OpenRouter code exchange 30 s), never retried after a timeout; Cancel resolves `whenCancelled`
-  (main → pipeline → provider → `requestJson`): the request in flight is dropped and aborted
-  (`AbortController`, accepted by UXP fetch), retry waits end too. Tests 70/70 (4 s), package
-  OK, self-test 28/28 (free scenarios; `panelRun` now checks double click and Cancel within 3 s
-  of a request that never answers). Next, his pick: B3 (retry rule: only 429 and 502/503, not
-  after a network error or 408), then B4, S1, S2, then R1, R3, A1 (paid A/B), B5 (his call).
+  "relecture du code (novembre 2026)"). Done and committed: B2 double click, B1 request deadlines
+  + immediate Cancel (`c41e68d`). **Done, not committed yet (2026-11-08)**: B3 retries only on
+  refusals that cost nothing (429, 502, 503), never after a network failure, 408, 500 or 504;
+  B4 the pipeline pastes only replies it can read as an image of the area's shape (`imageSize`
+  now reads WebP; unreadable bytes get their own message; the self-test's broken image keeps a
+  valid PNG header so Photoshop's rollback is still tested); S1 keys only in secure storage, an
+  old plain-text copy is moved there once then erased, `setKey` throws without secure storage;
+  S2 install/uninstall refuse a plugin id that is not a plain name (CI checks it), uninstall
+  prints the id. Tests 72/72, package OK, self-test 28/28. Next, his pick: R1 (shared prompt
+  and sizing for OpenRouter/Gemini), R3 dead code, A1 (paid A/B), B5 (his call), A2, A3, R2.
   A dropped request's cost is not counted (its reply never arrives).
 - **Step 5 (local models) on hold, his call (2026-11-08)**: good results need a high-end GPU
   (RTX 5080: ~20 s per edit at 1.5K, Qwen Image 2.1 Turbo), whose owners don't mind ~0.04 €/image
@@ -94,8 +95,8 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Recently done
 
-- 2026-11-08 — Step 4: code review (no serious flaw), B2 double click and B1 request deadline +
-  immediate Cancel fixed.
+- 2026-11-08 — Step 4: code review (no serious flaw); fixed B2 double click, B1 request deadline
+  + immediate Cancel, B3 retry rule, B4 unreadable replies, S1 plain-text keys, S2 installer id.
 - 2026-11-08 — Step 5 researched and tested (UXP loopback, stable-diffusion.cpp vs ComfyUI,
   Qwen Image 2.1 on an RTX 5080), then put on hold.
 - 2026-11-08 — Scene reference kept always on (3.3) and pasted-prompt placeholder fix
@@ -146,4 +147,3 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 - JPEG/WebP results get no colour profile yet (OpenAI always PNG; Gemini/Qwen via OpenRouter: check
   the `media_type` of real replies).
 - GitHub "Forked from" label (optional, Stéphane): leave the fork network or ask Support.
-- Minor: `uninstall.ps1` always prints "Fulla", even with another `-Id`.

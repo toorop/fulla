@@ -6,24 +6,19 @@
 
 ## Next action
 
-- **Resume here: step 4, fixes from the code review** (review 2026-11-08; findings in his vault,
-  "relecture du code (novembre 2026)"). Committed: B2 double click, B1 deadlines + immediate
-  Cancel (`c41e68d`); B3 retries only on 429/502/503, B4 unreadable replies never pasted, S1 keys
-  only in secure storage (`062dde3`); S2 installer id guard (`b31a1af`). **Done, not committed
-  (2026-11-08)**: R1 one mask instruction per API family in `prompts.js` (`maskImagePrompt`,
-  `alphaMaskPrompt`) and ratio/tier choice shared in `providers/sizing.js` (OpenRouter, Gemini);
-  R3 old prefs cleanup removed; R4 Gemini doc comment, OpenAI 429 branch simplified. **B5 (his
-  call, 2026-11-08): the selection stays after a run, like Adobe** (`commit` puts it back after the
-  tone fit; a variation sets it aside in a temporary channel around the tone refit, since a smart
-  filter added under a selection takes it as its mask). Tests 72/72, package OK, self-test 28/28
-  (fill scenarios and `toneMatch` check the selection after the run and after a variation, and no
-  leftover channel). **A1, his call (2026-11-08): the area is sent at its own pixels, never
-  upscaled** (pipeline `upload` default "crop"; "target", the old way, kept for the dev-only A/B
-  mode `{"abInput": {...}}` of the self-test). His eye saw a better acutance; measured on one
-  Nano Banana pair: +15 % fine detail in the new content, same price (fixed input tokens).
-  Rule now: output large (2K floor), input at its real size. Not committed yet. Tests 73/73,
-  package OK, self-test 28/28. Left: A2 "Copy details", A3 dated price estimates, R2 run
-  controller out of main.js, S3/B6 (minor).
+- **Resume here: step 4 is done (2026-11-08); next, with him: push, his walk-through, then
+  step 6 (website).** Code review findings and what became of each: his vault, "relecture du
+  code (novembre 2026)". All committed, nothing pushed (he pushes once per session; ask first).
+  Fixed: B2 double click, B1 request deadlines + immediate Cancel, B3 retries only on 429/502/503,
+  B4 unreadable replies never pasted, B5 selection kept after a run (his call), B6 OpenAI caps n,
+  S1 keys only in secure storage, S2 installer id guard, S3 CI actions pinned by SHA, A1 the
+  area sent at its own pixels, never upscaled (his call: better acutance, +15 % fine detail
+  measured, same price; dev-only A/B mode `{"abInput": {...}}`), A2 error Details to copy, A3
+  billed amounts without "≈", R1 shared prompts/sizing, R2 run gate in `src/run.js`, R3/R4 dead
+  code and details; found on the way: JPEG results (Nano Banana via OpenRouter) now get an sRGB
+  profile (in Adobe RGB a green moved from 60,160,60 to 0,162,48). Tests 78/78, package OK,
+  self-test 29/29 (new `adobeRgbJpeg`; a parse test now covers selftest.js).
+  He should check by hand: pasting a prompt, the selection kept after a run, Details on an error.
 - **Step 5 (local models) on hold, his call (2026-11-08)**: good results need a high-end GPU
   (RTX 5080: ~20 s per edit at 1.5K, Qwen Image 2.1 Turbo), whose owners don't mind ~0.04 €/image
   through an API; Qwen 2.1's licence is research-only. Not put forward on the website. Tests,
@@ -71,7 +66,7 @@
 
 ## Current step
 
-Step 4 (code review), next. Step 5 (local models) on hold since 2026-11-08 after tests. Step 1 left to test some day, not blocking: sign-up with a fresh OpenRouter
+Step 4 (code review) done 2026-11-08. Step 5 (local models) on hold. Next: step 6 (website). Step 1 left to test some day, not blocking: sign-up with a fresh OpenRouter
 account; a real OpenAI key.
 
 ## Roadmap (order agreed 2026-11-07, revised that evening; details and checkboxes in Stéphane's notes)
@@ -80,7 +75,7 @@ account; a real OpenAI key.
 2. Prompt box. Done (README done; panel captures moved to step 6; his walk-through not done).
 3. Automatic resolution, tone matching (global), whole image as a scene reference (all done);
    the tile offset seen with earlier test layers present; grain later (not in the public release).
-4. Full code review (next).
+4. Full code review: done 2026-11-08 (no serious flaw; 18 items fixed, see his notes).
 5. Local models: **on hold since 2026-11-08** (his call after tests: needs a high-end GPU; owners
    of one don't mind API prices; only privacy remains). Not put forward on the website.
 6. Website (presentation + all user docs; SEO and GEO). Domain considered: fulla.photo.
@@ -95,9 +90,7 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Recently done
 
-- 2026-11-08 — Step 4: code review (no serious flaw); fixed B2 double click, B1 request deadline
-  + immediate Cancel, B3 retry rule, B4 unreadable replies, S1 plain-text keys, S2 installer id;
-  R1/R3/R4 refactors; B5 selection kept after a run; A1 area sent at its own size.
+- 2026-11-08 — Step 4: code review and its fixes (`c41e68d` to `5a920cf`), JPEG colour profile.
 - 2026-11-08 — Step 5 researched and tested (UXP loopback, stable-diffusion.cpp vs ComfyUI,
   Qwen Image 2.1 on an RTX 5080), then put on hold.
 - 2026-11-08 — Scene reference kept always on (3.3) and pasted-prompt placeholder fix
@@ -145,6 +138,5 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Open questions / blockers
 
-- JPEG/WebP results get no colour profile yet: confirmed 2026-11-08, OpenRouter returns Nano Banana
-  2.1 as JPEG (OpenAI always PNG).
+- WebP results get no colour profile (JPEG and PNG do since 2026-11-08); none seen so far.
 - GitHub "Forked from" label (optional, Stéphane): leave the fork network or ask Support.

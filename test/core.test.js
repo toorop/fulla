@@ -329,3 +329,30 @@ test("error report: versions, provider, model, message, status, code and provide
   assert.match(plain, /^Fulla dev · Photoshop \? · /);
   assert.ok(plain.split("\n").pop().length <= "Detail: ".length + 1000);
 });
+
+test("run gate: one run at a time; Cancel during a run drops it at once; the second half of a double click is ignored", async () => {
+  const { createRunGate } = require("../plugin/src/run");
+  let t = 1000;
+  const gate = createRunGate({ now: () => t });
+  assert.equal(gate.busy, false);
+  assert.equal(gate.click(), "start");
+  assert.equal(gate.busy, true, "busy at once, before anything is awaited");
+  t += 200;
+  assert.equal(gate.click(), "ignore", "a double click is not a Cancel, nor a second run");
+  assert.equal(gate.cancelled(), false);
+  let dropped = false;
+  gate.whenCancelled.then(() => (dropped = true));
+  t += 400;
+  assert.equal(gate.click(), "cancel");
+  await Promise.resolve();
+  assert.ok(dropped && gate.cancelled(), "Cancel resolves whenCancelled");
+  gate.finish();
+  assert.equal(gate.busy, false);
+  // The next run starts clean.
+  assert.equal(gate.click(), "start");
+  assert.equal(gate.cancelled(), false);
+  let early = false;
+  gate.whenCancelled.then(() => (early = true));
+  await Promise.resolve();
+  assert.equal(early, false, "a new run has its own whenCancelled");
+});

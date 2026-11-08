@@ -7,13 +7,14 @@ const settings = require("./src/settings");
 const { toBase64 } = require("./src/bytes");
 const { newSpend, addSpend, spendText, spendAmount } = require("./src/cost");
 const { errorReport } = require("./src/report");
+const { createRunGate } = require("./src/run");
 const connect = require("./src/connect");
 const { filterItems, modelMenuItems } = require("./src/menu");
 const { helpMenu } = require("./src/help");
 
 const $ = (id) => document.getElementById(id);
 let prefs = settings.loadPrefs();
-let busy = false;
+const gate = createRunGate(); // one run at a time; Cancel; double clicks (src/run.js)
 let lastRun = null; // { placed, results, active }: the last run's layer and its variations
 const sessionSpend = newSpend(); // since the panel was opened
 
@@ -134,7 +135,6 @@ function modelLabel(provider, id) {
 const LOCKED = ["prompt", "modelChip", "optionsChip"];
 
 function setBusy(b) {
-  busy = b;
   closeMenu();
   const g = $("generate");
   g.textContent = b ? "Cancel" : "Generate";
@@ -193,7 +193,7 @@ function renderThumbs(results) {
 }
 
 async function chooseVariation(i) {
-  if (!lastRun || busy || i === lastRun.active) return;
+  if (!lastRun || gate.busy || i === lastRun.active) return;
   try {
     await ps.showVariation(lastRun.placed, lastRun.results[i]);
     lastRun.active = i;
@@ -215,8 +215,6 @@ function finishRun() {
 
 // ---------- generate ----------
 
-let cancelRequested = false;
-
 // "Open a document first" / "Make a selection first" go away by themselves once the user has done
 // it: the panel checks Photoshop every second while such a message shows (a cheap read).
 let readyWatch = null;
@@ -229,7 +227,7 @@ function stopReadyWatch() {
 function watchUntilReady(code) {
   stopReadyWatch();
   readyWatch = setInterval(async () => {
-    if (busy) return stopReadyWatch();
+    if (gate.busy) return stopReadyWatch();
     try {
       const doc = await ps.getDocument();
       const ready = doc && (code === "noDocument" || (await ps.getSelectionBounds(doc.id)));
@@ -245,31 +243,21 @@ function watchUntilReady(code) {
 // The network used by generations; the self-test swaps it for a fake so its runs are free.
 const generationNet = { fetch: (url, init) => fetch(url, init) };
 
-// A click on Cancel this soon after Generate is the second half of a double click: ignored.
-const CANCEL_GRACE_MS = 500;
-let runStartedAt = 0;
-// Resolves the running generation's `whenCancelled`: the request in flight is dropped at once.
-let cancelRun = null;
-
 async function generate() {
-  if (busy) {
-    if (Date.now() - runStartedAt < CANCEL_GRACE_MS) return;
+  const click = gate.click(); // busy at once: nothing is awaited before this
+  if (click === "ignore") return;
+  if (click === "cancel") {
     // While running, the button is Cancel. The request already sent can't be recalled: it is
     // dropped, its result thrown away, and the document is left untouched.
-    cancelRequested = true;
     $("runStage").textContent = "Cancelling... the document will not be changed.";
-    if (cancelRun) cancelRun();
     return;
   }
-  // Lock before anything is awaited: a second click in that gap would start another (billed) run.
-  cancelRequested = false;
-  runStartedAt = Date.now();
-  const provider = getProvider(prefs.provider);
-  const model = currentModel();
-  resetCard(provider.name); // the model is named in the stage line: "Generating with Nano Banana 2.1"
-  setBusy(true);
   let timer = null;
   try {
+    const provider = getProvider(prefs.provider);
+    const model = currentModel();
+    resetCard(provider.name); // the model is named in the stage line: "Generating with Nano Banana 2.1"
+    setBusy(true);
     const apiKey = await settings.getKey(provider.id);
     if (!apiKey) {
       const msg = `Add your ${provider.name} API key first.`;
@@ -279,7 +267,7 @@ async function generate() {
     }
     const prompt = $("prompt").value || "";
     if (prompt.length > 4000) return setStatus("Prompt is too long (4,000 characters max).", "error");
-    if (cancelRequested) return setStatus("Cancelled. Nothing was changed.");
+    if (gate.cancelled()) return setStatus("Cancelled. Nothing was changed.");
 
     stopReadyWatch();
     animateBar(true);
@@ -287,7 +275,7 @@ async function generate() {
     const seconds = () => Math.round((Date.now() - started) / 1000);
     let stage = "Starting";
     const tick = () => {
-      if (!cancelRequested) $("runStage").textContent = `${stage}...`;
+      if (!gate.cancelled()) $("runStage").textContent = `${stage}...`;
       $("runTime").textContent = `${seconds()} s`;
     };
     tick();
@@ -298,7 +286,6 @@ async function generate() {
       addSpend(sessionSpend, model, usage);
       renderCost(runSpend);
     };
-    const whenCancelled = new Promise((resolve) => (cancelRun = resolve));
     try {
       const out = await runGeneration({
         ps,
@@ -318,8 +305,8 @@ async function generate() {
           stage = label;
           tick();
         },
-        cancelled: () => cancelRequested,
-        whenCancelled,
+        cancelled: gate.cancelled,
+        whenCancelled: gate.whenCancelled,
         onUsage,
       });
       animateBar(false);
@@ -338,7 +325,7 @@ async function generate() {
       console.error(e);
       animateBar(false);
       // Once Cancel is clicked, whatever ends the run (often the dropped request) means "cancelled".
-      if (cancelRequested) setStatus("Cancelled. Nothing was changed.");
+      if (gate.cancelled()) setStatus("Cancelled. Nothing was changed.");
       else {
         const known = e instanceof UserError || e.name === "ProviderError" || e instanceof ps.HostError;
         setStatus(known ? e.message : `Something went wrong: ${e.message || e}`, "error");
@@ -351,8 +338,8 @@ async function generate() {
       }
     }
   } finally {
-    cancelRun = null;
     if (timer) clearInterval(timer);
+    gate.finish();
     setBusy(false);
   }
 }
@@ -499,7 +486,7 @@ function fillSheet(sheet) {
 
 function toggleSettings() {
   const chip = $("optionsChip");
-  if (busy) return;
+  if (gate.busy) return;
   if (menuChip === chip) return closeMenu();
   closeMenu();
   const app = $("app").getBoundingClientRect();
@@ -575,7 +562,7 @@ function bindGrip() {
 /** The model chip: one menu for every model of every provider that has a key. */
 async function toggleModelMenu() {
   const chip = $("modelChip");
-  if (busy) return;
+  if (gate.busy) return;
   if (menuChip === chip) return closeMenu();
   const keys = await savedKeys();
   const keyed = {};

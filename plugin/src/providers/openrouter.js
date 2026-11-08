@@ -104,10 +104,12 @@ function classify(status, json, text) {
   }
   if (status === 403) return new ProviderError("OpenRouter's safety filter blocked this request. Try a different prompt or selection.", { status, code: "moderation", detail });
   if (status === 404) return new ProviderError(`OpenRouter doesn't know that model. ${msg}`, { status, code, detail });
-  if (status === 408) return new ProviderError("The model took too long to answer. Try again.", { status, code, retryable: true, detail });
+  // Not retried: the model may have run (and billed) before the time ran out.
+  if (status === 408) return new ProviderError("The model took too long to answer. Try again.", { status, code, detail });
   if (status === 429) return new ProviderError("OpenRouter rate limit reached. Retrying shortly...", { status, code, retryable: true, detail });
-  // 502: the model failed (not billed); 503: no provider available right now.
-  if (status >= 500) return new ProviderError("The model is having trouble right now. Nothing was billed; try again shortly.", { status, code, retryable: true, detail });
+  // 502: the model failed (not billed); 503: no provider available right now. Both cost nothing: retried.
+  if (status === 502 || status === 503) return new ProviderError("The model is having trouble right now. Nothing was billed; try again shortly.", { status, code, retryable: true, detail });
+  if (status >= 500) return new ProviderError("OpenRouter had a problem with this request. Try again shortly.", { status, code, detail });
   return new ProviderError(`OpenRouter: ${msg}`, { status, code, detail });
 }
 

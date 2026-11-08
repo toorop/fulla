@@ -58,7 +58,11 @@ function mockProvider({ base = openai, colors = [null, [0, 255, 0], [255, 255, 0
     autoMax: base.autoMax,
     async generate(req) {
       m.requests.push(req);
-      if (garbage) return [{ bytes: Uint8Array.of(1, 2, 3, 4, 5), mime: "image/png" }];
+      // A PNG whose header is right (so it passes the pipeline's shape check) and whose data is not.
+      if (garbage) {
+        const good = gradientPng(req.target.width, req.target.height);
+        return [{ bytes: Uint8Array.from([...good.subarray(0, 33), 1, 2, 3, 4, 5, 6, 7, 8]), mime: "image/png" }];
+      }
       const W = Math.round(req.target.width * scale);
       const H = Math.round(req.target.height * scale);
       m.outSize = { W, H };

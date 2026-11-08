@@ -224,6 +224,32 @@ test("checkKey: one free GET per provider with the key; refused keys and network
   }
 });
 
+test("only refusals that cost nothing are retried (429, 502, 503); a network failure, 408, 500 or 504 sends one request", async () => {
+  const runs = [
+    [openrouter, { model: "google/gemini-nano-banana-2.1", target: openrouter.fitSize("google/gemini-nano-banana-2.1", 1024, 1024, "1K") }, orOk(1), [408, 500, 504]],
+    [openai, { model: "gpt-image-2" }, { json: { data: [{ b64_json: toBase64(tinyPng()) }] } }, [500, 504]],
+    [gemini, { model: "gemini-nano-banana-2.1", target: gemini.fitSize("gemini-nano-banana-2.1", 1024, 1024, "1K") }, geminiOk(4), [500, 504]],
+  ];
+  const fail = (status) => ({ status, json: { error: { code: status, message: "trouble" } }, headers: { "retry-after": "0.01" } });
+  for (const [provider, opts, ok, once] of runs) {
+    for (const status of once) {
+      const fetch = fakeFetch(() => fail(status));
+      await assert.rejects(provider.generate(req({ fetch, n: 1, ...opts })));
+      assert.equal(fetch.calls.length, 1, `${provider.id}: ${status} may have been billed, not retried`);
+    }
+    for (const status of [502, 503]) {
+      const fetch = fakeFetch((u, i, n) => (n === 1 ? fail(status) : ok));
+      assert.equal((await provider.generate(req({ fetch, n: 1, ...opts }))).length, 1);
+      assert.equal(fetch.calls.length, 2, `${provider.id}: ${status} retried`);
+    }
+    const dropped = fakeFetch(() => {
+      throw new Error("socket hang up");
+    });
+    await assert.rejects(provider.generate(req({ fetch: dropped, n: 1, ...opts })), (e) => e.code === "network" && /Can't reach/.test(e.message));
+    assert.equal(dropped.calls.length, 1, `${provider.id}: a network failure is not retried`);
+  }
+});
+
 // ---------------- Gemini ----------------
 
 test("gemini fitSize picks the closest ratio and smallest covering tier", () => {
@@ -589,4 +615,9 @@ test("pipeline: the scene goes along only when asked and when the area is a smal
   const ps = fakePs();
   await assert.rejects(runGeneration({ ps, provider: wrong, apiKey: "k", model: "m" }), /wrong shape/);
   assert.ok(!ps.log.some((l) => l[0] === "commit"), "nothing pasted");
+  // Bytes that aren't an image Fulla can read (an error page, a truncated reply) are never pasted either.
+  const junk = { ...fakeProvider(1), async generate() { return [{ bytes: Uint8Array.from([60, 104, 116, 109, 108, 62, 1, 2, 3]), mime: "image/png" }]; } };
+  const ps2 = fakePs();
+  await assert.rejects(runGeneration({ ps: ps2, provider: junk, apiKey: "k", model: "m" }), /isn't an image Fulla can read/);
+  assert.ok(!ps2.log.some((l) => l[0] === "commit"), "nothing pasted");
 });

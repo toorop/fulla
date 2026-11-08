@@ -82,7 +82,8 @@ function classify(status, json, text) {
     if (billing) return new ProviderError("Your OpenAI account has hit its spend limit. Raise it at platform.openai.com/settings/organization/limits, then try again.", { status, code, detail });
     return new ProviderError("OpenAI rate limit reached. Wait a minute and try again.", { status, code, retryable: true, detail });
   }
-  if (status >= 500) return new ProviderError("OpenAI is having trouble right now. Try again shortly.", { status, code, retryable: true, detail });
+  // Retried only when the service was unavailable (nothing ran); after a 500 or 504 the image may have been made.
+  if (status >= 500) return new ProviderError("OpenAI is having trouble right now. Try again shortly.", { status, code, retryable: status === 502 || status === 503, detail });
   if (status === 404) return new ProviderError(`OpenAI doesn't know that model. ${msg}`, { status, code, detail });
   return new ProviderError(`OpenAI: ${msg}`, { status, code, detail });
 }

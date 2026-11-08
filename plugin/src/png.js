@@ -221,8 +221,16 @@ function imageSize(bytes) {
     }
     return null;
   }
-  if (bytes.length > 30 && bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[8] === 0x57 && bytes[9] === 0x45) {
-    return { width: 0, height: 0, type: "webp" };
+  if (bytes.length >= 30 && bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[8] === 0x57 && bytes[9] === 0x45) {
+    // RIFF....WEBP, then the first chunk: "VP8 " (lossy), "VP8L" (lossless) or "VP8X" (extended).
+    const fourcc = String.fromCharCode(bytes[12], bytes[13], bytes[14], bytes[15]);
+    const b = (o) => bytes[o];
+    if (fourcc === "VP8 ") return { width: (b(26) | (b(27) << 8)) & 0x3fff, height: (b(28) | (b(29) << 8)) & 0x3fff, type: "webp" };
+    if (fourcc === "VP8L") {
+      return { width: 1 + (((b(22) & 0x3f) << 8) | b(21)), height: 1 + (((b(24) & 0x0f) << 10) | (b(23) << 2) | ((b(22) & 0xc0) >> 6)), type: "webp" };
+    }
+    if (fourcc === "VP8X") return { width: 1 + (b(24) | (b(25) << 8) | (b(26) << 16)), height: 1 + (b(27) | (b(28) << 8) | (b(29) << 16)), type: "webp" };
+    return null;
   }
   return null;
 }

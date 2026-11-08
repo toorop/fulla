@@ -150,6 +150,24 @@ test("imageSize reads JPEG dimensions", () => {
   assert.equal(imageSize(Uint8Array.from([1, 2, 3])), null);
 });
 
+test("imageSize reads WebP dimensions (lossy, lossless, extended) and refuses an unknown WebP chunk", () => {
+  const webp = (fourcc, body) => {
+    const b = new Uint8Array(40);
+    b.set([82, 73, 70, 70, 32, 0, 0, 0, 87, 69, 66, 80], 0); // RIFF .... WEBP
+    b.set([...fourcc].map((c) => c.charCodeAt(0)), 12);
+    b.set(body, 20);
+    return b;
+  };
+  // VP8: frame tag, start code 9d 01 2a, then 14-bit width and height (little endian): 1376 x 768
+  assert.deepEqual(imageSize(webp("VP8 ", [0, 0, 0, 0x9d, 0x01, 0x2a, 0x60, 0x05, 0x00, 0x03])), { width: 1376, height: 768, type: "webp" });
+  // VP8L: signature 2f, then width-1 (14 bits) and height-1 (14 bits) packed: 2048 x 1152
+  const w = 2047, h = 1151, bits = w | (h << 14);
+  assert.deepEqual(imageSize(webp("VP8L", [0x2f, bits & 255, (bits >> 8) & 255, (bits >> 16) & 255, (bits >> 24) & 255])), { width: 2048, height: 1152, type: "webp" });
+  // VP8X: flags (4 bytes), then width-1 and height-1 on 3 bytes each: 4096 x 2304
+  assert.deepEqual(imageSize(webp("VP8X", [0, 0, 0, 0, 0xff, 0x0f, 0x00, 0xff, 0x08, 0x00])), { width: 4096, height: 2304, type: "webp" });
+  assert.equal(imageSize(webp("ABCD", [])), null);
+});
+
 const SIZES = [
   { width: 1024, height: 1024 },
   { width: 1536, height: 1024 },
@@ -258,7 +276,7 @@ test("downsampleStrips keeps edges exactly where they belong, reading in strips"
   await assert.rejects(downsampleStrips(strip, 10, 10, 4, 20, 10), /only shrinks/);
 });
 
-test("keys: saved to secure storage and read back; Remove also clears a copy left in localStorage", async () => {
+test("keys: only in secure storage; a plain-text copy left in localStorage is moved there once, then erased", async () => {
   const Module = require("node:module");
   const secure = new Map();
   const local = new Map([["fulla.key.gemini", "old-local-copy"]]); // saved by a host without secure storage
@@ -270,13 +288,20 @@ test("keys: saved to secure storage and read back; Remove also clears a copy lef
   };
   try {
     const settings = require("../plugin/src/settings");
-    assert.equal(await settings.setKey("openrouter", "  sk-or-v1-abcd  "), "secure");
+    await settings.setKey("openrouter", "  sk-or-v1-abcd  ");
     assert.equal(await settings.getKey("openrouter"), "sk-or-v1-abcd");
+    assert.equal(local.has("fulla.key.openrouter"), false, "never written in plain text");
     assert.equal(await settings.getKey("gemini"), "old-local-copy");
+    assert.equal(secure.get("fulla.key.gemini"), "old-local-copy", "moved into secure storage");
+    assert.equal(local.has("fulla.key.gemini"), false, "the plain-text copy is erased");
+    // A plain-text copy next to a secure key: the secure one wins, the copy goes.
+    local.set("fulla.key.openrouter", "stale");
+    assert.equal(await settings.getKey("openrouter"), "sk-or-v1-abcd");
+    assert.equal(local.has("fulla.key.openrouter"), false);
     await settings.setKey("openrouter", "");
     await settings.setKey("gemini", "");
     assert.equal(await settings.getKey("openrouter"), "");
-    assert.equal(await settings.getKey("gemini"), "", "the old local copy is gone too");
+    assert.equal(await settings.getKey("gemini"), "");
   } finally {
     Module._load = origLoad;
     delete global.localStorage;

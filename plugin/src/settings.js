@@ -1,4 +1,4 @@
-// API keys in UXP secure storage (encrypted by the OS); everything else in localStorage.
+// API keys in UXP secure storage (encrypted by the OS), never in plain text; everything else in localStorage.
 
 const PREFS_KEY = "fulla.prefs.v1";
 
@@ -31,39 +31,46 @@ function bytesToString(v) {
   }
 }
 
+/**
+ * The saved key, or "". A plain-text copy left in localStorage by an early build is moved into
+ * secure storage once, then erased.
+ */
 async function getKey(providerId) {
+  const name = `fulla.key.${providerId}`;
   const s = secure();
+  if (!s) return "";
+  let v = "";
   try {
-    // Missing keys reject on older hosts and resolve null on Photoshop 26.10+.
-    if (s) {
-      const v = bytesToString(await s.getItem(`fulla.key.${providerId}`)).trim();
-      if (v) return v;
-    }
+    v = bytesToString(await s.getItem(name)).trim();
   } catch (_) {
-    /* fall through */
+    /* a missing key may reject instead of resolving null */
   }
-  return (localStorage.getItem(`fulla.key.${providerId}`) || "").trim();
+  const old = (localStorage.getItem(name) || "").trim();
+  if (old) {
+    if (!v) {
+      await s.setItem(name, old);
+      v = old;
+    }
+    localStorage.removeItem(name);
+  }
+  return v;
 }
 
+/** Save a key in secure storage, or remove it when `value` is empty. Never writes it in plain text. */
 async function setKey(providerId, value) {
+  const name = `fulla.key.${providerId}`;
   const v = (value || "").trim();
   const s = secure();
-  if (s) {
-    if (v) await s.setItem(`fulla.key.${providerId}`, v);
-    else {
-      try {
-        await s.removeItem(`fulla.key.${providerId}`);
-      } catch (_) {
-        /* older hosts reject when the key was never stored */
-      }
-      localStorage.removeItem(`fulla.key.${providerId}`); // a copy saved by a host without secure storage
+  if (!s) throw new Error("This Photoshop has no secure storage for keys. Update Photoshop and try again.");
+  localStorage.removeItem(name); // any plain-text copy from an early build
+  if (v) await s.setItem(name, v);
+  else {
+    try {
+      await s.removeItem(name);
+    } catch (_) {
+      /* removing a key that was never stored may reject */
     }
-    return "secure";
   }
-  // Older hosts without secure storage: keep it local to this machine's plugin data.
-  if (v) localStorage.setItem(`fulla.key.${providerId}`, v);
-  else localStorage.removeItem(`fulla.key.${providerId}`);
-  return "local";
 }
 
 function loadPrefs() {

@@ -124,13 +124,21 @@ async function runGeneration(o) {
     whenCancelled: o.whenCancelled,
   });
   checkCancel();
-  // A reply of the wrong shape is not the area (e.g. the whole photo came back): never paste it.
+  // Paste only replies Fulla can read as an image of the area's shape: a reply of the wrong shape is
+  // not the area (e.g. the whole photo came back), and unreadable bytes are not an image at all.
   const want = job.geo.target.width / job.geo.target.height;
-  const shaped = results.filter((r) => {
-    const s = imageSize(r.bytes);
-    return !s || !s.width || !s.height || Math.abs(Math.log(s.width / s.height / want)) < 0.15;
+  const sizes = results.map((r) => imageSize(r.bytes));
+  const shaped = results.filter((r, i) => {
+    const s = sizes[i];
+    return s && s.width > 0 && s.height > 0 && Math.abs(Math.log(s.width / s.height / want)) < 0.15;
   });
-  if (!shaped.length) throw new UserError("The model sent back a picture of the wrong shape (perhaps the whole photo). Nothing was changed: try again.");
+  if (!shaped.length) {
+    throw new UserError(
+      sizes.some((s) => s && s.width > 0)
+        ? "The model sent back a picture of the wrong shape (perhaps the whole photo). Nothing was changed: try again."
+        : "The model sent back something that isn't an image Fulla can read. Nothing was changed: try again."
+    );
+  }
   results.splice(0, results.length, ...shaped);
 
   progress("Placing the result");

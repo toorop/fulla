@@ -108,7 +108,8 @@ function classify(status, json, text) {
     }
     return new ProviderError("Gemini rate limit reached. Retrying shortly...", { status, code: e.status, retryable: true, retryAfterMs: delayS * 1000, detail: msg });
   }
-  if (status >= 500) return new ProviderError("Gemini is having trouble right now. Try again shortly.", { status, code: e.status, retryable: true });
+  // Retried only when the service was unavailable (nothing ran); after a 500 or 504 the image may have been made.
+  if (status >= 500) return new ProviderError("Gemini is having trouble right now. Try again shortly.", { status, code: e.status, retryable: status === 502 || status === 503, detail: msg });
   return new ProviderError(`Gemini: ${msg}`, { status, code: e.status || "" });
 }
 

@@ -22,7 +22,9 @@ const cancelledError = () => new ProviderError("Cancelled. Nothing was changed."
 
 /**
  * POST JSON and parse JSON. `classify(status, body)` turns an error response into a ProviderError.
- * Retries retryable errors up to `retries` times with exponential backoff + jitter.
+ * Retries retryable errors up to `retries` times with exponential backoff + jitter. Only refusals
+ * that are sure to have cost nothing are retryable (classify decides: rate limit, provider
+ * unavailable); a network failure is not retried, as the request may have gone through.
  * Once `cancelled()` is true no new request is sent (each one may be billed): it throws instead.
  * When `whenCancelled` resolves, the request in flight is dropped at once (its reply is ignored).
  * A request that takes longer than `timeoutMs` fails and is not retried: it may still be billed.
@@ -100,16 +102,11 @@ async function requestJson({ fetch, url, headers, body, classify, retries, host,
       ));
     } catch (e) {
       if (e instanceof ProviderError) throw e; // timeout or cancelled: never retried
-      const err = new ProviderError(`Can't reach ${host}. Check your internet connection.`, {
+      // Not retried either: the connection may have dropped after the provider took the request.
+      throw new ProviderError(`Can't reach ${host}. Check your internet connection.`, {
         code: "network",
-        retryable: true,
         detail: String((e && e.message) || e),
       });
-      if (attempt++ < retries) {
-        await pause(backoff(attempt));
-        continue;
-      }
-      throw err;
     }
     let json = null;
     try {

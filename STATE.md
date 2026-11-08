@@ -6,11 +6,28 @@
 
 ## Next action
 
-- **Resume here: end of step 2** (only that is left of step 2). (1) README brought up to date
-  for the new panel (prompt on top, model button, settings popup, thumbnails + Done, ≡ menu),
-  with one or two captures of the panel that Stéphane provides (panel only, no private photo: the
-  repo is public); (2) his full walk-through from a fresh start; (3) commit, push (ask). Then
-  propose step 3 (discuss first).
+- **Resume here: step 3, sub-step 3.1 under discussion** (the Auto resolution rule; no code
+  before Stéphane validates, one sub-step at a time). Validated 2026-11-08: Auto takes the
+  smallest model size that covers the whole crop (no 1.25× enlargement allowed any more), the
+  larger one when two cost the same, and **goes up to 4K above 2K** when the model offers it
+  (today it stops at 2K); beyond the model's largest size, the current "Large area" note. The
+  uploaded crop stays capped at 2048 px (`inputSize`) even for 4K outputs; sending it larger is
+  a research item for later. Nothing shown before the run: the card says the size afterwards
+  ("model · 4K · 12 s"); users who want a cap pick a size in the settings.
+- **3.1 coded (2026-11-08, not committed)**: `fitSize` (gemini, openrouter) takes the smallest
+  tier covering the crop on both sides; pipeline's Auto ceiling is `provider.autoMax || "4K"`
+  (OpenAI direct `autoMax: "2K"`, above 2560x1440 is experimental there); popup hint says it.
+  OpenRouter bills per token like Google, so Nano Banana 2.1 tiers differ in price; Pro already
+  has no 1K. `npm test` 63/63, package builds, free self-test 28/28 (2026-11-08, `only` list
+  without `geminiRaw`/`openaiRaw`; Stéphane saw the new Auto hint, so the new code ran).
+  **Left**: commit (ask), then a paid check on a real 24 MP photo, 4K vs 2K (ask).
+- Whole image as a scene reference (models taking several images): Stéphane wants it tested
+  (roadmap step 3). Ideas from a paid competitor plugin (prompt history and library, reference
+  images, rerun keeping results, 16/32-bit) are in his notes, not sorted yet.
+- A note listing what sets Fulla apart from Photoshop's Generative Fill (resolution, cost, BYOK,
+  models, local) now lives in his notes, for the website step.
+- Step 2 leftovers: README text done (2026-11-08, "Using Fulla" section), **not committed yet**
+  (ask). Panel captures moved to step 6 (website), his call. His full walk-through not done yet.
 - Generate tab as of `1bd710d` (agreed with Stéphane on 2026-11-07): prompt box at the top with
   a resize grip (`prefs.promptHeight`), one row under it: model button (provider `badge` OR/G/OA
   + model name, searchable menu), settings button (icons/sliders.svg) opening one popup
@@ -44,8 +61,10 @@
 
 ## Current step
 
-Step 2 (prompt box) in progress: 2.1 to 2.5 done (layout, run card, model button, settings
-popup, Adobe-like results); next the prompt wording and `prompts.js`. Step 1 left to test some day, not blocking:
+Step 3 (automatic resolution, then tone matching): 3.1, the Auto rule, under discussion since
+2026-11-08. Today's Auto (`fitSize` in each provider): smallest tier whose long side × 1.25
+covers the crop's long side, capped at 2K, so a tile may be enlarged up to 1.25× (more above
+2K). Step 2 code done. Step 1 left to test some day, not blocking:
 sign-up with a fresh OpenRouter account; a real OpenAI key (a Google key works since 2026-11-07).
 
 ## Roadmap (order agreed 2026-11-07, revised that evening; details and checkboxes in Stéphane's notes)

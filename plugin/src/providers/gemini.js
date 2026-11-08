@@ -39,8 +39,9 @@ function modelInfo(model) {
 }
 
 /**
- * Closest supported ratio, and a size tier: the smallest that covers the crop up to `maxTier`, or
- * exactly `maxTier` with { exact: true } (when the model offers it).
+ * Closest supported ratio, and a size tier: the smallest whose image covers the crop on both sides
+ * (the tile is never enlarged on placement) up to `maxTier`, or exactly `maxTier` with
+ * { exact: true } (when the model offers it). Above `maxTier`, the largest allowed tier.
  */
 function fitSize(model, w, h, maxTier = "2K", { exact = false } = {}) {
   const info = modelInfo(model);
@@ -56,11 +57,7 @@ function fitSize(model, w, h, maxTier = "2K", { exact = false } = {}) {
   const allowed = info.tiers.filter((t) => TIER_ORDER.indexOf(t) <= cap);
   const tiers = exact && info.tiers.includes(maxTier) ? [maxTier] : allowed.length ? allowed : [info.tiers[0]];
   const [bw, bh] = RATIOS_1K[ratio];
-  const longest = Math.max(w, h);
-  let tier = tiers[tiers.length - 1];
-  for (const t of tiers) {
-    if (Math.max(bw, bh) * TIER_MULT[t] * 1.25 >= longest) { tier = t; break; }
-  }
+  const tier = tiers.find((t) => bw * TIER_MULT[t] >= w && bh * TIER_MULT[t] >= h) || tiers[tiers.length - 1];
   return { width: bw * TIER_MULT[tier], height: bh * TIER_MULT[tier], aspectRatio: ratio, imageSize: tier };
 }
 

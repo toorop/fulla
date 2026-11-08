@@ -403,6 +403,14 @@ function openMenu(chip, items, onPick, searchHint) {
 // closed by a click elsewhere), with a row of buttons per setting the model in use offers a real
 // choice for. It stays open while choosing.
 
+/** What Auto does, under the Resolution row: it goes up to 4K unless the provider caps Auto lower. */
+function autoHint(provider, sizes) {
+  const max = provider.autoMax || "4K";
+  const top = sizes.includes(max) ? max : sizes[sizes.length - 1];
+  const slow = top === "4K" ? " (slower and costs more)" : "";
+  return `Auto picks the smallest size that covers your selection, up to ${top}${slow}. Pick a size to always use it.`;
+}
+
 /** The popup's rows, in order; a setting the model has no choice for is left out. */
 function optionRows() {
   const offer = currentOffer();
@@ -415,7 +423,7 @@ function optionRows() {
       values: [{ id: "auto", label: "Auto" }, ...offer.resolutions.map((r) => ({ id: r, label: r }))],
       current: currentResolution(),
       set: (r) => (prefs.resolution = r),
-      hint: `Auto picks the size from your selection.${offer.resolutions.includes("4K") ? " 4K is slower and costs more." : ""}`,
+      hint: autoHint(getProvider(prefs.provider), offer.resolutions),
     });
   }
   rows.push({

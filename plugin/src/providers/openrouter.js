@@ -41,8 +41,9 @@ const ratioValue = (r) => {
 };
 
 /**
- * Closest supported ratio, and a size tier: the smallest that covers the crop up to `maxTier`, or
- * exactly `maxTier` with { exact: true } (when the model offers it). OpenRouter picks the exact
+ * Closest supported ratio, and a size tier: the smallest whose image covers the crop on both sides
+ * (the tile is never enlarged on placement) up to `maxTier`, or exactly `maxTier` with
+ * { exact: true } (when the model offers it). Above `maxTier`, the largest allowed tier. OpenRouter picks the exact
  * pixels per provider, so width/height here are the expected size; placement fits whatever comes
  * back onto the crop.
  */
@@ -66,15 +67,8 @@ function fitSize(model, w, h, maxTier = "2K", { exact = false } = {}) {
     const area = TIER_SIDE[t] * TIER_SIDE[t];
     return { width: Math.round(Math.sqrt(area * k) / 16) * 16, height: Math.round(Math.sqrt(area / k) / 16) * 16 };
   };
-  const longest = Math.max(w, h);
-  let tier = tiers[tiers.length - 1];
-  for (const t of tiers) {
-    const s = size(t);
-    if (Math.max(s.width, s.height) * 1.25 >= longest) {
-      tier = t;
-      break;
-    }
-  }
+  const covers = (t) => size(t).width >= w && size(t).height >= h;
+  const tier = tiers.find(covers) || tiers[tiers.length - 1];
   return { ...size(tier), aspectRatio: ratio, imageSize: tier };
 }
 

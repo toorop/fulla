@@ -55,6 +55,7 @@ function mockProvider({ base = openai, colors = [null, [0, 255, 0], [255, 255, 0
     name: "Mock",
     requests: [],
     fitSize: base.fitSize,
+    autoMax: base.autoMax,
     async generate(req) {
       m.requests.push(req);
       if (garbage) return [{ bytes: Uint8Array.of(1, 2, 3, 4, 5), mime: "image/png" }];

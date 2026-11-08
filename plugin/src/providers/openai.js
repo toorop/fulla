@@ -161,6 +161,8 @@ module.exports = {
   qualities: QUALITIES,
   fitSize: (model, w, h, tier, opts) => fitSize(w, h, tier, opts),
   resolutions: () => ["1K", "2K", "4K"],
+  // Auto stays within 2K: OpenAI marks sizes above 2560x1440 as experimental. 4K can still be chosen.
+  autoMax: "2K",
   generate,
   checkKey,
   // exposed for tests

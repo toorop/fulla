@@ -1,6 +1,6 @@
 # Fulla
 
-Photoshop UXP plugin: generative fill with the user's own AI provider (OpenRouter, OpenAI, Gemini; local models planned). MIT, open source. Maintainer: Stéphane (toorop). Started on 2026-11-06 from OpenFill by Daman Reddy (MIT, github.com/damanjz/openfill); no upstream tracking, the projects have parted. Spec: `docs/spec.md`.
+Photoshop UXP plugin: generative fill with the user's own AI provider (OpenRouter, OpenAI, Gemini; local models on hold since 2026-11-08). MIT, open source. Maintainer: Stéphane (toorop). Started on 2026-11-06 from OpenFill by Daman Reddy (MIT, github.com/damanjz/openfill); no upstream tracking, the projects have parted. Spec: `docs/spec.md`.
 
 ## Working with Stéphane
 - Start every session by reading `STATE.md` and resume from its `## Next action`.
@@ -24,6 +24,7 @@ Photoshop UXP plugin: generative fill with the user's own AI provider (OpenRoute
 - UXP `require` does not resolve a folder to `index.js`.
 - batchPlay returns `{_obj:"error"}` instead of throwing; errors thrown inside executeAsModal lose their message.
 - Imaging reads: scaled reads (`targetSize` smaller than source) come back shifted; selection reads that miss the selection fail with "Invalid Source Bounds". Fulla reads full resolution in strips (max 4 MP each) and scales itself.
+- Network to the local machine (28.0.1, 2026-11-08): only `http://localhost` (no port) in `network.domains` works, for any port, IPv4 or IPv6 server; `127.0.0.1` is refused with or without port ("Manifest entry not found"). A fetch to a port where nothing listens hangs: use a timeout.
 - sp-picker locks if its menu is rebuilt while closing: pickers are replaced, never edited (`main.js`).
 
 ## Rules

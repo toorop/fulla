@@ -13,7 +13,21 @@ Fulla brings generative fill to Photoshop 2026 (27.11 or newer), powered by your
 2. **Generate.** It sends that crop and a mask to the provider you picked, using your key. Photoshop stays free to use meanwhile.
 3. **Place.** The result is scaled back exactly onto the crop, placed as a smart object and clipped to your exact selection with a soft edge, all in one undo step. If anything fails, the document is left as it was.
 
-Select an area and describe what to add or change there, or leave the prompt empty: Fulla then removes what is selected, or fills an empty area from its surroundings. To extend a picture, enlarge the canvas in Photoshop, select the new area with a little overlap, and generate with an empty prompt. Each run makes one layer, masked by your selection. Ask for 1 to 4 variations and click a thumbnail to switch the layer between them; Done clears them once you have chosen. The panel shows the estimated cost of each run.
+## Using Fulla
+
+Open **Plugins > Fulla**. The **Generate** tab works like Photoshop's own Generative Fill:
+
+1. **Select** an area in your image.
+2. **Describe** in the box at the top what to add or change there ("a small boat tied to the pier", "make her smile"). Leave it empty to remove what is selected, or to fill an empty area from its surroundings. Drag the grip under the box to make it taller.
+3. **Pick a model** with the button under the box. It shows the provider (OR for OpenRouter, G for Google, OA for OpenAI) and the model, and opens a searchable list of the models of every provider you connected. Nano Banana 2.1 is the recommended one.
+4. **Settings**, if you need them: the sliders button opens a popup with what the current model lets you choose. **Resolution**: Auto (the smallest size that covers your selection, so the result is never stretched; up to 4K, 2K for OpenAI models) or a size of your choice; **Variations**: 1 to 4; **Quality**, for OpenAI models. A setting the model doesn't offer isn't shown.
+5. Click **Generate**. A card under the box shows the run with a moving bar and the seconds; Photoshop stays free to use, and the button turns into **Cancel**.
+
+Each run makes one layer, named after your prompt and masked by your selection. With several variations, thumbnails appear in the card: click one to put it in the layer (one undo step). The card also shows the model, size and time, and the cost of the run and of the session (since the panel was opened). Click **Done** once you have chosen: the card, thumbnails and prompt are cleared, the layer stays.
+
+To extend a picture, enlarge the canvas in Photoshop, select the new area with a little overlap, and generate with an empty prompt.
+
+The **≡** menu at the top right of the panel opens this documentation, a bug report, a request for a model or provider, and the version (About Fulla).
 
 ### Colours
 
@@ -90,6 +104,9 @@ plugin/
 └── src/
     ├── pipeline.js      # read, generate, place; host-free, tested with fakes
     ├── photoshop.js     # every Photoshop call
+    ├── prompts.js       # the instruction sent to the model, with or without a prompt
+    ├── settings.js      # keys (secure storage) and panel settings
+    ├── menu.js, help.js # search in the floating menus; the ≡ menu's links
     ├── providers/       # one file per provider: openrouter.js, openai.js, gemini.js
     ├── connect.js       # OpenRouter connect (OAuth PKCE, headless), with sha256.js
     ├── cost.js          # estimated cost from the tokens each reply reports

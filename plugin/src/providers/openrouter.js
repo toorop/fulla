@@ -137,6 +137,7 @@ async function request(req, body) {
     classify,
     host: HOST,
     cancelled: req.cancelled,
+    whenCancelled: req.whenCancelled,
   });
   // Reported before the image check: a reply without an image may still be billed.
   const usage = usageFrom(json);

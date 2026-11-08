@@ -81,6 +81,7 @@ async function read(ps, doc, fit, sceneRef) {
  * @param {boolean} [o.sceneRef]  also send the whole photo, reduced, as a scene reference (roadmap 3.3)
  * @param {(label: string) => void} [o.progress]
  * @param {() => boolean} [o.cancelled]
+ * @param {Promise} [o.whenCancelled]  resolves on Cancel: the request in flight is dropped at once
  * @param {(usage: object) => void} [o.onUsage]  token counts of each provider reply, even if the run then fails
  */
 async function runGeneration(o) {
@@ -120,6 +121,7 @@ async function runGeneration(o) {
     quality: o.quality,
     onUsage: o.onUsage,
     cancelled,
+    whenCancelled: o.whenCancelled,
   });
   checkCancel();
   // A reply of the wrong shape is not the area (e.g. the whole photo came back): never paste it.

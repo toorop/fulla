@@ -828,8 +828,8 @@ const SCENARIOS = {
 
   async panelRun() {
     // The run card, driven from the panel. Free: every request goes to a fake fetch. First one that
-    // answers nothing until Cancel: card, stage, seconds and bar move, prompt and chip locked, Cancel,
-    // then "Cancelled". Then one that answers with two images: one layer, two thumbnails, a click
+    // never answers, started by a double click (one run, the second click is not a Cancel): card,
+    // stage, seconds and bar move, prompt and chip locked, then Cancel ends it at once, "Cancelled". Then one that answers with two images: one layer, two thumbnails, a click
     // swaps the variation, Done clears the card and the prompt. Then an error card (no selection).
     const $ = (id) => document.getElementById(id);
     const tick = (ms = 150) => new Promise((r) => setTimeout(r, ms));
@@ -856,10 +856,15 @@ const SCENARIOS = {
       return $("generate").textContent === "Generate";
     };
     const info = {};
+    const nNow = Math.max(1, JSON.parse(localStorage.getItem("fulla.prefs.v1") || "{}").n || 1);
     try {
       $("generate").dispatchEvent(new Event("click"));
+      $("generate").dispatchEvent(new Event("click")); // a double click
       for (let i = 0; i < 50 && !calls; i++) await tick(200);
       expect(calls > 0, "the run never reached the provider");
+      await tick(800);
+      expect(calls <= nNow, `a double click sent ${calls} requests for ${nNow} variation(s): two runs`);
+      expect(!/Cancelling/.test($("runStage").textContent), "the second click of a double click cancelled the run");
       expect(!$("runCard").hidden && $("idleHint").hidden && !$("runProgress").hidden, "running: card or progress not shown");
       expect(/^Generating with /.test($("runStage").textContent) && !$("runStage").textContent.includes($("runTitle").textContent), `running: title "${$("runTitle").textContent}", stage "${$("runStage").textContent}" (provider on top, model in the stage)`);
       expect($("generate").textContent === "Cancel", `running: button "${$("generate").textContent}"`);
@@ -873,9 +878,8 @@ const SCENARIOS = {
       info.running = `${$("runTitle").textContent} | ${$("runStage").textContent} ${$("runTime").textContent}`;
       $("generate").dispatchEvent(new Event("click"));
       await tick();
-      expect(/Cancelling/.test($("runStage").textContent), `cancelling: stage "${$("runStage").textContent}"`);
-      release();
-      expect(await idle(30), "still running 30 s after Cancel");
+      // The request never answers: Cancel must not wait for it.
+      expect(await idle(3), "still running 3 s after Cancel (it waited for the request)");
       expect($("status").textContent === "Cancelled. Nothing was changed." && !/error/.test($("status").className), `cancelled: "${$("status").textContent}"`);
       expect($("runProgress").hidden && !$("prompt").hasAttribute("disabled"), "cancelled: progress shown or prompt still locked");
       expect(historyCount(doc) === h0, "cancelled: the document changed");

@@ -490,6 +490,35 @@ test("after Cancel no new request is sent: a failed request is not retried (each
   assert.equal(fetch.calls.length, 1);
 });
 
+test("Cancel drops the request in flight at once, also during a retry wait; a request past its deadline fails, never retried", async () => {
+  const { postJson, getJson, TIMEOUT_MS } = require("../plugin/src/providers/http");
+  const classify = (status) => new (require("../plugin/src/providers/http").ProviderError)("busy", { status, retryable: true });
+  const hang = fakeFetch(() => new Promise(() => {})); // a connection that never answers
+  const later = (ms) => new Promise((r) => setTimeout(r, ms));
+  const quick = async (p, re) => {
+    const t0 = Date.now();
+    await assert.rejects(p, re);
+    assert.ok(Date.now() - t0 < 1000, "should end at once");
+  };
+
+  // Cancel while the request is out: the run ends now, the request is aborted, nothing is retried.
+  await quick(runGeneration({ ps: fakePs(), provider: openrouter, fetch: hang, apiKey: "k", model: "qwen/qwen-image-3", prompt: "a red door", whenCancelled: later(20) }), /Cancelled/);
+  assert.equal(hang.calls.length, 1);
+  assert.equal(hang.calls[0].init.signal.aborted, true, "the dropped request is aborted");
+
+  // Cancel during the wait before a retry (Retry-After: 30 s): no second request.
+  const busy = fakeFetch(() => ({ status: 503, json: { error: { message: "busy" } }, headers: { "retry-after": "30" } }));
+  await quick(postJson({ fetch: busy, url: "https://x/y", headers: {}, body: {}, classify, host: "x", whenCancelled: later(20) }), (e) => e.code === "cancelled");
+  assert.equal(busy.calls.length, 1);
+
+  // Past the deadline: a plain message, one request only (it may still be billed).
+  const slow = fakeFetch(() => new Promise(() => {}));
+  await quick(postJson({ fetch: slow, url: "https://x/y", headers: {}, body: {}, classify, host: "openrouter.ai", timeoutMs: 30 }), (e) => e.code === "timeout" && /openrouter\.ai didn't answer within/.test(e.message));
+  assert.equal(slow.calls.length, 1);
+  await quick(getJson({ fetch: slow, url: "https://x/k", headers: {}, classify, host: "openrouter.ai", timeoutMs: 30 }), (e) => e.code === "timeout" && /Check your internet connection/.test(e.message));
+  assert.deepEqual(TIMEOUT_MS, { POST: 300000, GET: 20000 });
+});
+
 test("sizes: Auto takes the smallest size that covers the area, at least 2K, up to 4K (2K at OpenAI), a chosen size is used as is, and only real choices are offered", async () => {
   // What the options sheet offers: same-price sizes dropped, fixed-size models offer nothing to choose.
   assert.deepEqual(openrouter.resolutions("google/gemini-nano-banana-2.1"), ["1K", "2K", "4K"]);

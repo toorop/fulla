@@ -198,6 +198,7 @@ async function generateOne(req, text, imgB64, maskB64, size, sceneB64) {
       classify,
       host: HOST,
       cancelled: req.cancelled,
+      whenCancelled: req.whenCancelled,
     });
   let json;
   try {

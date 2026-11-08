@@ -52,6 +52,7 @@ async function exchangeCode({ fetch, code, verifier }) {
     classify,
     retries: 0,
     host: HOST,
+    timeoutMs: 30 * 1000, // the user is waiting on this exchange
   });
   if (!json.key) throw new ProviderError("OpenRouter sent no key. Try connecting again.", { code: "no_key" });
   return json.key;

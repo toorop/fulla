@@ -239,93 +239,110 @@ function watchUntilReady(code) {
 // The network used by generations; the self-test swaps it for a fake so its runs are free.
 const generationNet = { fetch: (url, init) => fetch(url, init) };
 
+// A click on Cancel this soon after Generate is the second half of a double click: ignored.
+const CANCEL_GRACE_MS = 500;
+let runStartedAt = 0;
+// Resolves the running generation's `whenCancelled`: the request in flight is dropped at once.
+let cancelRun = null;
+
 async function generate() {
   if (busy) {
-    // While running, the button is Cancel. The request already sent can't be recalled,
-    // but its result is thrown away and the document is left untouched.
+    if (Date.now() - runStartedAt < CANCEL_GRACE_MS) return;
+    // While running, the button is Cancel. The request already sent can't be recalled: it is
+    // dropped, its result thrown away, and the document is left untouched.
     cancelRequested = true;
     $("runStage").textContent = "Cancelling... the document will not be changed.";
+    if (cancelRun) cancelRun();
     return;
   }
+  // Lock before anything is awaited: a second click in that gap would start another (billed) run.
+  cancelRequested = false;
+  runStartedAt = Date.now();
   const provider = getProvider(prefs.provider);
   const model = currentModel();
   resetCard(provider.name); // the model is named in the stage line: "Generating with Nano Banana 2.1"
-  const apiKey = await settings.getKey(provider.id);
-  if (!apiKey) {
-    const msg = `Add your ${provider.name} API key first.`;
-    setStatus(msg, "error");
-    showTab("providers");
-    return providerMessage(provider, msg, "error");
-  }
-  const prompt = $("prompt").value || "";
-  if (prompt.length > 4000) return setStatus("Prompt is too long (4,000 characters max).", "error");
-
-  cancelRequested = false;
-  stopReadyWatch();
   setBusy(true);
-  animateBar(true);
-  const started = Date.now();
-  const seconds = () => Math.round((Date.now() - started) / 1000);
-  let stage = "Starting";
-  const tick = () => {
-    if (!cancelRequested) $("runStage").textContent = `${stage}...`;
-    $("runTime").textContent = `${seconds()} s`;
-  };
-  tick();
-  const timer = setInterval(tick, 1000);
-  const runSpend = newSpend();
-  const onUsage = (usage) => {
-    const cost = estimateCost(model, usage);
-    addSpend(runSpend, usage, cost);
-    addSpend(sessionSpend, usage, cost);
-    renderCost(runSpend);
-  };
+  let timer = null;
   try {
-    const out = await runGeneration({
-      ps,
-      provider,
-      fetch: (url, init) => generationNet.fetch(url, init),
-      apiKey,
-      model,
-      modelName: modelLabel(provider, model),
-      prompt,
-      n: prefs.n,
-      quality: prefs.quality,
-      resolution: currentResolution(),
-      // The whole photo, reduced, goes along when the area is small (roadmap 3.3): cheap, never
-      // seen to hurt, helps the model judge scale when the area has no landmark.
-      sceneRef: true,
-      progress: (label) => {
-        stage = label;
-        tick();
-      },
-      cancelled: () => cancelRequested,
-      onUsage,
-    });
-    animateBar(false);
-    lastRun = { placed: out.placed, results: out.results, active: 0 };
-    // The prompt is still in the box above, so the card names the model, size and time instead.
-    const size = out.target.imageSize || `${out.target.width}×${out.target.height}`;
-    $("runTitle").textContent = `${modelLabel(provider, model)} · ${size} · ${seconds()} s`;
-    // Done clears the thumbnails once one is chosen; with a single result there is nothing to choose.
-    $("runDone").hidden = out.results.length < 2;
-    renderThumbs(out.results);
-    const notes = [];
-    if (out.results.length < prefs.n) notes.push(`${prefs.n - out.results.length} variation(s) were blocked or failed.`);
-    if (out.softness > 1.6) notes.push(`Large area: enlarged ${out.softness.toFixed(1)}x, may look soft. Try a higher resolution or a smaller selection.`);
-    setStatus(notes.join(" "));
-  } catch (e) {
-    console.error(e);
-    animateBar(false);
-    // Once Cancel is clicked, whatever ends the run (often the dropped request) means "cancelled".
-    if (cancelRequested) setStatus("Cancelled. Nothing was changed.");
-    else {
-      const known = e instanceof UserError || e.name === "ProviderError" || e instanceof ps.HostError;
-      setStatus(known ? e.message : `Something went wrong: ${e.message || e}`, "error");
-      if (e.code === "noSelection" || e.code === "noDocument") watchUntilReady(e.code);
+    const apiKey = await settings.getKey(provider.id);
+    if (!apiKey) {
+      const msg = `Add your ${provider.name} API key first.`;
+      setStatus(msg, "error");
+      showTab("providers");
+      return providerMessage(provider, msg, "error");
+    }
+    const prompt = $("prompt").value || "";
+    if (prompt.length > 4000) return setStatus("Prompt is too long (4,000 characters max).", "error");
+    if (cancelRequested) return setStatus("Cancelled. Nothing was changed.");
+
+    stopReadyWatch();
+    animateBar(true);
+    const started = Date.now();
+    const seconds = () => Math.round((Date.now() - started) / 1000);
+    let stage = "Starting";
+    const tick = () => {
+      if (!cancelRequested) $("runStage").textContent = `${stage}...`;
+      $("runTime").textContent = `${seconds()} s`;
+    };
+    tick();
+    timer = setInterval(tick, 1000);
+    const runSpend = newSpend();
+    const onUsage = (usage) => {
+      const cost = estimateCost(model, usage);
+      addSpend(runSpend, usage, cost);
+      addSpend(sessionSpend, usage, cost);
+      renderCost(runSpend);
+    };
+    const whenCancelled = new Promise((resolve) => (cancelRun = resolve));
+    try {
+      const out = await runGeneration({
+        ps,
+        provider,
+        fetch: (url, init) => generationNet.fetch(url, init),
+        apiKey,
+        model,
+        modelName: modelLabel(provider, model),
+        prompt,
+        n: prefs.n,
+        quality: prefs.quality,
+        resolution: currentResolution(),
+        // The whole photo, reduced, goes along when the area is small (roadmap 3.3): cheap, never
+        // seen to hurt, helps the model judge scale when the area has no landmark.
+        sceneRef: true,
+        progress: (label) => {
+          stage = label;
+          tick();
+        },
+        cancelled: () => cancelRequested,
+        whenCancelled,
+        onUsage,
+      });
+      animateBar(false);
+      lastRun = { placed: out.placed, results: out.results, active: 0 };
+      // The prompt is still in the box above, so the card names the model, size and time instead.
+      const size = out.target.imageSize || `${out.target.width}×${out.target.height}`;
+      $("runTitle").textContent = `${modelLabel(provider, model)} · ${size} · ${seconds()} s`;
+      // Done clears the thumbnails once one is chosen; with a single result there is nothing to choose.
+      $("runDone").hidden = out.results.length < 2;
+      renderThumbs(out.results);
+      const notes = [];
+      if (out.results.length < prefs.n) notes.push(`${prefs.n - out.results.length} variation(s) were blocked or failed.`);
+      if (out.softness > 1.6) notes.push(`Large area: enlarged ${out.softness.toFixed(1)}x, may look soft. Try a higher resolution or a smaller selection.`);
+      setStatus(notes.join(" "));
+    } catch (e) {
+      console.error(e);
+      animateBar(false);
+      // Once Cancel is clicked, whatever ends the run (often the dropped request) means "cancelled".
+      if (cancelRequested) setStatus("Cancelled. Nothing was changed.");
+      else {
+        const known = e instanceof UserError || e.name === "ProviderError" || e instanceof ps.HostError;
+        setStatus(known ? e.message : `Something went wrong: ${e.message || e}`, "error");
+        if (e.code === "noSelection" || e.code === "noDocument") watchUntilReady(e.code);
+      }
     }
   } finally {
-    clearInterval(timer);
+    cancelRun = null;
+    if (timer) clearInterval(timer);
     setBusy(false);
   }
 }

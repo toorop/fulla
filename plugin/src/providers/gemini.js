@@ -4,6 +4,7 @@
 const { toBase64, fromBase64 } = require("../bytes");
 const { encodePng } = require("../png");
 const { binarize } = require("../image");
+const { sceneNote } = require("../prompts");
 const { postJson, getJson, ProviderError } = require("./http");
 
 const HOST = "generativelanguage.googleapis.com";
@@ -66,9 +67,11 @@ function fitSize(model, w, h, maxTier = "2K", { exact = false, minTier = null } 
   return { width: bw * TIER_MULT[tier], height: bh * TIER_MULT[tier], aspectRatio: ratio, imageSize: tier };
 }
 
-function promptFor(task) {
+function promptFor(task, scene) {
   return (
-    "You are given two images of the same size. Image 1 is a picture. Image 2 is a mask: white marks the area to change, black marks the area to keep. " +
+    (scene ? "You are given three images; images 1 and 2 have the same size. " : "You are given two images of the same size. ") +
+    "Image 1 is a picture. Image 2 is a mask: white marks the area to change, black marks the area to keep. " +
+    (scene ? sceneNote("Image 3") : "") +
     task +
     " Change only the white area of image 1. Keep every black area identical, with the same framing, size, perspective and lighting. " +
     "Return the full edited image 1 only: no mask, borders, text or watermarks."
@@ -161,7 +164,7 @@ function usageFrom(json) {
 // Which config field the API accepted last time, per model ("responseFormat" or "imageConfig").
 const configStyle = {};
 
-function buildBody(text, imgB64, maskB64, size, style) {
+function buildBody(text, imgB64, maskB64, size, style, sceneB64) {
   const image = { aspectRatio: size.aspectRatio, imageSize: size.imageSize };
   const generationConfig = { responseModalities: ["IMAGE"] };
   if (style === "imageConfig") generationConfig.imageConfig = image;
@@ -174,6 +177,7 @@ function buildBody(text, imgB64, maskB64, size, style) {
           { text },
           { inline_data: { mime_type: "image/png", data: imgB64 } },
           { inline_data: { mime_type: "image/png", data: maskB64 } },
+          ...(sceneB64 ? [{ inline_data: { mime_type: "image/png", data: sceneB64 } }] : []),
         ],
       },
     ],
@@ -181,7 +185,7 @@ function buildBody(text, imgB64, maskB64, size, style) {
   };
 }
 
-async function generateOne(req, text, imgB64, maskB64, size) {
+async function generateOne(req, text, imgB64, maskB64, size, sceneB64) {
   // imageConfig {aspectRatio: "16:9", imageSize: "2K"} is what the API accepts (verified 2026-10-12);
   // responseFormat.image wants enum values instead, so it is only a fallback.
   const style = configStyle[req.model] || "imageConfig";
@@ -190,7 +194,7 @@ async function generateOne(req, text, imgB64, maskB64, size) {
       fetch: req.fetch,
       url: urlFor(req.model),
       headers: { "x-goog-api-key": req.apiKey },
-      body: buildBody(text, imgB64, maskB64, size, s),
+      body: buildBody(text, imgB64, maskB64, size, s, sceneB64),
       classify,
       host: HOST,
       cancelled: req.cancelled,
@@ -226,9 +230,10 @@ async function generate(req) {
   const imgB64 = toBase64(encodePng(req.image.rgb, width, height, 3));
   const maskB64 = toBase64(encodePng(binarize(req.mask), width, height, 1));
   const size = req.target.aspectRatio ? req.target : fitSize(req.model, req.target.width, req.target.height, "2K");
-  const text = promptFor(req.task);
+  const sceneB64 = req.scene ? toBase64(encodePng(req.scene.rgb, req.scene.width, req.scene.height, 3)) : null;
+  const text = promptFor(req.task, !!sceneB64);
   const n = Math.max(1, Math.min(4, req.n || 1));
-  const settled = await Promise.allSettled(Array.from({ length: n }, () => generateOne(req, text, imgB64, maskB64, size)));
+  const settled = await Promise.allSettled(Array.from({ length: n }, () => generateOne(req, text, imgB64, maskB64, size, sceneB64)));
   const ok = settled.filter((s) => s.status === "fulfilled").map((s) => s.value);
   if (!ok.length) throw settled[0].reason;
   return ok;

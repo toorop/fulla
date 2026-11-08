@@ -5,6 +5,7 @@
 const { toBase64, fromBase64 } = require("../bytes");
 const { encodePng } = require("../png");
 const { binarize } = require("../image");
+const { sceneNote } = require("../prompts");
 const { postJson, getJson, ProviderError } = require("./http");
 
 const HOST = "openrouter.ai";
@@ -77,9 +78,11 @@ function fitSize(model, w, h, maxTier = "2K", { exact = false, minTier = null } 
   return { ...size(tier), aspectRatio: ratio, imageSize: tier };
 }
 
-function promptFor(task) {
+function promptFor(task, scene) {
   return (
-    "You are given two images of the same size. Image 1 is a picture. Image 2 is a mask: white marks the area to change, black marks the area to keep. " +
+    (scene ? "You are given three images; images 1 and 2 have the same size. " : "You are given two images of the same size. ") +
+    "Image 1 is a picture. Image 2 is a mask: white marks the area to change, black marks the area to keep. " +
+    (scene ? sceneNote("Image 3") : "") +
     task +
     " Change only the white area of image 1. Keep every black area identical, with the same framing, size, perspective and lighting. " +
     "Return the full edited image 1 only: no mask, borders, text or watermarks."
@@ -171,10 +174,12 @@ async function generate(req) {
   const size = req.target.aspectRatio ? req.target : fitSize(req.model, req.target.width, req.target.height, "2K");
   const n = Math.max(1, Math.min(4, req.n || 1));
   const dataUrl = (png) => ({ type: "image_url", image_url: { url: `data:image/png;base64,${toBase64(png)}` } });
+  const refs = [dataUrl(encodePng(req.image.rgb, width, height, 3)), dataUrl(encodePng(binarize(req.mask), width, height, 1))];
+  if (req.scene) refs.push(dataUrl(encodePng(req.scene.rgb, req.scene.width, req.scene.height, 3)));
   const body = (count) => ({
     model: req.model,
-    prompt: promptFor(req.task),
-    input_references: [dataUrl(encodePng(req.image.rgb, width, height, 3)), dataUrl(encodePng(binarize(req.mask), width, height, 1))],
+    prompt: promptFor(req.task, !!req.scene),
+    input_references: refs,
     ...(info.noResolution ? {} : { resolution: size.imageSize }),
     aspect_ratio: size.aspectRatio,
     ...(info.png ? { output_format: "png" } : {}),

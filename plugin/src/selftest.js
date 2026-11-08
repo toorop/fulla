@@ -688,6 +688,19 @@ const SCENARIOS = {
     const rect = (id) => $(id).getBoundingClientRect();
     const span = (b) => `${Math.round(b.top)}..${Math.round(b.bottom)}`;
     await click($("tab-generate"));
+    // A pasted prompt: the hint goes away (UXP does not repaint it), and comes back once emptied.
+    const hint = $("prompt").getAttribute("placeholder");
+    const v0 = $("prompt").value;
+    $("prompt").value = "pasted prompt";
+    $("prompt").dispatchEvent(new Event("paste"));
+    await tick();
+    expect($("prompt").getAttribute("placeholder") === "", `hint still set after a paste: "${$("prompt").getAttribute("placeholder")}"`);
+    $("prompt").value = "";
+    $("prompt").dispatchEvent(new Event("input"));
+    await tick();
+    expect(hint && $("prompt").getAttribute("placeholder") === hint, "hint not back once the prompt is empty");
+    $("prompt").value = v0;
+    $("prompt").dispatchEvent(new Event("input"));
     const app = rect("app");
     const pageTop = rect("page-generate").top;
     const pinned = () => Math.abs(rect("promptBox").top - pageTop) <= 2;

@@ -203,6 +203,7 @@ function finishRun() {
   $("runCard").hidden = true;
   $("thumbs").innerHTML = "";
   $("prompt").value = "";
+  syncPromptHint();
   renderIdle();
 }
 
@@ -291,6 +292,9 @@ async function generate() {
       n: prefs.n,
       quality: prefs.quality,
       resolution: currentResolution(),
+      // The whole photo, reduced, goes along when the area is small (roadmap 3.3): cheap, never
+      // seen to hurt, helps the model judge scale when the area has no landmark.
+      sceneRef: true,
       progress: (label) => {
         stage = label;
         tick();
@@ -484,6 +488,25 @@ function toggleSettings() {
   menuChip = chip;
 }
 
+// ---------- prompt hint ----------
+// UXP's text area keeps drawing its placeholder over a pasted prompt (no repaint on paste), so the
+// placeholder is removed while there is text and put back when the box is empty.
+
+let promptHint = "";
+
+function syncPromptHint() {
+  const area = $("prompt");
+  const want = area.value ? "" : promptHint;
+  if (area.getAttribute("placeholder") !== want) area.setAttribute("placeholder", want);
+}
+
+function bindPromptHint() {
+  const area = $("prompt");
+  promptHint = area.getAttribute("placeholder") || "";
+  // The pasted text is in the box only after the paste event: check again a moment later.
+  for (const ev of ["input", "change", "keyup", "paste", "focus", "blur"]) area.addEventListener(ev, () => (syncPromptHint(), setTimeout(syncPromptHint, 50)));
+}
+
 // ---------- prompt height ----------
 // The handle under the prompt drags its height (40 to 400 px); the height is remembered.
 
@@ -546,6 +569,7 @@ function bind() {
   $("optionsChip").addEventListener("click", toggleSettings);
   $("runDone").addEventListener("click", finishRun);
   bindGrip();
+  bindPromptHint();
   // A click anywhere else in the panel closes the menu (the chip toggles it itself).
   $("app").addEventListener("click", (e) => {
     const m = $("menu");

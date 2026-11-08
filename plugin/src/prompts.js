@@ -12,4 +12,12 @@ function taskFor(userPrompt) {
     : "Fill the area to change so it continues the surrounding image seamlessly: if something is there, remove it and rebuild what was behind it; if the area is empty, extend the scene into it. Do not add new objects, people, text or logos.";
 }
 
-module.exports = { taskFor };
+/**
+ * When the whole photograph goes along (reduced) so the model can judge scale, light and perspective
+ * (roadmap 3.3). `which` names it: "Image 3", or "The second image" at OpenAI.
+ */
+function sceneNote(which) {
+  return `${which} is the whole photograph, reduced, showing where this area sits: use it only to judge scale, light and perspective. Do not edit it or return it. `;
+}
+
+module.exports = { taskFor, sceneNote };

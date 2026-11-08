@@ -12,6 +12,8 @@ const { runGeneration, layerName, UserError } = require("../plugin/src/pipeline"
 const { taskFor } = require("../plugin/src/prompts");
 
 const tinyPng = (w = 4, h = 4) => encodePng(new Uint8Array(w * h * 3).fill(90), w, h, 3);
+/** A small reply with the shape asked for (the pipeline refuses replies of the wrong shape). */
+const tilePng = (t) => tinyPng(64, Math.max(1, Math.round((64 * t.height) / t.width)));
 
 function fakeFetch(handler) {
   const calls = [];
@@ -314,7 +316,7 @@ function fakePs({ doc = { id: 1, width: 4000, height: 3000, resolution: 300 }, s
 const fakeProvider = (out = 2) => ({
   name: "Fake",
   fitSize: (m, w, h) => openai._fitSize(w, h, "2K"),
-  async generate(r) { this.seen = r; return Array.from({ length: out }, () => ({ bytes: tinyPng(), mime: "image/png" })); },
+  async generate(r) { this.seen = r; return Array.from({ length: out }, () => ({ bytes: tilePng(r.target), mime: "image/png" })); },
 });
 
 test("pipeline: read in one modal, network outside, commit as one undo step", async () => {
@@ -464,14 +466,14 @@ test("openai reads usage once per reply, even when output details come back zero
 });
 
 test("pipeline passes usage through, even when the run is then cancelled", async () => {
-  const spending = { ...fakeProvider(1), async generate(r) { r.onUsage({ total: 7 }); return [{ bytes: tinyPng(), mime: "image/png" }]; } };
+  const spending = { ...fakeProvider(1), async generate(r) { r.onUsage({ total: 7 }); return [{ bytes: tilePng(r.target), mime: "image/png" }]; } };
   let cancel = false;
   const seen = [];
   const run = (o) => runGeneration({ ps: fakePs(), provider: spending, apiKey: "k", model: "m", mode: "fill", onUsage: (u) => { seen.push(u); cancel = true; }, cancelled: () => cancel, ...o });
   await assert.rejects(run(), /Cancelled/);
   assert.deepEqual(seen, [{ total: 7 }]);
   // without a listener, nothing breaks
-  const quiet = { ...fakeProvider(1), async generate(r) { if (r.onUsage) r.onUsage({ total: 1 }); return [{ bytes: tinyPng(), mime: "image/png" }]; } };
+  const quiet = { ...fakeProvider(1), async generate(r) { if (r.onUsage) r.onUsage({ total: 1 }); return [{ bytes: tilePng(r.target), mime: "image/png" }]; } };
   await runGeneration({ ps: fakePs(), provider: quiet, apiKey: "k", model: "m", mode: "fill" });
 });
 
@@ -499,7 +501,7 @@ test("sizes: Auto takes the smallest size that covers the area, at least 2K, up 
   // The pipeline turns the user's choice into the size asked for.
   const sizeFor = async (provider, model, resolution, w = 500, h = 500) => {
     let target = null;
-    const spy = { ...provider, generate: async (r) => ((target = r.target), [{ bytes: tinyPng(), mime: "image/png" }]) };
+    const spy = { ...provider, generate: async (r) => ((target = r.target), [{ bytes: tilePng(r.target), mime: "image/png" }]) };
     const ps = fakePs({ selection: { left: 1000, top: 1000, right: 1000 + w, bottom: 1000 + h } });
     await runGeneration({ ps, provider: spy, apiKey: "k", model, resolution });
     return target;
@@ -518,4 +520,44 @@ test("sizes: Auto takes the smallest size that covers the area, at least 2K, up 
   assert.equal((await sizeFor(gemini, "gemini-3-pro-image", "auto")).imageSize, "2K", "Pro never asks for 1K");
   const o = await sizeFor(openai, "gpt-image-2", "4K");
   assert.ok(o.width * o.height > 2560 * 1440, `OpenAI 4K asks for 4K pixels, got ${o.width}x${o.height}`);
+});
+
+test("scene reference: the whole photo, reduced, goes along as one more image, named in the instruction, at every provider", async () => {
+  const scene = { rgb: new Uint8Array(8 * 6 * 3), width: 8, height: 6 };
+  const or = fakeFetch(() => orOk(1));
+  await openrouter.generate(req({ fetch: or, model: "google/gemini-nano-banana-2.1", target: openrouter.fitSize("google/gemini-nano-banana-2.1", 1024, 1024, "1K"), n: 1, scene }));
+  assert.equal(or.calls[0].body.input_references.length, 3, "picture, mask, whole photo");
+  assert.match(or.calls[0].body.prompt, /three images.*Image 3 is the whole photograph/);
+  const g = fakeFetch(() => geminiOk(4));
+  await gemini.generate(req({ fetch: g, model: "gemini-nano-banana-2.1", target: gemini.fitSize("gemini-nano-banana-2.1", 1024, 1024, "1K"), n: 1, scene }));
+  const parts = g.calls[0].body.contents[0].parts;
+  assert.equal(parts.filter((p) => p.inline_data).length, 3);
+  assert.match(parts[0].text, /Image 3 is the whole photograph/);
+  const oa = fakeFetch(() => ({ json: { data: [{ b64_json: toBase64(tinyPng()) }] } }));
+  await openai.generate(req({ fetch: oa, model: "gpt-image-2", n: 1, scene }));
+  assert.equal(oa.calls[0].body.images.length, 2, "the mask applies to the first; the second is the whole photo");
+  assert.match(oa.calls[0].body.prompt, /The second image is the whole photograph/);
+  // Without a scene, requests stay as they were.
+  const plain = fakeFetch(() => orOk(1));
+  await openrouter.generate(req({ fetch: plain, model: "google/gemini-nano-banana-2.1", target: openrouter.fitSize("google/gemini-nano-banana-2.1", 1024, 1024, "1K"), n: 1 }));
+  assert.equal(plain.calls[0].body.input_references.length, 2);
+  assert.doesNotMatch(plain.calls[0].body.prompt, /whole photograph/);
+});
+
+test("pipeline: the scene goes along only when asked and when the area is a small part of the photo; a reply of the wrong shape is never pasted", async () => {
+  const provider = fakeProvider(1);
+  await runGeneration({ ps: fakePs(), provider, apiKey: "k", model: "m", sceneRef: true });
+  const sc = provider.seen.scene;
+  assert.ok(sc && Math.max(sc.width, sc.height) <= 1024 && sc.rgb.length === sc.width * sc.height * 3, "whole photo, 1024 px at most, RGB");
+  await runGeneration({ ps: fakePs(), provider, apiKey: "k", model: "m" });
+  assert.equal(provider.seen.scene, null, "off unless asked");
+  await runGeneration({ ps: fakePs({ selection: { left: 300, top: 300, right: 3700, bottom: 2700 } }), provider, apiKey: "k", model: "m", sceneRef: true });
+  assert.equal(provider.seen.scene, null, "not when the area already covers most of the photo");
+  // A 4:1 reply for a near-square area is not the area: dropped, or the run fails with nothing changed.
+  const mixed = { ...fakeProvider(2), async generate(r) { return [{ bytes: tinyPng(64, 16), mime: "image/png" }, { bytes: tilePng(r.target), mime: "image/png" }]; } };
+  assert.equal((await runGeneration({ ps: fakePs(), provider: mixed, apiKey: "k", model: "m", n: 2 })).results.length, 1);
+  const wrong = { ...fakeProvider(1), async generate() { return [{ bytes: tinyPng(64, 16), mime: "image/png" }]; } };
+  const ps = fakePs();
+  await assert.rejects(runGeneration({ ps, provider: wrong, apiKey: "k", model: "m" }), /wrong shape/);
+  assert.ok(!ps.log.some((l) => l[0] === "commit"), "nothing pasted");
 });

@@ -3,6 +3,7 @@
 const { toBase64, fromBase64 } = require("../bytes");
 const { encodePng } = require("../png");
 const { alphaEditMask } = require("../image");
+const { sceneNote } = require("../prompts");
 const { postJson, getJson, ProviderError } = require("./http");
 
 const HOST = "api.openai.com";
@@ -49,9 +50,10 @@ function fitSize(w, h, tier = "2K", { exact = false, minTier = null } = {}) {
   return best;
 }
 
-function promptFor(task) {
+function promptFor(task, scene) {
   return (
-    "Edit only the transparent area of the mask on the image. " +
+    "Edit only the transparent area of the mask on the first image. " +
+    (scene ? sceneNote("The second image") : "") +
     task +
     " Keep everything outside that area unchanged, with the same framing, perspective and lighting. No borders, text or watermarks."
   );
@@ -129,8 +131,12 @@ async function generate(req) {
   const maskPng = encodePng(alphaEditMask(req.mask), width, height, 4);
   const body = {
     model: req.model,
-    prompt: promptFor(req.task),
-    images: [{ image_url: `data:image/png;base64,${toBase64(imagePng)}` }],
+    prompt: promptFor(req.task, !!req.scene),
+    // The mask applies to the first image; the second, when there, is the whole photo for context.
+    images: [
+      { image_url: `data:image/png;base64,${toBase64(imagePng)}` },
+      ...(req.scene ? [{ image_url: `data:image/png;base64,${toBase64(encodePng(req.scene.rgb, req.scene.width, req.scene.height, 3))}` }] : []),
+    ],
     mask: { image_url: `data:image/png;base64,${toBase64(maskPng)}` },
     n: req.n,
     size: `${req.target.width}x${req.target.height}`,

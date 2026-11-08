@@ -8,6 +8,12 @@ const { computeCrop, inputSize } = require("./geometry");
 const { resample, toRGB, dilate, coverage } = require("./image");
 const { taskFor } = require("./prompts");
 const { fitTone } = require("./tone");
+const { imageSize } = require("./png");
+
+// Whole photo as a scene reference (roadmap 3.3): its long side, and when it is worth sending (the area
+// sent covers less than this share of the photo; above, the model already sees most of it).
+const SCENE_SIDE = 1024;
+const SCENE_MAX_SHARE = 0.5;
 
 /** A message for the user. `code` names the cases the panel follows up on ("noDocument", "noSelection"). */
 class UserError extends Error {
@@ -32,8 +38,8 @@ const asUserError = (fn) => {
   }
 };
 
-/** Phase 1: read the selection and the pixels around it. */
-async function read(ps, doc, fit) {
+/** Phase 1: read the selection and the pixels around it (and the whole photo, reduced, when asked). */
+async function read(ps, doc, fit, sceneRef) {
   const selection = await ps.getSelectionBounds(doc.id);
   if (!selection) throw new UserError("Make a selection first (any selection tool).", "noSelection");
   const geo = asUserError(() => computeCrop({ docWidth: doc.width, docHeight: doc.height, selection, fit }));
@@ -48,7 +54,15 @@ async function read(ps, doc, fit) {
   // Full-resolution copy of the selection, so the final layer mask is exact even if the user
   // changes the selection while the provider is working.
   const full = await ps.readSelection(doc.id, geo.crop, null);
-  return { geo, inp, rgb, mask, selection: { data: full.data, width: full.width, height: full.height, left: geo.crop.left, top: geo.crop.top } };
+  let scene = null;
+  const share = ((geo.crop.right - geo.crop.left) * (geo.crop.bottom - geo.crop.top)) / (doc.width * doc.height);
+  if (sceneRef && share < SCENE_MAX_SHARE) {
+    const k = Math.min(1, SCENE_SIDE / Math.max(doc.width, doc.height));
+    const size = { width: Math.max(1, Math.round(doc.width * k)), height: Math.max(1, Math.round(doc.height * k)) };
+    const px = await ps.readComposite(doc.id, { left: 0, top: 0, right: doc.width, bottom: doc.height }, size);
+    scene = { rgb: toRGB(px.data, px.width, px.height, px.components), width: px.width, height: px.height };
+  }
+  return { geo, inp, rgb, mask, scene, selection: { data: full.data, width: full.width, height: full.height, left: geo.crop.left, top: geo.crop.top } };
 }
 
 /**
@@ -64,6 +78,7 @@ async function read(ps, doc, fit) {
  * @param {string} [o.quality]
  * @param {string} [o.resolution="auto"]  "auto": the smallest size that covers the selection, at least 2K, up to 4K (provider.autoMax);
  *   "1K" / "2K" / "4K": that size, when the model offers it
+ * @param {boolean} [o.sceneRef]  also send the whole photo, reduced, as a scene reference (roadmap 3.3)
  * @param {(label: string) => void} [o.progress]
  * @param {() => boolean} [o.cancelled]
  * @param {(usage: object) => void} [o.onUsage]  token counts of each provider reply, even if the run then fails
@@ -85,7 +100,7 @@ async function runGeneration(o) {
   const fit = (w, h) => provider.fitSize(o.model, w, h, forced ? o.resolution : provider.autoMax || "4K", { exact: forced, minTier: forced ? null : "2K" });
 
   progress("Reading the image");
-  const job = await ps.modal("Fulla: read", () => read(ps, doc, fit));
+  const job = await ps.modal("Fulla: read", () => read(ps, doc, fit, o.sceneRef));
   checkCancel();
 
   // A little extra room so the model can blend; the Photoshop layer mask still uses the exact selection.
@@ -98,6 +113,7 @@ async function runGeneration(o) {
     model: o.model,
     image: { rgb: job.rgb, width: job.inp.width, height: job.inp.height },
     mask: modelMask,
+    scene: job.scene,
     task: taskFor(o.prompt),
     n: Math.max(1, Math.min(4, o.n || 1)),
     target: job.geo.target,
@@ -106,6 +122,14 @@ async function runGeneration(o) {
     cancelled,
   });
   checkCancel();
+  // A reply of the wrong shape is not the area (e.g. the whole photo came back): never paste it.
+  const want = job.geo.target.width / job.geo.target.height;
+  const shaped = results.filter((r) => {
+    const s = imageSize(r.bytes);
+    return !s || !s.width || !s.height || Math.abs(Math.log(s.width / s.height / want)) < 0.15;
+  });
+  if (!shaped.length) throw new UserError("The model sent back a picture of the wrong shape (perhaps the whole photo). Nothing was changed: try again.");
+  results.splice(0, results.length, ...shaped);
 
   progress("Placing the result");
   const crop = job.geo.crop;

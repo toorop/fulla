@@ -151,7 +151,7 @@ test("getSelectionBounds unwraps unit values; null when nothing selected", async
   assert.equal(await ps.getSelectionBounds(7), null);
 });
 
-test("commit: one layer, like Adobe's: deselect, place and fit the first result, name it, restore the exact selection as its mask; no group", async () => {
+test("commit: one layer, like Adobe's: deselect, place and fit the first result, name it, restore the exact selection as its mask, then leave it selected; no group", async () => {
   const { ps, calls, state } = loadWithFakes();
   const crop = { left: 100, top: 50, right: 868, bottom: 562 };
   const sel = { data: new Uint8Array(768 * 512).fill(255), width: 768, height: 512, left: 100, top: 50 };
@@ -174,6 +174,11 @@ test("commit: one layer, like Adobe's: deselect, place and fit the first result,
   const putIdx = calls.findIndex((c) => c[0] === "putSelection");
   const maskIdx = calls.findIndex((c) => c[1] === "make" && c[2].using);
   assert.ok(putIdx >= 0 && maskIdx > putIdx);
+  // and put back once more at the end, like Adobe: the selection is ready for the next run
+  const puts = calls.map((c, i) => (c[0] === "putSelection" ? i : -1)).filter((i) => i >= 0);
+  assert.equal(puts.length, 2);
+  assert.ok(puts[1] > maskIdx, "selected again after the mask");
+  assert.deepEqual(calls[puts[1]][1], { left: 100, top: 50 });
   assert.equal(state.active.id, placed.layerId);
   assert.equal(state.deleted.length, 1, "temp file removed");
   assert.deepEqual(placed, { docId: 7, layerId: layer.id, crop, tone: null });
@@ -197,9 +202,25 @@ test("tone matching: the layer's own pixels are read, the correction lands as a 
   assert.deepEqual(ops[ci].adjustment[2].curve, [{ _obj: "paint", horizontal: 5, vertical: 0 }, { _obj: "paint", horizontal: 255, vertical: 250 }]);
   assert.equal(state.filterFX.length, 1);
   // A variation drops the old correction and fits a new one; a negligible one leaves no filter.
+  // The user's selection is set aside meanwhile (a smart filter would take it as its mask), then put back.
   placed.matchTone = matchTone;
+  calls.length = 0;
   await ps.showVariation(placed, png(20));
   assert.equal(state.filterFX.length, 1, "replaced, not stacked");
+  const vops = calls.filter((c) => c[0] === "bp").map((c) => c[2]);
+  const at = (f) => vops.findIndex(f);
+  const aside = at((d) => d._obj === "duplicate" && d._target[0]._property === "selection");
+  const none = at((d) => d._obj === "set" && d.to._value === "none");
+  const curves = at((d) => d._obj === "curves");
+  const back = at((d) => d._obj === "set" && d.to._ref === "channel" && d.to._name === vops[aside].name);
+  const gone = at((d) => d._obj === "delete" && d._target[0]._ref === "channel" && d._target[0]._name === vops[aside].name);
+  assert.ok(aside >= 0 && aside < none && none < curves && curves < back && back < gone, `selection aside around the tone fit: ${vops.map((d) => d._obj)}`);
+  // Without a selection there is nothing to set aside.
+  state.selection = null;
+  calls.length = 0;
+  await ps.showVariation(placed, png(20));
+  assert.ok(!calls.some((c) => c[0] === "bp" && c[1] === "duplicate"), "no channel without a selection");
+  state.selection = { left: 10, top: 20, right: 110, bottom: 220 };
   next = null;
   await ps.showVariation(placed, png(20));
   assert.equal(state.filterFX.length, 0);

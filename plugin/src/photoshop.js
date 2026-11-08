@@ -323,20 +323,6 @@ function findLayer(layers, id) {
   return null;
 }
 
-/**
- * Apply a finished generation to the document, like Adobe's Generative Fill: one layer (the first
- * result as a smart object fitted to the crop), named after the prompt, with the selection as its
- * own mask. No group. Other variations are swapped in later with showVariation.
- * Call inside modal(..., { historyDocId }).
- * @param {object} o
- * @param {number} o.docId
- * @param {Array<{bytes, mime}>} o.results
- * @param {{left,top,right,bottom}} o.crop   where the result goes (document px)
- * @param {string} o.name                    layer name
- * @param {number} o.feather                 mask feather in px
- * @param {object} o.selection               {data, width, height, left, top}: the selection read before generating
- * @returns {Promise<{docId, layerId, crop}>}
- */
 // Curves channels in descriptor terms (Photoshop names green "grain" in colours, not in channels).
 const CURVE_CHANNELS = ["red", "green", "blue"];
 
@@ -375,6 +361,41 @@ async function matchTone(docId, layerId, crop, match) {
   return fit;
 }
 
+// An alpha channel that holds the user's selection while Fulla works without one.
+const KEPT_SELECTION = "Fulla: kept selection";
+
+/**
+ * Set the active selection aside (in a temporary channel) and deselect; returns a function that
+ * puts it back and removes the channel. Nothing to do without a selection. Smart filters added
+ * while a selection is active get it as their mask, so tone matching runs without one.
+ */
+async function setSelectionAside(docId) {
+  if (!(await getSelectionBounds(docId))) return async () => {};
+  await bp([
+    { _obj: "duplicate", _target: [SELECTION], name: KEPT_SELECTION },
+    { _obj: "set", _target: [SELECTION], to: { _enum: "ordinal", _value: "none" } },
+  ]);
+  return () =>
+    bp([
+      { _obj: "set", _target: [SELECTION], to: { _ref: "channel", _name: KEPT_SELECTION } },
+      { _obj: "delete", _target: [{ _ref: "channel", _name: KEPT_SELECTION }] },
+    ]);
+}
+
+/**
+ * Apply a finished generation to the document, like Adobe's Generative Fill: one layer (the first
+ * result as a smart object fitted to the crop), named after the prompt, with the selection as its
+ * own mask. No group. The selection is put back at the end, as Adobe does, for the next run. Other variations are swapped in later with showVariation.
+ * Call inside modal(..., { historyDocId }).
+ * @param {object} o
+ * @param {number} o.docId
+ * @param {Array<{bytes, mime}>} o.results
+ * @param {{left,top,right,bottom}} o.crop   where the result goes (document px)
+ * @param {string} o.name                    layer name
+ * @param {number} o.feather                 mask feather in px
+ * @param {object} o.selection               {data, width, height, left, top}: the selection read before generating
+ * @returns {Promise<{docId, layerId, crop}>}
+ */
 async function commit(o) {
   const doc = findDoc(o.docId);
   if (app.activeDocument.id !== doc.id) app.activeDocument = doc;
@@ -396,6 +417,8 @@ async function commit(o) {
     }
     // After the mask, as in the self-test's exploration: reads ignore the mask, Curves then lands on the picture.
     const tone = await matchTone(doc.id, layer.id, o.crop, o.matchTone);
+    // Like Adobe's Generative Fill, the selection stays for the next run (making the mask used it up).
+    await putSelectionPixels(doc.id, o.selection);
     if (o.trace) o.trace.push({ step: "done", layer: layer.id, bounds: layerBounds(layer), doc: [num(doc.width), num(doc.height)], tone });
     return { docId: doc.id, layerId: layer.id, crop: o.crop, tone };
   } finally {
@@ -426,10 +449,16 @@ async function showVariation(placed, result) {
       } finally {
         await removeTemp(file);
       }
-      // Each variation shifts tones its own way: drop the previous correction, fit this one.
+      // Each variation shifts tones its own way: drop the previous correction, fit this one,
+      // with the user's selection set aside meanwhile (it would become the filter's mask).
       if (placed.matchTone) {
-        await removeToneFilters(placed.layerId);
-        return matchTone(placed.docId, placed.layerId, placed.crop, placed.matchTone);
+        const putBack = await setSelectionAside(placed.docId);
+        try {
+          await removeToneFilters(placed.layerId);
+          return await matchTone(placed.docId, placed.layerId, placed.crop, placed.matchTone);
+        } finally {
+          await putBack();
+        }
       }
       return null;
     },

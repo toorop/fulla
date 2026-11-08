@@ -7,16 +7,18 @@
 ## Next action
 
 - **Resume here: step 4, fixes from the code review** (review 2026-11-08; findings in his vault,
-  "relecture du code (novembre 2026)"). Done and committed: B2 double click, B1 request deadlines
-  + immediate Cancel (`c41e68d`). **Done, not committed yet (2026-11-08)**: B3 retries only on
-  refusals that cost nothing (429, 502, 503), never after a network failure, 408, 500 or 504;
-  B4 the pipeline pastes only replies it can read as an image of the area's shape (`imageSize`
-  now reads WebP; unreadable bytes get their own message; the self-test's broken image keeps a
-  valid PNG header so Photoshop's rollback is still tested); S1 keys only in secure storage, an
-  old plain-text copy is moved there once then erased, `setKey` throws without secure storage;
-  S2 install/uninstall refuse a plugin id that is not a plain name (CI checks it), uninstall
-  prints the id. Tests 72/72, package OK, self-test 28/28. Next, his pick: R1 (shared prompt
-  and sizing for OpenRouter/Gemini), R3 dead code, A1 (paid A/B), B5 (his call), A2, A3, R2.
+  "relecture du code (novembre 2026)"). Committed: B2 double click, B1 deadlines + immediate
+  Cancel (`c41e68d`); B3 retries only on 429/502/503, B4 unreadable replies never pasted, S1 keys
+  only in secure storage (`062dde3`); S2 installer id guard (`b31a1af`). **Done, not committed
+  (2026-11-08)**: R1 one mask instruction per API family in `prompts.js` (`maskImagePrompt`,
+  `alphaMaskPrompt`) and ratio/tier choice shared in `providers/sizing.js` (OpenRouter, Gemini);
+  R3 old prefs cleanup removed; R4 Gemini doc comment, OpenAI 429 branch simplified. **B5 (his
+  call, 2026-11-08): the selection stays after a run, like Adobe** (`commit` puts it back after the
+  tone fit; a variation sets it aside in a temporary channel around the tone refit, since a smart
+  filter added under a selection takes it as its mask). Tests 72/72, package OK, self-test 28/28
+  (fill scenarios and `toneMatch` check the selection after the run and after a variation, and no
+  leftover channel). Left: A1 (paid A/B: send the crop at its real size instead of upscaled to
+  the output size, ask him), then A2 "Copy details", A3 dated price estimates, R2 run controller.
   A dropped request's cost is not counted (its reply never arrives).
 - **Step 5 (local models) on hold, his call (2026-11-08)**: good results need a high-end GPU
   (RTX 5080: ~20 s per edit at 1.5K, Qwen Image 2.1 Turbo), whose owners don't mind ~0.04 €/image
@@ -40,8 +42,6 @@
 - Prompts: naming the photo's style in the prompt ("keep the film grain") made things far worse;
   our wrapper's wording made no clear difference (A/B, reverted). Tip for docs and waiting tips:
   describe the change, not the photo's style.
-- Ideas from a paid competitor plugin (prompt history and library, reference images, rerun
-  keeping results, 16/32-bit, a Photoshop-like progress window) are in his notes, for later.
 - A note listing what sets Fulla apart from Photoshop's Generative Fill (resolution, cost, BYOK,
   free, models; local now on hold) lives in his notes, for the website step.
 - Step 2 leftovers: panel captures moved to step 6 (website), his call; his full walk-through
@@ -96,7 +96,8 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 ## Recently done
 
 - 2026-11-08 — Step 4: code review (no serious flaw); fixed B2 double click, B1 request deadline
-  + immediate Cancel, B3 retry rule, B4 unreadable replies, S1 plain-text keys, S2 installer id.
+  + immediate Cancel, B3 retry rule, B4 unreadable replies, S1 plain-text keys, S2 installer id;
+  R1/R3/R4 refactors; B5 selection kept after a run.
 - 2026-11-08 — Step 5 researched and tested (UXP loopback, stable-diffusion.cpp vs ComfyUI,
   Qwen Image 2.1 on an RTX 5080), then put on hold.
 - 2026-11-08 — Scene reference kept always on (3.3) and pasted-prompt placeholder fix

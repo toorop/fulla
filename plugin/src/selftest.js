@@ -269,6 +269,9 @@ async function fillScenario(name, docOpts, sel, { shape = "rect", base = openai,
   expect(g.hasMask, "the layer has no mask");
   expect(g.name === layerName(prompt), `layer name is "${g.name}"`);
   expect(historyCount(doc) === h0 + 1, `history grew by ${historyCount(doc) - h0}, expected exactly 1`);
+  // Like Adobe's Generative Fill, the selection is still there for the next run.
+  const after = await ps.getSelectionBounds(doc.id);
+  expect(after && ["left", "top", "right", "bottom"].every((k) => Math.abs(after[k] - sel[k]) <= 2), `selection after the run: ${JSON.stringify(after)}, expected ${JSON.stringify(sel)}`);
   notes.feather = g.feather;
   notes.kind = g.kind;
 
@@ -382,14 +385,23 @@ const SCENARIOS = {
     near(await probe(doc, 400, 400), RED, 6, "outside the selection untouched");
     expect(historyCount(doc) === h0 + 1, `history grew by ${historyCount(doc) - h0}, expected 1`);
     await snapshot(doc, "toneMatch");
+    const sameSelection = async (when) => {
+      const b = await ps.getSelectionBounds(doc.id);
+      expect(b && ["left", "top", "right", "bottom"].every((k) => Math.abs(b[k] - sel[k]) <= 2), `${when}: selection ${JSON.stringify(b)}, expected ${JSON.stringify(sel)}`);
+      expect(!Array.from(doc.channels || []).some((c) => c.name === "Fulla: kept selection"), `${when}: the temporary channel was left behind`);
+    };
+    await sameSelection("after the run");
     const second = await ps.showVariation(out.placed, out.results[1]);
     expect(second, "no correction for a -40 blue cast");
     expect((await curves()) === 1, "variation: the correction is replaced, not stacked");
+    await sameSelection("after a variation");
+    const [ld] = await ps.modal("Fulla self-test: inspect", () => ps.bp([{ _obj: "get", _target: [{ _ref: "layer", _id: out.placed.layerId }] }]));
+    const filterMask = { has: ld.hasFilterMask, enabled: ld.filterMaskEnable }; // for the record: Photoshop gives smart filters a white mask by default
     near(await probe(doc, 650, 400), BLUE, 6, "blue cast undone (variation 2)");
     const third = await ps.showVariation(out.placed, out.results[2]);
     expect(!third && (await curves()) === 0, "no cast, no filter");
     near(await probe(doc, 550, 400), RED, 6, "variation 3 as is");
-    return { first: out.placed.tone.channels, second: second.channels };
+    return { first: out.placed.tone.channels, second: second.channels, filterMask };
   },
 
   async probeCheck() {

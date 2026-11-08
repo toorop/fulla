@@ -19,7 +19,7 @@ const { PROVIDERS } = require("./providers/index");
 const { estimateCost } = require("./cost");
 const settings = require("./settings");
 const { encodePng } = require("./png");
-const { toRGB } = require("./image");
+const { toRGB, resample } = require("./image");
 
 const lfs = uxp.storage.localFileSystem;
 const formats = uxp.storage.formats;
@@ -66,6 +66,24 @@ function mockProvider({ base = openai, colors = [null, [0, 255, 0], [255, 255, 0
     },
   };
   return m;
+}
+
+/** Stand-in model that returns what it was sent, with each variation's colour cast added (tone matching). */
+function echoProvider(casts) {
+  return {
+    name: "Echo",
+    fitSize: openai.fitSize,
+    autoMax: openai.autoMax,
+    async generate(req) {
+      const { width: W, height: H } = req.target;
+      const img = resample(req.image.rgb, req.image.width, req.image.height, 3, W, H);
+      return casts.slice(0, req.n).map((cast) => {
+        const p = new Uint8Array(img.length);
+        for (let i = 0; i < img.length; i++) p[i] = Math.max(0, Math.min(255, img[i] + cast[i % 3]));
+        return { bytes: encodePng(p, W, H, 3), mime: "image/png" };
+      });
+    },
+  };
 }
 
 // ---------- assertions ----------
@@ -338,6 +356,37 @@ async function diag() {
 
 const SCENARIOS = {
   diag,
+
+  // Tone matching (roadmap 3.2): a cast the model put on the whole tile is undone by a Curves smart
+  // filter on the run's layer, fitted again for each variation; no filter when nothing needs it.
+  async toneMatch() {
+    const doc = await newDoc();
+    const sel = { left: 450, top: 250, right: 750, bottom: 550 };
+    await select(doc, "rect", sel);
+    const h0 = historyCount(doc);
+    const casts = [[0, 40, 0], [0, 0, -40], [0, 0, 0]];
+    const out = await run(echoProvider(casts), { prompt: "selftest tone", n: 3 });
+    const curves = async () => {
+      const [d] = await ps.modal("Fulla self-test: inspect", () => ps.bp([{ _obj: "get", _target: [{ _ref: "layer", _id: out.placed.layerId }] }]));
+      return ((d.smartObject && d.smartObject.filterFX) || []).filter((f) => f.filter && f.filter._obj === "curves").length;
+    };
+    expect(out.placed.tone, "no correction for a +40 green cast");
+    expect((await curves()) === 1, "one Curves smart filter");
+    expect((await layerInfo(doc, out.placed.layerId)).hasMask, "the layer kept its mask");
+    near(await probe(doc, 550, 400), RED, 6, "green cast undone (red half)");
+    near(await probe(doc, 650, 400), BLUE, 6, "green cast undone (blue half)");
+    near(await probe(doc, 400, 400), RED, 6, "outside the selection untouched");
+    expect(historyCount(doc) === h0 + 1, `history grew by ${historyCount(doc) - h0}, expected 1`);
+    await snapshot(doc, "toneMatch");
+    const second = await ps.showVariation(out.placed, out.results[1]);
+    expect(second, "no correction for a -40 blue cast");
+    expect((await curves()) === 1, "variation: the correction is replaced, not stacked");
+    near(await probe(doc, 650, 400), BLUE, 6, "blue cast undone (variation 2)");
+    const third = await ps.showVariation(out.placed, out.results[2]);
+    expect(!third && (await curves()) === 0, "no cast, no filter");
+    near(await probe(doc, 550, 400), RED, 6, "variation 3 as is");
+    return { first: out.placed.tone.channels, second: second.channels };
+  },
 
   async probeCheck() {
     // The reads Fulla depends on (regions at odd offsets, scaled) must hit exact pixels.
@@ -804,7 +853,8 @@ const SCENARIOS = {
       expect($("prompt").hasAttribute("disabled") && $("modelChip").hasAttribute("disabled"), "running: prompt or model chip not locked");
       const bar = $("runBarFill").style.marginLeft;
       const time = $("runTime").textContent;
-      await tick(1200);
+      // Panel timers slow down while Photoshop is busy or in the background: give them a few seconds.
+      for (let i = 0; i < 20 && ($("runBarFill").style.marginLeft === bar || $("runTime").textContent === time); i++) await tick(200);
       expect($("runBarFill").style.marginLeft !== bar, "running: the bar does not move");
       expect($("runTime").textContent !== time, `running: seconds stuck at "${time}"`);
       info.running = `${$("runTitle").textContent} | ${$("runStage").textContent} ${$("runTime").textContent}`;
@@ -866,6 +916,7 @@ const SCENARIOS = {
       thumbs[1].dispatchEvent(new Event("click"));
       for (let i = 0; i < 20 && historyCount(doc) === h1 + 1; i++) await tick(200);
       near(await probe(doc, 600, 400), YELLOW_SOLID, 12, "variation 2 after a click on its thumbnail");
+      for (let i = 0; i < 20 && thumbs[1].className !== "thumb active"; i++) await tick(200);
       expect(thumbs[1].className === "thumb active", "the clicked thumbnail is not marked");
       $("runDone").dispatchEvent(new Event("click"));
       await tick();

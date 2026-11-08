@@ -7,6 +7,7 @@
 const { computeCrop, inputSize } = require("./geometry");
 const { resample, toRGB, dilate, coverage } = require("./image");
 const { taskFor } = require("./prompts");
+const { fitTone } = require("./tone");
 
 /** A message for the user. `code` names the cases the panel follows up on ("noDocument", "noSelection"). */
 class UserError extends Error {
@@ -61,7 +62,7 @@ async function read(ps, doc, fit) {
  * @param {string} [o.prompt]    what to paint in the selection; empty removes what is selected
  * @param {number} [o.n=1]
  * @param {string} [o.quality]
- * @param {string} [o.resolution="auto"]  "auto": the smallest size that covers the selection, up to 2K;
+ * @param {string} [o.resolution="auto"]  "auto": the smallest size that covers the selection, up to 4K (provider.autoMax);
  *   "1K" / "2K" / "4K": that size, when the model offers it
  * @param {(label: string) => void} [o.progress]
  * @param {() => boolean} [o.cancelled]
@@ -109,7 +110,13 @@ async function runGeneration(o) {
   const crop = job.geo.crop;
   const feather = Math.max(2, Math.min(24, Math.round(Math.max(crop.right - crop.left, crop.bottom - crop.top) * 0.004)));
   const name = layerName(o.prompt);
-  const placed = await ps.modal(name, () => ps.commit({ docId: doc.id, results, crop, name, feather, selection: job.selection, trace: o.trace }), { historyDocId: doc.id });
+  // Tone matching: the placed result is compared with what was sent, around the selection (tone.js).
+  const matchTone = {
+    size: job.inp,
+    fit: (tile) => fitTone({ orig: job.rgb, origComps: 3, tile: tile.data, tileComps: tile.components, mask: job.mask, width: job.inp.width, height: job.inp.height }),
+  };
+  const placed = await ps.modal(name, () => ps.commit({ docId: doc.id, results, crop, name, feather, selection: job.selection, matchTone, trace: o.trace }), { historyDocId: doc.id });
+  placed.matchTone = matchTone; // each variation shown later gets its own correction
   return { results, placed, crop, target: job.geo.target, softness: job.geo.softness };
 }
 

@@ -8,7 +8,7 @@ const path = require("node:path");
 
 function loadWithFakes({ imagingMissing = false, fail8bit = false, trim = null, refuse = null } = {}) {
   const calls = [];
-  const state = { selection: { left: 10, top: 20, right: 110, bottom: 220 }, nextId: 100, layers: {}, active: null, deleted: [], history: [], putSelection: null };
+  const state = { selection: { left: 10, top: 20, right: 110, bottom: 220 }, nextId: 100, layers: {}, active: null, deleted: [], history: [], putSelection: null, filterFX: [] };
 
   function makeLayer(w, h, kind = "layer") {
     const id = state.nextId++;
@@ -55,7 +55,7 @@ function loadWithFakes({ imagingMissing = false, fail8bit = false, trim = null, 
     },
     imaging: imagingMissing ? undefined : {
       async getPixels(o) {
-        calls.push(["getPixels", o.componentSize, o.sourceBounds, o.targetSize]);
+        calls.push(["getPixels", o.componentSize, o.sourceBounds, o.targetSize, o.layerID]);
         if (fail8bit && o.componentSize === 8) throw new Error("Photoshop error code -1");
         const sixteen = o.componentSize === 16;
         calls.push(["getPixelsSize", o.targetSize || null]);
@@ -88,7 +88,10 @@ function loadWithFakes({ imagingMissing = false, fail8bit = false, trim = null, 
             out.push({ _obj: "error", result: -25920, message: `The command “${d._obj}” is not currently available.` });
             continue;
           }
-          if (d._obj === "get") out.push({ selection: state.selection && { left: { _unit: "pixelsUnit", _value: state.selection.left }, top: state.selection.top, right: state.selection.right, bottom: state.selection.bottom } });
+          if (d._obj === "get" && d._target[0]._ref === "layer") out.push({ smartObject: { filterFX: state.filterFX.slice() } });
+          else if (d._obj === "curves") { state.filterFX.push({ _obj: "filterFX", filter: { _obj: "curves", adjustment: d.adjustment } }); out.push({}); }
+          else if (d._obj === "delete" && d._target[0]._ref === "filterFX") { state.filterFX.splice(d._target[0]._index - 1, 1); out.push({}); }
+          else if (d._obj === "get") out.push({ selection: state.selection && { left: { _unit: "pixelsUnit", _value: state.selection.left }, top: state.selection.top, right: state.selection.right, bottom: state.selection.bottom } });
           else if (d._obj === "placeEvent") { makeLayer(1536, 1024); out.push({}); }
           else if (d._obj === "make" && d._target && d._target[0]._ref === "layerSection") { makeLayer(0, 0, "group"); out.push({}); }
           else out.push({});
@@ -173,7 +176,33 @@ test("commit: one layer, like Adobe's: deselect, place and fit the first result,
   assert.ok(putIdx >= 0 && maskIdx > putIdx);
   assert.equal(state.active.id, placed.layerId);
   assert.equal(state.deleted.length, 1, "temp file removed");
-  assert.deepEqual(placed, { docId: 7, layerId: layer.id, crop });
+  assert.deepEqual(placed, { docId: 7, layerId: layer.id, crop, tone: null });
+});
+
+test("tone matching: the layer's own pixels are read, the correction lands as a Curves smart filter, and each variation gets its own", async () => {
+  const { ps, calls, state } = loadWithFakes();
+  const crop = { left: 0, top: 0, right: 40, bottom: 20 };
+  const sel = { data: new Uint8Array(800).fill(255), width: 40, height: 20, left: 0, top: 0 };
+  const seen = [];
+  let next = [[{ input: 0, output: 10 }, { input: 255, output: 245 }], [{ input: 0, output: 0 }, { input: 255, output: 255 }], [{ input: 5, output: 0 }, { input: 255, output: 250 }]];
+  const matchTone = { size: { width: 20, height: 10 }, fit: (tile) => (seen.push(tile), next && { curves: next }) };
+  const placed = await ps.commit({ docId: 7, results: [png(10), png(20)], crop, name: "x", feather: 2, selection: sel, matchTone });
+  assert.deepEqual([seen[0].width, seen[0].height, seen[0].components], [20, 10, 4], "the fit gets the layer at the size sent");
+  assert.ok(calls.some((c) => c[0] === "getPixels" && c[4] === placed.layerId), "read the run's layer, not the composite");
+  const ops = calls.filter((c) => c[0] === "bp").map((c) => c[2]);
+  const ci = ops.findIndex((d) => d._obj === "curves");
+  assert.ok(ci > ops.findIndex((d) => d._obj === "make" && d.using), "after the mask");
+  assert.equal(ops[ci - 1]._target[0]._value, "RGB", "on the picture's channels, not the mask");
+  assert.deepEqual(ops[ci].adjustment.map((a) => a.channel._value), ["red", "green", "blue"]);
+  assert.deepEqual(ops[ci].adjustment[2].curve, [{ _obj: "paint", horizontal: 5, vertical: 0 }, { _obj: "paint", horizontal: 255, vertical: 250 }]);
+  assert.equal(state.filterFX.length, 1);
+  // A variation drops the old correction and fits a new one; a negligible one leaves no filter.
+  placed.matchTone = matchTone;
+  await ps.showVariation(placed, png(20));
+  assert.equal(state.filterFX.length, 1, "replaced, not stacked");
+  next = null;
+  await ps.showVariation(placed, png(20));
+  assert.equal(state.filterFX.length, 0);
 });
 
 test("commit refuses a closed document", async () => {

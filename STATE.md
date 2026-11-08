@@ -6,35 +6,59 @@
 
 ## Next action
 
-- **Resume here: step 3, sub-step 3.1 under discussion** (the Auto resolution rule; no code
-  before Stéphane validates, one sub-step at a time). Validated 2026-11-08: Auto takes the
-  smallest model size that covers the whole crop (no 1.25× enlargement allowed any more), the
-  larger one when two cost the same, and **goes up to 4K above 2K** when the model offers it
-  (today it stops at 2K); beyond the model's largest size, the current "Large area" note. The
-  uploaded crop stays capped at 2048 px (`inputSize`) even for 4K outputs; sending it larger is
-  a research item for later. Nothing shown before the run: the card says the size afterwards
-  ("model · 4K · 12 s"); users who want a cap pick a size in the settings.
-- **3.1 coded (2026-11-08, not committed)**: `fitSize` (gemini, openrouter) takes the smallest
-  tier covering the crop on both sides; pipeline's Auto ceiling is `provider.autoMax || "4K"`
-  (OpenAI direct `autoMax: "2K"`, above 2560x1440 is experimental there); popup hint says it.
-  OpenRouter bills per token like Google, so Nano Banana 2.1 tiers differ in price; Pro already
-  has no 1K. `npm test` 63/63, package builds, free self-test 28/28 (2026-11-08, `only` list
-  without `geminiRaw`/`openaiRaw`; Stéphane saw the new Auto hint, so the new code ran).
-  **Left**: commit (ask), then a paid check on a real 24 MP photo, 4K vs 2K (ask).
+- **Resume here: step 3, 3.1 done; Stéphane is running one more paid try** (4K with "keep the
+  grain" in the prompt) and maybe the same test on an untreated digital photo (most users' case).
+  Then propose 3.2, tone matching (discuss first, one sub-step at a time, no code before he says).
+- 3.1 (`3b7c47a`, not pushed): Auto takes the smallest tier covering the crop on both sides (the
+  tile is never enlarged), up to 4K (`provider.autoMax || "4K"`; OpenAI direct `autoMax: "2K"`,
+  above 2560x1440 is experimental there); a chosen size is used as is; nothing shown before the
+  run (the card says the size). Uploaded crop stays capped at 2048 px (`inputSize`): sending it
+  larger is a research item. 63/63, package, free self-test 28/28.
+- **Real test, 2026-11-08** (26 MP film-look portrait, 2500 px selection, Nano Banana 2.1 via
+  OpenRouter, "make her sad"): Auto gave 4K, clean but **too clean (film grain partly lost)**,
+  $0.121 vs $0.058 at 2K (double, not +50 %); 2K stretched ~2x looked grainier, by accident.
+  **Both show a warm/red colour shift with a sharp rectangular seam** at the selection edge:
+  Nano Banana shifts tones too, so tone matching (3.2) is a must; grain matching becomes a real
+  need for grainy photos. A 4K run with "keep the film grain and colours" in the user prompt was
+  far worse (stronger shift and seam): naming the style seems to make the model apply it. A/B of
+  our wrapper (current vs minimal, temporary edit, reverted) showed no clear difference: the
+  wrapper stays as is; the colour shift is the model's, to fix after the fact (3.2). Tip for the
+  docs and the waiting tips: describe the change, not the photo's style.
+- **3.2 tone matching, agreed 2026-11-08**: start with a global correction (gain + offset per
+  channel, fitted in the ring around the selection on reduced, blurred images, gains bounded),
+  always applied, B&W included (models sometimes add a colour cast to B&W); aim for the best
+  compromise, not perfection. Open question put to him: bake it into the pixels (needs a PNG
+  decoder in JS; JPEG/WebP results left out; slow re-encode at 4K) or let Photoshop do it (read
+  the placed layer's pixels, apply a Curves smart filter on the smart object: one layer,
+  editable, can be switched off; recomputed on each variation)? He chose the smart filter, and
+  no filter when the correction is negligible.
+- **3.2 global correction coded (2026-11-08, not committed)**: `src/tone.js` (fit on a 128 px grid,
+  3x3 blur, ring 4 % away from the selection, robust least squares, gain 0.8-1.25, offset ±60,
+  none under 3 levels); `photoshop.js` reads the layer's own pixels (`layerID`: reads ignore the
+  mask but include smart filters), then select RGB channel + `curves` (channels red/green/blue,
+  points `_obj: "paint"`), after the mask; `showVariation` deletes Fulla's Curves filterFX and
+  refits. Explored in Photoshop first (the mask is the target channel after commit, so Curves needs
+  the RGB channel selected). Safeguard: if the corrected ring still differs (median > 10 levels),
+  the tile is not the same picture there, so no correction (the self-test's unrelated mock tiles
+  showed why). 67/67, package, free self-test 29/29 (new `toneMatch`; `panelRun` timing checks
+  made patient, they flaked with Photoshop busy or in the background). Real try by Stéphane on
+  his portrait (2K, "make her sad"): "just perfect", seam and warm cast gone. Open question from
+  him: merge the filter into the tile to keep a plain layer? Then commit (ask).
 - Whole image as a scene reference (models taking several images): Stéphane wants it tested
   (roadmap step 3). Ideas from a paid competitor plugin (prompt history and library, reference
-  images, rerun keeping results, 16/32-bit) are in his notes, not sorted yet.
+  images, rerun keeping results, 16/32-bit, a Photoshop-like progress window) are in his notes,
+  to discuss later.
 - A note listing what sets Fulla apart from Photoshop's Generative Fill (resolution, cost, BYOK,
-  models, local) now lives in his notes, for the website step.
-- Step 2 leftovers: README text done (2026-11-08, "Using Fulla" section), **not committed yet**
-  (ask). Panel captures moved to step 6 (website), his call. His full walk-through not done yet.
+  free, models, local) lives in his notes, for the website step.
+- Step 2 leftovers: panel captures moved to step 6 (website), his call; his full walk-through
+  not done yet.
 - Generate tab as of `1bd710d` (agreed with Stéphane on 2026-11-07): prompt box at the top with
   a resize grip (`prefs.promptHeight`), one row under it: model button (provider `badge` OR/G/OA
   + model name, searchable menu), settings button (icons/sliders.svg) opening one popup
   (Resolution only when the model offers sizes, Variations, Quality for OpenAI), Generate.
   Run card and hint under the box. No frames around boxes; buttons are `.obtn` (outline = outer
   background through a 1 px gap, since UXP drops some bottom borders); Providers buttons alike,
-  icons only where they tell something. Resolution: Auto (smallest covering size up to 2K) or a
+  icons only where they tell something. Resolution: Auto (see 3.1 above) or a
   forced size (`fitSize(..., { exact })`, providers' `resolutions(model)`).
 - UXP layout lessons (keep): an element's measured size updates only after the handler returns
   (measure in a `setTimeout`, or keep computed values); flex children shrink unless told not to

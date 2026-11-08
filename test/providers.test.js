@@ -337,6 +337,9 @@ test("pipeline: read in one modal, network outside, commit as one undo step", as
   assert.equal(commit.selection.width, r.crop.right - r.crop.left, "full-resolution selection kept for the mask");
   assert.equal(commit.selection.left, r.crop.left);
   assert.ok(commit.feather >= 2);
+  // Tone matching compares the placed layer with what was sent, at the same size; variations reuse it.
+  assert.deepEqual(commit.matchTone.size, { width: seen.image.width, height: seen.image.height });
+  assert.equal(r.placed.matchTone, commit.matchTone);
   assert.deepEqual(stages, ["Reading the image", "Generating with Model M", "Placing the result"]);
 });
 

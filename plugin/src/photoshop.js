@@ -138,30 +138,30 @@ async function getPixelsAnyDepth(opts) {
 // read covers more than this many pixels; bigger areas are read as strips and assembled.
 const MAX_READ_PIXELS = 4000000;
 
-/** Read `b` at full resolution, mapped exactly onto b, in strips. RGBA (composite) or 1-byte mask (selection). */
-async function readExact(docId, b, gray) {
+/** Read `b` at full resolution, mapped exactly onto b, in strips. RGBA (composite, or one layer) or 1-byte mask (selection). */
+async function readExact(docId, b, gray, layerId) {
   const w = b.right - b.left;
   const h = b.bottom - b.top;
   const rows = Math.max(1, Math.floor(MAX_READ_PIXELS / w));
-  if (rows >= h) return readOne(docId, b, gray);
+  if (rows >= h) return readOne(docId, b, gray, layerId);
   const comps = gray ? 1 : 4;
   const out = new Uint8Array(w * h * comps);
   for (let y = 0; y < h; y += rows) {
     const y1 = Math.min(h, y + rows);
-    out.set(await readOne(docId, { left: b.left, right: b.right, top: b.top + y, bottom: b.top + y1 }, gray), y * w * comps);
+    out.set(await readOne(docId, { left: b.left, right: b.right, top: b.top + y, bottom: b.top + y1 }, gray, layerId), y * w * comps);
   }
   return out;
 }
 
-/** One imaging call for `b` (callers keep it small). */
-async function readOne(docId, b, gray) {
+/** One imaging call for `b` (callers keep it small). With a layer id, that layer's own pixels (its mask is not applied). */
+async function readOne(docId, b, gray, layerId) {
   const w = b.right - b.left;
   const h = b.bottom - b.top;
   let res;
   try {
     res = gray
       ? await imaging.getSelection({ documentID: docId, sourceBounds: b })
-      : await getPixelsAnyDepth({ documentID: docId, sourceBounds: b, colorSpace: "RGB", colorProfile: SRGB });
+      : await getPixelsAnyDepth({ documentID: docId, ...(layerId ? { layerID: layerId } : {}), sourceBounds: b, colorSpace: "RGB", colorProfile: SRGB });
   } catch (e) {
     const msg = String((e && e.message) || e);
     // Photoshop refuses reads of areas with nothing in them (no pixels / nothing selected).
@@ -182,7 +182,7 @@ async function readOne(docId, b, gray) {
  * Read `bounds` at `size`. Photoshop's own scaled reads come back shifted by a few pixels when
  * shrinking (seen on 27.10), so pixels are always read at full resolution, in strips, and scaled here.
  */
-async function readScaled(docId, bounds, size, gray) {
+async function readScaled(docId, bounds, size, gray, layerId) {
   const b = { left: Math.round(bounds.left), top: Math.round(bounds.top), right: Math.round(bounds.right), bottom: Math.round(bounds.bottom) };
   const W = b.right - b.left;
   const H = b.bottom - b.top;
@@ -190,9 +190,9 @@ async function readScaled(docId, bounds, size, gray) {
   const dw = Math.min(W, size.width);
   const dh = Math.min(H, size.height);
   let img;
-  if (dw === W && dh === H) img = await readExact(docId, b, gray);
+  if (dw === W && dh === H) img = await readExact(docId, b, gray, layerId);
   else {
-    const strip = (y0, y1) => readExact(docId, { left: b.left, right: b.right, top: b.top + y0, bottom: b.top + y1 }, gray);
+    const strip = (y0, y1) => readExact(docId, { left: b.left, right: b.right, top: b.top + y0, bottom: b.top + y1 }, gray, layerId);
     img = await downsampleStrips(strip, W, H, comps, dw, dh);
   }
   if (dw !== size.width || dh !== size.height) img = resample(img, dw, dh, comps, size.width, size.height);
@@ -337,6 +337,44 @@ function findLayer(layers, id) {
  * @param {object} o.selection               {data, width, height, left, top}: the selection read before generating
  * @returns {Promise<{docId, layerId, crop}>}
  */
+// Curves channels in descriptor terms (Photoshop names green "grain" in colours, not in channels).
+const CURVE_CHANNELS = ["red", "green", "blue"];
+
+/** Remove the Curves smart filters Fulla put on the layer (they were fitted to the previous content). */
+async function removeToneFilters(layerId) {
+  const [d] = await bp([{ _obj: "get", _target: [{ _ref: "layer", _id: layerId }] }]);
+  const fx = (d && d.smartObject && d.smartObject.filterFX) || [];
+  for (let i = fx.length; i >= 1; i--) {
+    if (fx[i - 1] && fx[i - 1].filter && fx[i - 1].filter._obj === "curves") {
+      await bp([{ _obj: "delete", _target: [{ _ref: "filterFX", _index: i }, { _ref: "layer", _id: layerId }] }]);
+    }
+  }
+}
+
+/**
+ * Tone matching (tone.js): read the layer's own pixels over the crop, let `match.fit` compare them with
+ * the original, and apply the correction as a Curves smart filter. Nothing when the fit says it's not needed.
+ * @param {{size: {width, height}, fit: (px: {data, width, height, components}) => object|null}} match
+ */
+async function matchTone(docId, layerId, crop, match) {
+  if (!match) return null;
+  const tile = await readScaled(docId, crop, match.size, false, layerId);
+  const fit = match.fit(tile);
+  if (!fit) return null;
+  const point = (p) => ({ _obj: "paint", horizontal: p.input, vertical: p.output });
+  await bp([
+    { _obj: "select", _target: [{ _ref: "layer", _id: layerId }], makeVisible: false },
+    // The new mask is the target channel; Curves needs the picture's own channels.
+    { _obj: "select", _target: [{ _ref: "channel", _enum: "channel", _value: "RGB" }] },
+    {
+      _obj: "curves",
+      presetKind: { _enum: "presetKindType", _value: "presetKindCustom" },
+      adjustment: fit.curves.map((pts, i) => ({ _obj: "curvesAdjustment", channel: { _ref: "channel", _enum: "channel", _value: CURVE_CHANNELS[i] }, curve: pts.map(point) })),
+    },
+  ]);
+  return fit;
+}
+
 async function commit(o) {
   const doc = findDoc(o.docId);
   if (app.activeDocument.id !== doc.id) app.activeDocument = doc;
@@ -356,8 +394,10 @@ async function commit(o) {
     } catch (_) {
       /* feather is cosmetic; the mask itself is correct */
     }
-    if (o.trace) o.trace.push({ step: "done", layer: layer.id, bounds: layerBounds(layer), doc: [num(doc.width), num(doc.height)] });
-    return { docId: doc.id, layerId: layer.id, crop: o.crop };
+    // After the mask, as in the self-test's exploration: reads ignore the mask, Curves then lands on the picture.
+    const tone = await matchTone(doc.id, layer.id, o.crop, o.matchTone);
+    if (o.trace) o.trace.push({ step: "done", layer: layer.id, bounds: layerBounds(layer), doc: [num(doc.width), num(doc.height)], tone });
+    return { docId: doc.id, layerId: layer.id, crop: o.crop, tone };
   } finally {
     await removeTemp(file);
   }
@@ -386,6 +426,12 @@ async function showVariation(placed, result) {
       } finally {
         await removeTemp(file);
       }
+      // Each variation shifts tones its own way: drop the previous correction, fit this one.
+      if (placed.matchTone) {
+        await removeToneFilters(placed.layerId);
+        return matchTone(placed.docId, placed.layerId, placed.crop, placed.matchTone);
+      }
+      return null;
     },
     { historyDocId: placed.docId }
   );

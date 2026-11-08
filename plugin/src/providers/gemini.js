@@ -4,8 +4,9 @@
 const { toBase64, fromBase64 } = require("../bytes");
 const { encodePng } = require("../png");
 const { binarize } = require("../image");
-const { sceneNote } = require("../prompts");
+const { maskImagePrompt } = require("../prompts");
 const { postJson, getJson, ProviderError } = require("./http");
+const { closestRatio, chooseTier } = require("./sizing");
 
 const HOST = "generativelanguage.googleapis.com";
 const urlFor = (model) => `https://${HOST}/v1beta/models/${encodeURIComponent(model)}:generateContent`;
@@ -32,50 +33,20 @@ const MODELS = [
   { id: "gemini-3.1-flash-lite-image", label: "Nano Banana 2 Lite", note: "Fast", ratios: R14, tiers: ["1K"] },
 ];
 const TIER_MULT = { "1K": 1, "2K": 2, "4K": 4 };
-const TIER_ORDER = ["1K", "2K", "4K"];
 
 function modelInfo(model) {
   // A model not in the catalogue (saved by an older version) gets the widest common set.
   return MODELS.find((m) => m.id === model) || { id: model, ratios: R10, tiers: ["1K", "2K", "4K"] };
 }
 
-/**
- * Closest supported ratio, and a size tier: the smallest whose image covers the crop on both sides
- * (the tile is never enlarged on placement) up to `maxTier`, or exactly `maxTier` with
- * { exact: true } (when the model offers it), never below `minTier` when the model has it. Above
- * `maxTier`, the largest allowed tier.
- */
-function fitSize(model, w, h, maxTier = "2K", { exact = false, minTier = null } = {}) {
+/** Closest supported ratio and a size tier (rules in sizing.js); Gemini's exact pixels per ratio. */
+function fitSize(model, w, h, maxTier = "2K", opts = {}) {
   const info = modelInfo(model);
-  const want = Math.log(w / h);
-  let ratio = info.ratios[0];
-  let bestErr = Infinity;
-  for (const r of info.ratios) {
-    const [rw, rh] = RATIOS_1K[r];
-    const err = Math.abs(Math.log(rw / rh) - want);
-    if (err < bestErr) { bestErr = err; ratio = r; }
-  }
-  const cap = TIER_ORDER.indexOf(maxTier) >= 0 ? TIER_ORDER.indexOf(maxTier) : 1;
-  const allowed = info.tiers.filter((t) => TIER_ORDER.indexOf(t) <= cap);
-  let tiers = exact && info.tiers.includes(maxTier) ? [maxTier] : allowed.length ? allowed : [info.tiers[0]];
-  // Auto's floor (2K): generated pixels hold less detail than a camera's, so a tile asked bigger and
-  // shrunk on placement looks as sharp as the photo. A model without that size keeps what it has.
-  const floor = minTier ? tiers.filter((t) => TIER_ORDER.indexOf(t) >= TIER_ORDER.indexOf(minTier)) : tiers;
-  if (floor.length) tiers = floor;
+  const ratio = closestRatio(info.ratios, w, h, (r) => RATIOS_1K[r][0] / RATIOS_1K[r][1]);
   const [bw, bh] = RATIOS_1K[ratio];
-  const tier = tiers.find((t) => bw * TIER_MULT[t] >= w && bh * TIER_MULT[t] >= h) || tiers[tiers.length - 1];
-  return { width: bw * TIER_MULT[tier], height: bh * TIER_MULT[tier], aspectRatio: ratio, imageSize: tier };
-}
-
-function promptFor(task, scene) {
-  return (
-    (scene ? "You are given three images; images 1 and 2 have the same size. " : "You are given two images of the same size. ") +
-    "Image 1 is a picture. Image 2 is a mask: white marks the area to change, black marks the area to keep. " +
-    (scene ? sceneNote("Image 3") : "") +
-    task +
-    " Change only the white area of image 1. Keep every black area identical, with the same framing, size, perspective and lighting. " +
-    "Return the full edited image 1 only: no mask, borders, text or watermarks."
-  );
+  const size = (t) => ({ width: bw * TIER_MULT[t], height: bh * TIER_MULT[t] });
+  const tier = chooseTier(info.tiers, w, h, maxTier, opts, size);
+  return { ...size(tier), aspectRatio: ratio, imageSize: tier };
 }
 
 function classify(status, json, text) {
@@ -219,13 +190,13 @@ async function generateOne(req, text, imgB64, maskB64, size, sceneB64) {
   return extractImage(json);
 }
 
-/** Same request shape as openai.generate. Variations run as parallel requests. */
 /** Free request that only proves the key works. */
 async function checkKey({ fetch, apiKey }) {
   await getJson({ fetch, url: `https://${HOST}/v1beta/models?pageSize=1`, headers: { "x-goog-api-key": apiKey }, classify, host: HOST });
   return {};
 }
 
+/** Same request shape as openai.generate. Variations run as parallel requests. */
 async function generate(req) {
   if (!req.apiKey) throw new ProviderError("Add your Gemini API key in the Providers tab first.", { code: "no_key" });
   const { width, height } = req.image;
@@ -233,7 +204,7 @@ async function generate(req) {
   const maskB64 = toBase64(encodePng(binarize(req.mask), width, height, 1));
   const size = req.target.aspectRatio ? req.target : fitSize(req.model, req.target.width, req.target.height, "2K");
   const sceneB64 = req.scene ? toBase64(encodePng(req.scene.rgb, req.scene.width, req.scene.height, 3)) : null;
-  const text = promptFor(req.task, !!sceneB64);
+  const text = maskImagePrompt(req.task, !!sceneB64);
   const n = Math.max(1, Math.min(4, req.n || 1));
   const settled = await Promise.allSettled(Array.from({ length: n }, () => generateOne(req, text, imgB64, maskB64, size, sceneB64)));
   const ok = settled.filter((s) => s.status === "fulfilled").map((s) => s.value);

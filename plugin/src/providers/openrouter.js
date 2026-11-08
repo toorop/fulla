@@ -5,8 +5,9 @@
 const { toBase64, fromBase64 } = require("../bytes");
 const { encodePng } = require("../png");
 const { binarize } = require("../image");
-const { sceneNote } = require("../prompts");
+const { maskImagePrompt } = require("../prompts");
 const { postJson, getJson, ProviderError } = require("./http");
+const { closestRatio, chooseTier } = require("./sizing");
 
 const HOST = "openrouter.ai";
 const URL = `https://${HOST}/api/v1/images`;
@@ -28,7 +29,6 @@ const MODELS = [
   { id: "openai/gpt-image-2.6-sunburst", label: "GPT Image 2.6 Sunburst", ratios: OPENAI_RATIOS, tiers: ["1K", "2K"], maxN: 4, noResolution: true, png: true },
   { id: "openai/gpt-image-2.5-sunburst", label: "GPT Image 2.5 Sunburst", ratios: OPENAI_RATIOS, tiers: ["1K", "2K"], maxN: 4, noResolution: true, png: true },
 ];
-const TIER_ORDER = ["1K", "2K", "4K"];
 const TIER_SIDE = { "1K": 1024, "2K": 2048, "4K": 4096 }; // about this many pixels squared per tier
 
 function modelInfo(model) {
@@ -42,51 +42,20 @@ const ratioValue = (r) => {
 };
 
 /**
- * Closest supported ratio, and a size tier: the smallest whose image covers the crop on both sides
- * (the tile is never enlarged on placement) up to `maxTier`, or exactly `maxTier` with
- * { exact: true } (when the model offers it), never below `minTier` when the model has it. Above
- * `maxTier`, the largest allowed tier. OpenRouter picks the exact
- * pixels per provider, so width/height here are the expected size; placement fits whatever comes
- * back onto the crop.
+ * Closest supported ratio and a size tier (rules in sizing.js). OpenRouter picks the exact pixels
+ * per provider, so width/height here are the expected size; placement fits whatever comes back
+ * onto the crop.
  */
-function fitSize(model, w, h, maxTier = "2K", { exact = false, minTier = null } = {}) {
+function fitSize(model, w, h, maxTier = "2K", opts = {}) {
   const info = modelInfo(model);
-  const want = Math.log(w / h);
-  let ratio = info.ratios[0];
-  let bestErr = Infinity;
-  for (const r of info.ratios) {
-    const err = Math.abs(Math.log(ratioValue(r)) - want);
-    if (err < bestErr) {
-      bestErr = err;
-      ratio = r;
-    }
-  }
-  const cap = TIER_ORDER.indexOf(maxTier) >= 0 ? TIER_ORDER.indexOf(maxTier) : 1;
-  const allowed = info.tiers.filter((t) => TIER_ORDER.indexOf(t) <= cap);
-  let tiers = exact && info.tiers.includes(maxTier) ? [maxTier] : allowed.length ? allowed : [info.tiers[0]];
-  // Auto's floor (2K): generated pixels hold less detail than a camera's, so a tile asked bigger and
-  // shrunk on placement looks as sharp as the photo. A model without that size keeps what it has.
-  const floor = minTier ? tiers.filter((t) => TIER_ORDER.indexOf(t) >= TIER_ORDER.indexOf(minTier)) : tiers;
-  if (floor.length) tiers = floor;
+  const ratio = closestRatio(info.ratios, w, h, ratioValue);
   const size = (t) => {
     const k = ratioValue(ratio);
     const area = TIER_SIDE[t] * TIER_SIDE[t];
     return { width: Math.round(Math.sqrt(area * k) / 16) * 16, height: Math.round(Math.sqrt(area / k) / 16) * 16 };
   };
-  const covers = (t) => size(t).width >= w && size(t).height >= h;
-  const tier = tiers.find(covers) || tiers[tiers.length - 1];
+  const tier = chooseTier(info.tiers, w, h, maxTier, opts, size);
   return { ...size(tier), aspectRatio: ratio, imageSize: tier };
-}
-
-function promptFor(task, scene) {
-  return (
-    (scene ? "You are given three images; images 1 and 2 have the same size. " : "You are given two images of the same size. ") +
-    "Image 1 is a picture. Image 2 is a mask: white marks the area to change, black marks the area to keep. " +
-    (scene ? sceneNote("Image 3") : "") +
-    task +
-    " Change only the white area of image 1. Keep every black area identical, with the same framing, size, perspective and lighting. " +
-    "Return the full edited image 1 only: no mask, borders, text or watermarks."
-  );
 }
 
 function classify(status, json, text) {
@@ -181,7 +150,7 @@ async function generate(req) {
   if (req.scene) refs.push(dataUrl(encodePng(req.scene.rgb, req.scene.width, req.scene.height, 3)));
   const body = (count) => ({
     model: req.model,
-    prompt: promptFor(req.task, !!req.scene),
+    prompt: maskImagePrompt(req.task, !!req.scene),
     input_references: refs,
     ...(info.noResolution ? {} : { resolution: size.imageSize }),
     aspect_ratio: size.aspectRatio,

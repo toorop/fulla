@@ -3,7 +3,7 @@
 const { toBase64, fromBase64 } = require("../bytes");
 const { encodePng } = require("../png");
 const { alphaEditMask } = require("../image");
-const { sceneNote } = require("../prompts");
+const { alphaMaskPrompt } = require("../prompts");
 const { postJson, getJson, ProviderError } = require("./http");
 
 const HOST = "api.openai.com";
@@ -50,15 +50,6 @@ function fitSize(w, h, tier = "2K", { exact = false, minTier = null } = {}) {
   return best;
 }
 
-function promptFor(task, scene) {
-  return (
-    "Edit only the transparent area of the mask on the first image. " +
-    (scene ? sceneNote("The second image") : "") +
-    task +
-    " Keep everything outside that area unchanged, with the same framing, perspective and lighting. No borders, text or watermarks."
-  );
-}
-
 function classify(status, json, text) {
   const e = (json && json.error) || {};
   const msg = e.message || (text || "").slice(0, 200) || `HTTP ${status}`;
@@ -75,11 +66,13 @@ function classify(status, json, text) {
     return new ProviderError(`OpenAI refused the request: ${msg}`, { status, code, detail });
   }
   if (status === 429) {
-    const billing = /credit_balance_exhausted|spend_limit|usage_limit|insufficient_quota/.test(`${e.code} ${e.type}`);
-    if (/credit_balance_exhausted|insufficient_quota/.test(`${e.code} ${e.type}`) && !/spend_limit|usage_limit/.test(`${e.code}`)) {
+    // A spend limit comes with type "insufficient_quota" too: tell it by its code first.
+    if (/spend_limit|usage_limit/.test(e.code || "")) {
+      return new ProviderError("Your OpenAI account has hit its spend limit. Raise it at platform.openai.com/settings/organization/limits, then try again.", { status, code, detail });
+    }
+    if (/credit_balance_exhausted|insufficient_quota/.test(`${e.code} ${e.type}`)) {
       return new ProviderError("Your OpenAI account has no credits left. Add credits at platform.openai.com/settings/organization/billing, then try again.", { status, code, detail });
     }
-    if (billing) return new ProviderError("Your OpenAI account has hit its spend limit. Raise it at platform.openai.com/settings/organization/limits, then try again.", { status, code, detail });
     return new ProviderError("OpenAI rate limit reached. Wait a minute and try again.", { status, code, retryable: true, detail });
   }
   // Retried only when the service was unavailable (nothing ran); after a 500 or 504 the image may have been made.
@@ -133,7 +126,7 @@ async function generate(req) {
   const maskPng = encodePng(alphaEditMask(req.mask), width, height, 4);
   const body = {
     model: req.model,
-    prompt: promptFor(req.task, !!req.scene),
+    prompt: alphaMaskPrompt(req.task, !!req.scene),
     // The mask applies to the first image; the second, when there, is the whole photo for context.
     images: [
       { image_url: `data:image/png;base64,${toBase64(imagePng)}` },

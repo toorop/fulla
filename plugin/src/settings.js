@@ -76,10 +76,7 @@ async function setKey(providerId, value) {
 function loadPrefs() {
   try {
     const raw = JSON.parse(localStorage.getItem(PREFS_KEY) || "{}");
-    const prefs = { ...DEFAULTS, ...raw, models: { ...DEFAULTS.models, ...(raw.models || {}) } };
-    delete prefs.customModel; // custom model IDs are gone (2026-11-07); such a choice falls back to the default model
-    delete prefs.maxTier; // the old size cap (until 2026-11-07); "resolution" starts at Auto
-    return prefs;
+    return { ...DEFAULTS, ...raw, models: { ...DEFAULTS.models, ...(raw.models || {}) } };
   } catch (_) {
     return JSON.parse(JSON.stringify(DEFAULTS));
   }

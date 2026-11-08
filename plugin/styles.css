@@ -367,6 +367,12 @@ sp-textarea {
   color: #e34850;
 }
 
+/* Error details: a read-only field the user can select and copy. */
+.details {
+  height: 110px;
+  font-size: 11px;
+}
+
 .hint {
   color: var(--uxp-host-text-color-secondary);
   font-size: 11px;

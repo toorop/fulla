@@ -34,3 +34,10 @@ test("every require in the plugin is a host module or resolves to a file (not a 
   }
   assert.deepEqual(problems, []);
 });
+
+test("every plugin file parses (the self-test too: npm test never runs it)", () => {
+  const vm = require("node:vm");
+  for (const file of jsFiles(PLUGIN)) {
+    assert.doesNotThrow(() => new vm.Script(fs.readFileSync(file, "utf8"), { filename: file }), `${path.relative(PLUGIN, file)} does not parse`);
+  }
+});

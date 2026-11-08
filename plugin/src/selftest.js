@@ -969,10 +969,39 @@ const SCENARIOS = {
       await setN(n0);
     }
 
+    // A provider error: the message, and a Details button whose text (status, provider detail,
+    // versions; never the key) unfolds on click and folds when a menu opens.
+    const real3 = net.fetch;
+    net.fetch = async () => ({ ok: false, status: 400, headers: { get: () => null }, text: async () => JSON.stringify({ error: { code: 400, status: "INVALID_ARGUMENT", message: "selftest refusal" } }) });
+    try {
+      $("prompt").value = "selftest error";
+      $("generate").dispatchEvent(new Event("click"));
+      await tick(300);
+      expect(await idle(30), "the refused run did not end");
+    } finally {
+      if (await idle(30)) net.fetch = real3;
+    }
+    expect(/error/.test($("status").className), `refused run: status "${$("status").textContent}"`);
+    expect(!$("details").hidden && $("detailsText").hidden, "refused run: no folded Details button");
+    const report = $("detailsText").value;
+    const key = await settings.getKey(current);
+    expect(/HTTP status: 400/.test(report) && /selftest refusal/.test(report) && /^Fulla /.test(report), `details: ${report}`);
+    expect(!key || !report.includes(key), "the details contain the API key");
+    $("detailsToggle").dispatchEvent(new Event("click"));
+    await tick();
+    expect(!$("detailsText").hidden, "Details did not unfold");
+    $("modelChip").dispatchEvent(new Event("click"));
+    await tick();
+    expect($("detailsText").hidden, "the details stayed open under a menu");
+    $("modelChip").dispatchEvent(new Event("click"));
+    await tick();
+    info.details = report.split(String.fromCharCode(10)).slice(1, 3).join(" | ");
+
     await select(doc, "none");
     $("generate").dispatchEvent(new Event("click"));
     for (let i = 0; i < 25 && !$("status").textContent; i++) await tick(200);
     expect(await idle(10), "no-selection run did not end");
+    expect($("details").hidden, "a message for the user got a Details button");
     expect(/Make a selection first/.test($("status").textContent) && /error/.test($("status").className), `no selection: "${$("status").textContent}"`);
     info.error = $("status").textContent;
     // Once there is a selection, the message goes away by itself (the panel checks every second).

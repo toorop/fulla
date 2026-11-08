@@ -6,6 +6,7 @@ const { runGeneration, UserError } = require("./src/pipeline");
 const settings = require("./src/settings");
 const { toBase64 } = require("./src/bytes");
 const { newSpend, addSpend, spendText, spendAmount } = require("./src/cost");
+const { errorReport } = require("./src/report");
 const connect = require("./src/connect");
 const { filterItems, modelMenuItems } = require("./src/menu");
 const { helpMenu } = require("./src/help");
@@ -57,7 +58,32 @@ function setStatus(text, kind) {
   s.textContent = text || "";
   s.className = kind === "error" ? "status error" : "status";
   s.hidden = !text;
+  showDetails("");
   if (text) showCard();
+}
+
+/** The "Details" button under an error, with its text (folded); "" removes it. */
+function showDetails(text) {
+  $("details").hidden = !text;
+  $("detailsText").value = text || "";
+  foldDetails();
+}
+
+// Folded whenever a menu opens: the native text field would draw over the menu.
+function foldDetails() {
+  $("detailsText").hidden = true;
+  $("detailsToggle").querySelector(".obtn-in").textContent = "Details";
+}
+
+function versions() {
+  const v = { plugin: "", host: "" };
+  try {
+    v.plugin = require("uxp").versions.plugin || "";
+    v.host = require("photoshop").app.version || "";
+  } catch (_) {
+    /* the report then says "dev" / "?" */
+  }
+  return v;
 }
 
 function showCard() {
@@ -317,6 +343,11 @@ async function generate() {
         const known = e instanceof UserError || e.name === "ProviderError" || e instanceof ps.HostError;
         setStatus(known ? e.message : `Something went wrong: ${e.message || e}`, "error");
         if (e.code === "noSelection" || e.code === "noDocument") watchUntilReady(e.code);
+        // A message for the user (no selection, wrong shape...) needs no details; anything else may.
+        else if (!(e instanceof UserError)) {
+          const v = versions();
+          showDetails(errorReport({ error: e, provider: provider.name, model, size: currentResolution(), plugin: v.plugin, host: v.host }));
+        }
       }
     }
   } finally {
@@ -347,6 +378,7 @@ function closeMenu() {
  */
 function openMenu(chip, items, onPick, searchHint) {
   closeMenu();
+  foldDetails();
   const app = $("app").getBoundingClientRect();
   const box = $("promptBox").getBoundingClientRect();
   const menu = el("div", { id: "menu", class: "menu" });
@@ -564,6 +596,12 @@ function bind() {
   $("modelChip").addEventListener("click", toggleModelMenu);
   $("optionsChip").addEventListener("click", toggleSettings);
   $("runDone").addEventListener("click", finishRun);
+  $("detailsToggle").addEventListener("click", () => {
+    const show = $("detailsText").hidden;
+    closeMenu();
+    $("detailsText").hidden = !show;
+    $("detailsToggle").querySelector(".obtn-in").textContent = show ? "Hide details" : "Details";
+  });
   bindGrip();
   bindPromptHint();
   // A click anywhere else in the panel closes the menu (the chip toggles it itself).

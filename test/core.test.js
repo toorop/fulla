@@ -307,3 +307,25 @@ test("keys: only in secure storage; a plain-text copy left in localStorage is mo
     delete global.localStorage;
   }
 });
+
+test("error report: versions, provider, model, message, status, code and provider detail; never the key", () => {
+  const { errorReport } = require("../plugin/src/report");
+  const { ProviderError } = require("../plugin/src/providers/http");
+  const err = new ProviderError("The model is having trouble right now.", { status: 502, code: "502", detail: "502: Provider returned error" });
+  const text = errorReport({ error: err, provider: "OpenRouter", model: "google/gemini-nano-banana-2.1", size: "Auto", plugin: "0.1.0", host: "28.0.1", when: new Date("2026-11-08T18:00:00Z") });
+  assert.equal(
+    text,
+    [
+      "Fulla 0.1.0 · Photoshop 28.0.1 · 2026-11-08T18:00:00.000Z",
+      "Provider: OpenRouter · model: google/gemini-nano-banana-2.1 · size: Auto",
+      "Message: The model is having trouble right now.",
+      "HTTP status: 502",
+      "Code: 502",
+      "Detail: 502: Provider returned error",
+    ].join("\n")
+  );
+  // A plain error (Photoshop, network) still reads; a long detail is cut.
+  const plain = errorReport({ error: Object.assign(new Error("Photoshop refused \"placeEvent\""), { detail: "x".repeat(5000) }) });
+  assert.match(plain, /^Fulla dev · Photoshop \? · /);
+  assert.ok(plain.split("\n").pop().length <= "Detail: ".length + 1000);
+});

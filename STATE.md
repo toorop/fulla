@@ -6,44 +6,27 @@
 
 ## Next action
 
-- **Resume here: step 3, 3.1 done; Stéphane is running one more paid try** (4K with "keep the
-  grain" in the prompt) and maybe the same test on an untreated digital photo (most users' case).
-  Then propose 3.2, tone matching (discuss first, one sub-step at a time, no code before he says).
-- 3.1 (`3b7c47a`, not pushed): Auto takes the smallest tier covering the crop on both sides (the
-  tile is never enlarged), up to 4K (`provider.autoMax || "4K"`; OpenAI direct `autoMax: "2K"`,
-  above 2560x1440 is experimental there); a chosen size is used as is; nothing shown before the
-  run (the card says the size). Uploaded crop stays capped at 2048 px (`inputSize`): sending it
-  larger is a research item. 63/63, package, free self-test 28/28.
-- **Real test, 2026-11-08** (26 MP film-look portrait, 2500 px selection, Nano Banana 2.1 via
-  OpenRouter, "make her sad"): Auto gave 4K, clean but **too clean (film grain partly lost)**,
-  $0.121 vs $0.058 at 2K (double, not +50 %); 2K stretched ~2x looked grainier, by accident.
-  **Both show a warm/red colour shift with a sharp rectangular seam** at the selection edge:
-  Nano Banana shifts tones too, so tone matching (3.2) is a must; grain matching becomes a real
-  need for grainy photos. A 4K run with "keep the film grain and colours" in the user prompt was
-  far worse (stronger shift and seam): naming the style seems to make the model apply it. A/B of
-  our wrapper (current vs minimal, temporary edit, reverted) showed no clear difference: the
-  wrapper stays as is; the colour shift is the model's, to fix after the fact (3.2). Tip for the
-  docs and the waiting tips: describe the change, not the photo's style.
-- **3.2 tone matching, agreed 2026-11-08**: start with a global correction (gain + offset per
-  channel, fitted in the ring around the selection on reduced, blurred images, gains bounded),
-  always applied, B&W included (models sometimes add a colour cast to B&W); aim for the best
-  compromise, not perfection. Open question put to him: bake it into the pixels (needs a PNG
-  decoder in JS; JPEG/WebP results left out; slow re-encode at 4K) or let Photoshop do it (read
-  the placed layer's pixels, apply a Curves smart filter on the smart object: one layer,
-  editable, can be switched off; recomputed on each variation)? He chose the smart filter, and
-  no filter when the correction is negligible.
-- **3.2 global correction coded (2026-11-08, not committed)**: `src/tone.js` (fit on a 128 px grid,
-  3x3 blur, ring 4 % away from the selection, robust least squares, gain 0.8-1.25, offset ±60,
-  none under 3 levels); `photoshop.js` reads the layer's own pixels (`layerID`: reads ignore the
-  mask but include smart filters), then select RGB channel + `curves` (channels red/green/blue,
-  points `_obj: "paint"`), after the mask; `showVariation` deletes Fulla's Curves filterFX and
-  refits. Explored in Photoshop first (the mask is the target channel after commit, so Curves needs
-  the RGB channel selected). Safeguard: if the corrected ring still differs (median > 10 levels),
-  the tile is not the same picture there, so no correction (the self-test's unrelated mock tiles
-  showed why). 67/67, package, free self-test 29/29 (new `toneMatch`; `panelRun` timing checks
-  made patient, they flaked with Photoshop busy or in the background). Real try by Stéphane on
-  his portrait (2K, "make her sad"): "just perfect", seam and warm cast gone. Open question from
-  him: merge the filter into the tile to keep a plain layer? Then commit (ask).
+- **Resume here: step 3, 3.1 and 3.2 (global tone matching) done and committed** (`3b7c47a`,
+  `c2a05b3`, not pushed; push once at the end of the session, ask). Next: propose the next step-3
+  sub-step (discuss first, one at a time, no code before he says): whole image as a scene
+  reference, grain matching (now a real need for grainy photos), the tile offset (reproduce first).
+- 3.1 Auto resolution: smallest tier covering the crop on both sides (never enlarged), up to 4K
+  (`provider.autoMax || "4K"`; OpenAI direct 2K, above is experimental there); nothing shown before
+  the run. Uploaded crop stays capped at 2048 px (`inputSize`): sending it larger is a research
+  item. Real test (26 MP film-look portrait, Nano Banana 2.1): 4K is sharper but too clean (grain
+  lost), $0.121 vs $0.058 at 2K.
+- 3.2 tone matching (`src/tone.js`): per-channel gain + offset fitted in the ring around the
+  selection (128 px grid, 3x3 blur, ring 4 % away, robust least squares, gain 0.8-1.25, offset
+  ±60); none under 3 levels, none without a ring, none when the corrected ring still differs
+  (median > 10 levels: not the same picture). Applied by `photoshop.js` as a Curves smart filter
+  after the mask (reads with `layerID` ignore the mask but include smart filters; select the RGB
+  channel first, the mask is the target); `showVariation` deletes Fulla's Curves and refits. B&W
+  included. His real try: "just perfect". Kept as a separate filter (variations need the smart
+  object; the user can hide, adjust or mask it). Sand slightly lighter: midtone point or local
+  correction only if more cases show it.
+- Prompts: naming the photo's style in the prompt ("keep the film grain") made things far worse;
+  our wrapper's wording made no clear difference (A/B, reverted). Tip for docs and waiting tips:
+  describe the change, not the photo's style.
 - Whole image as a scene reference (models taking several images): Stéphane wants it tested
   (roadmap step 3). Ideas from a paid competitor plugin (prompt history and library, reference
   images, rerun keeping results, 16/32-bit, a Photoshop-like progress window) are in his notes,
@@ -65,7 +48,7 @@
   (pages use `flex: 1 1 0`, tabs and sheet rows don't shrink); a div that scrolls itself or whose
   row clips it can lose its bottom border; the native text field draws over any menu.
 - Self-test with Stéphane's Google key: never run `geminiRaw` without asking (5 billed images);
-  use an `only` list (every free scenario passes, 25/26 with `openaiRaw` failing for lack of key).
+  use an `only` list of the free scenarios (29/29 on 2026-11-08, `openaiRaw` left out: no key).
 - **Tile offset to dig into later** (Stéphane's call; details and captures in his notes): pier
   photo, Nano Banana 2.1 via OpenRouter, a removal came out shifted up-right while the morning's
   one did not; after deleting every layer but the base, the same removal had no offset, so the
@@ -85,22 +68,17 @@
 
 ## Current step
 
-Step 3 (automatic resolution, then tone matching): 3.1, the Auto rule, under discussion since
-2026-11-08. Today's Auto (`fitSize` in each provider): smallest tier whose long side × 1.25
-covers the crop's long side, capped at 2K, so a tile may be enlarged up to 1.25× (more above
-2K). Step 2 code done. Step 1 left to test some day, not blocking:
-sign-up with a fresh OpenRouter account; a real OpenAI key (a Google key works since 2026-11-07).
+Step 3 (resolution, tones, grain): 3.1 Auto resolution and 3.2 global tone matching done
+(2026-11-08). Left in step 3: whole image as a scene reference, grain matching, the tile offset;
+the B&W boat check (border gone?). Step 1 left to test some day, not blocking: sign-up with a
+fresh OpenRouter account; a real OpenAI key.
 
 ## Roadmap (order agreed 2026-11-07, revised that evening; details and checkboxes in Stéphane's notes)
 
 1. Onboarding. Done.
-2. Prompt box (layout, run card, model button and menu, settings popup, Adobe-like results, help
-   in the panel menu). Code done; end of step left: README + panel captures, his walk-through.
-3. Automatic resolution (rule to agree first; idea: when two sizes cost the same, ask the bigger),
-   then tone matching (GPT Image shifts tones; his pier, portrait and extended-canvas cases show a
-   slight colour shift or seam; fit a correction on the ring around the selection), grain
-   matching only if still needed. Also: whole image as a scene reference; the tile offset seen
-   with earlier test layers present.
+2. Prompt box. Done (README done; panel captures moved to step 6; his walk-through not done).
+3. Automatic resolution (done), tone matching (global, done), grain matching, whole image as a
+   scene reference, the tile offset seen with earlier test layers present.
 4. Full code review.
 5. Local models, **before the website and the public release** (his decision, 2026-11-07): with
    cost, privacy (nothing leaves the computer) is the big argument against Photoshop for many
@@ -118,38 +96,21 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Recently done
 
+- 2026-11-08 — README "Using Fulla" (`7059fce`); Auto resolution up to 4K (`3b7c47a`); tone
+  matching with a Curves smart filter (`c2a05b3`). Panel captures moved to the website step.
 - 2026-11-07 — Roadmap 2.5 (`54f1c90`): one layer per run, thumbnails swap it, Done clears.
   Prompt wording (`16d37cc`): Photoshop's placeholder; add/change/remove/fill prompts. Help in the
   panel's ≡ menu (`1cf4bcf`, UXP needs a `show` hook), model-request template, 310 px minimum.
 - 2026-11-07 — Roadmap 2.3 and 2.4 + Generate tab rework (`6e26e16`, `20dbb07`, `1bd710d`): model
   button and menu, no custom model IDs, key page button, settings popup with Auto size, prompt on
   top with one button row and a resize grip, lighter look; Cancel/no-selection fixes.
-- 2026-11-07 — Roadmap 2.2: run card above the prompt box (provider; "Generating with <model>",
-  seconds, looping bar; done: prompt, model · tier · time, run and session cost; errors red),
-  idle hint, prompt and pickers locked while running, Generate ↔ Cancel. Cancel now stops any
-  further request (retries were billed). Self-test `panelRun` (fake network, free). 60/60, 26/28.
-- 2026-11-07 — Roadmap 2.1 (`678ef19`): prompt box pinned at the bottom, scrolling area above
-  (Providers scrolls too), hand-built floating menu with search (`src/menu.js`); self-test
-  `panelLayout`, 25/27; checked by Stéphane.
-- 2026-11-07 — Step 1 (onboarding, roadmap 1.1-1.4: tabs, Providers tab, guided OpenRouter
-  connect with headless OAuth PKCE, first-run screens) done; details in the git log and his notes.
-- 2026-11-07 — Tone shift seen with GPT Image 2.6 via OpenRouter (B&W pier, boat removed): visible
-  border and darker tile; Nano Banana seamless. Tone matching added to roadmap step 3.
-- 2026-11-06 — OpenRouter provider (`providers/openrouter.js`): `POST /api/v1/images`, picture +
-  mask as `input_references` (no mask parameter exists); catalogue Nano Banana 2.1 (default),
-  Nano Banana Pro, Qwen Image 3, Qwen Image 2.1 Pro, GPT Image 2.6 and 2.5 Sunburst; the run's cost
-  is OpenRouter's billed `usage.cost`. On a real B&W photo Qwen 3 removed a boat behind posts best.
-- 2026-11-06 — Colour fix (`ebd5829`, sRGB profile in results), modes and Expand removed, renamed to Fulla.
+- 2026-11-07 — Steps 1 and 2.1-2.4 (onboarding, prompt box, run card, model button, settings
+  popup): details in the git log and his notes.
 
 ## Decisions taken
 
 - After Cancel no new request is sent (2026-11-07): each one may be billed; the one already out
   can't be recalled, its result is dropped.
-- Generate tab layout (2026-11-07): prompt box pinned at the bottom (model chip showing the
-  model name only, options chip "2K · ×1", a "Generate" button, Adobe's word, that becomes
-  "Cancel"); above it a scrolling card for the last run only (prompt, thumbnails when > 1,
-  model · resolution · time, run and session cost); while running, an animated bar without
-  percent, stage and seconds, prompt and chips locked. No chat history: past runs are layers.
 - Stay as close as possible to Photoshop's built-in Generative Fill (2026-11-07), e.g. one
   variation → one layer, no group; several → thumbnails in the panel, click to try, validate to
   create the layer (roadmap step 2). Show clearly that a generation is running.
@@ -168,13 +129,15 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 - First run is the adoption make-or-break (most users have no AI account): OpenRouter put forward,
   Google and OpenAI keys offered from day one to power users, fal.ai later. One account per
   provider type in v1.
-- One model menu in the prompt box, listing a curated catalogue of tested models for configured
-  providers, plus "custom model ID"; never every model of an aggregator.
+- One model menu, a curated catalogue of tested models for configured providers; no custom model
+  IDs (2026-11-07); never every model of an aggregator.
 - Clean, efficient UI close to everyday AI chat apps, not a form with many selects.
 - Colours: read and send sRGB, embed an sRGB profile in results. With policy Off Photoshop drops
   it; handling that (putPixels instead of placing a file) is a bigger change, ask first.
 - Develop with UXP Developer Tools; never install with `install.ps1` at the same time.
 - Commit as we go, push once at the end of a session (spares the CI).
+- Tone matching as a separate Curves smart filter, not merged (2026-11-08): variations swap the
+  smart object's content; the user can hide, adjust or mask it. No filter when not needed.
 
 ## Open questions / blockers
 

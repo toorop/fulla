@@ -53,8 +53,8 @@
 - **Tile offset to dig into later** (details in his notes): a removal on the pier came out shifted
   up-right only while earlier (hidden) test layers existed. Plan: reproduce, save sent/received
   images (dev only), measure; fix the cause or register the tile in the ring (roadmap step 3).
-- **Push**: everything up to the end of 2026-11-07 is pushed (he pushes once per session to
-  spare the CI; ask before pushing).
+- **Push**: pushed up to `5a188d2` on 2026-11-08, end of step 4 (he pushes once per session to
+  spare the CI; ask before pushing). Check that run's CI result next session.
 - The detailed roadmap with checkboxes lives in Stéphane's notes (not in the repo); tick it as
   sub-steps finish, and record decisions in his ideas note.
 - Blocked by: —

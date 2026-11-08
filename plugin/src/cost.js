@@ -48,10 +48,43 @@ function formatUsd(usd) {
   return `$${usd.toFixed(usd < 1 ? 3 : 2)}`;
 }
 
-/** "≈ $0.034 · 1,290 tokens", or "1,290 tokens" when the price is unknown. */
-function formatCost(cost, usage) {
+/**
+ * "≈ $0.034 · 1,290 tokens" (estimated from list prices), "$0.058 · 5,535 tokens" with `billed`
+ * (the amount the provider reported), or "1,290 tokens" when the price is unknown.
+ */
+function formatCost(cost, usage, billed = false) {
   const tokens = `${groupThousands((usage && usage.total) || 0)} tokens`;
-  return cost == null ? tokens : `≈ ${formatUsd(cost)} · ${tokens}`;
+  return cost == null ? tokens : `${billed ? "" : "≈ "}${formatUsd(cost)} · ${tokens}`;
 }
 
-module.exports = { PRICES, emptyUsage, addUsage, estimateCost, formatCost, formatUsd };
+// What a run, or the session, has cost so far. Every reply counts, even when the run is then
+// cancelled or a variation is blocked: the provider may still bill it.
+
+function newSpend() {
+  return { usage: null, cost: 0, priced: false, unpriced: false, estimated: false };
+}
+
+/** Add one reply's usage; its cost is the billed amount when the reply carried one, else an estimate. */
+function addSpend(spend, model, usage) {
+  const cost = estimateCost(model, usage);
+  spend.usage = addUsage(spend.usage, usage);
+  if (cost == null) spend.unpriced = true;
+  else {
+    spend.cost += cost;
+    spend.priced = true;
+    if (!(usage && typeof usage.cost === "number")) spend.estimated = true;
+  }
+}
+
+/** The spend as a line: amount (with "≈" if any part is an estimate) and tokens. */
+function spendText(spend) {
+  const text = formatCost(spend.priced ? spend.cost : null, spend.usage, !spend.estimated);
+  return spend.priced && spend.unpriced ? `${text} (some replies not priced)` : text;
+}
+
+/** The amount alone ("$0.120", "≈ $0.120"), or the tokens when nothing is priced. */
+function spendAmount(spend) {
+  return spend.priced ? `${spend.estimated ? "≈ " : ""}${formatUsd(spend.cost)}` : spendText(spend);
+}
+
+module.exports = { PRICES, emptyUsage, addUsage, estimateCost, formatCost, formatUsd, newSpend, addSpend, spendText, spendAmount };

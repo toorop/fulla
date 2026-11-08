@@ -1,7 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const { PRICES, emptyUsage, addUsage, estimateCost, formatCost, formatUsd } = require("../plugin/src/cost");
+const { PRICES, emptyUsage, addUsage, estimateCost, formatCost, formatUsd, newSpend, addSpend, spendText, spendAmount } = require("../plugin/src/cost");
 const { PROVIDERS } = require("../plugin/src/providers/index");
 
 const usage = (o) => ({ ...emptyUsage(), ...o });
@@ -42,5 +42,23 @@ test("cost reads as a short line", () => {
   assert.equal(formatCost(1.234, usage({ total: 1234567 })), "≈ $1.23 · 1,234,567 tokens");
   assert.equal(formatCost(null, usage({ total: 999 })), "999 tokens");
   assert.equal(formatCost(null, null), "0 tokens");
+  assert.equal(formatCost(0.0585, usage({ total: 5535 }), true), "$0.059 · 5,535 tokens", "a billed amount has no ≈");
   assert.equal(formatUsd(0), "$0.000");
+});
+
+test("spend: an amount the provider billed shows as is; any estimate in it brings the ≈; unpriced replies are flagged", () => {
+  const billed = newSpend();
+  addSpend(billed, "google/gemini-nano-banana-2.1", usage({ total: 5535, cost: 0.0581 }));
+  addSpend(billed, "google/gemini-nano-banana-2.1", usage({ total: 5590, cost: 0.0585 }));
+  assert.equal(spendText(billed), "$0.117 · 11,125 tokens");
+  assert.equal(spendAmount(billed), "$0.117");
+  const mixed = newSpend();
+  addSpend(mixed, "gpt-image-2", usage({ outputImage: 1000, total: 1000 }));
+  addSpend(mixed, "openai/gpt-image-2.6-sunburst", usage({ total: 10, cost: 0.1 }));
+  assert.equal(spendAmount(mixed), "≈ $0.130", "estimate + billed: still an estimate");
+  const unknown = newSpend();
+  addSpend(unknown, "gpt-image-2", usage({ outputImage: 1000, total: 1000 }));
+  addSpend(unknown, "no-such-model", usage({ total: 7 }));
+  assert.equal(spendText(unknown), "≈ $0.030 · 1,007 tokens (some replies not priced)");
+  assert.equal(spendAmount(newSpend()), "0 tokens");
 });

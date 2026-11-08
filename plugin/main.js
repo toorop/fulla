@@ -5,7 +5,7 @@ const { PROVIDERS, getProvider } = require("./src/providers/index");
 const { runGeneration, UserError } = require("./src/pipeline");
 const settings = require("./src/settings");
 const { toBase64 } = require("./src/bytes");
-const { addUsage, estimateCost, formatCost, formatUsd } = require("./src/cost");
+const { newSpend, addSpend, spendText, spendAmount } = require("./src/cost");
 const connect = require("./src/connect");
 const { filterItems, modelMenuItems } = require("./src/menu");
 const { helpMenu } = require("./src/help");
@@ -137,31 +137,11 @@ function persist() {
 }
 
 // ---------- cost ----------
-// Estimated from the tokens each reply reports. Replies count even when the run is then cancelled
-// or a variation is blocked, because the provider may still bill them.
+// The amount each reply reports (OpenRouter), else an estimate from its tokens (cost.js).
 
-function newSpend() {
-  return { usage: null, cost: 0, priced: false, unpriced: false };
-}
-
-function addSpend(spend, usage, cost) {
-  spend.usage = addUsage(spend.usage, usage);
-  if (cost == null) spend.unpriced = true;
-  else {
-    spend.cost += cost;
-    spend.priced = true;
-  }
-}
-
-function spendText(spend) {
-  const text = formatCost(spend.priced ? spend.cost : null, spend.usage);
-  return spend.priced && spend.unpriced ? `${text} (some replies not priced)` : text;
-}
-
-/** "≈ $0.041 · 4,011 tokens · session ≈ $0.120": this run, then since the panel opened. */
+/** "$0.058 · 5,535 tokens · session $0.120": this run, then since the panel opened. */
 function renderCost(run) {
-  const session = sessionSpend.priced ? `≈ ${formatUsd(sessionSpend.cost)}` : spendText(sessionSpend);
-  $("runCost").textContent = `${spendText(run)} · session ${session}`;
+  $("runCost").textContent = `${spendText(run)} · session ${spendAmount(sessionSpend)}`;
   $("runCost").hidden = false;
 }
 
@@ -288,9 +268,8 @@ async function generate() {
     timer = setInterval(tick, 1000);
     const runSpend = newSpend();
     const onUsage = (usage) => {
-      const cost = estimateCost(model, usage);
-      addSpend(runSpend, usage, cost);
-      addSpend(sessionSpend, usage, cost);
+      addSpend(runSpend, model, usage);
+      addSpend(sessionSpend, model, usage);
       renderCost(runSpend);
     };
     const whenCancelled = new Promise((resolve) => (cancelRun = resolve));

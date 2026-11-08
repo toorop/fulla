@@ -133,7 +133,7 @@ async function generate(req) {
       ...(req.scene ? [{ image_url: `data:image/png;base64,${toBase64(encodePng(req.scene.rgb, req.scene.width, req.scene.height, 3))}` }] : []),
     ],
     mask: { image_url: `data:image/png;base64,${toBase64(maskPng)}` },
-    n: req.n,
+    n: Math.max(1, Math.min(4, req.n || 1)),
     size: `${req.target.width}x${req.target.height}`,
     quality: QUALITIES.includes(req.quality) ? req.quality : "auto",
     output_format: "png",

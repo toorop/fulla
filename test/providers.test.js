@@ -109,6 +109,10 @@ test("openai sends a JSON edit with image, inverted alpha mask, size, n", async 
   assert.equal(mask.h, 32);
   assert.equal(mask.alpha(30, 10), 0, "selected pixel is transparent (edit)");
   assert.equal(mask.alpha(5, 10), 255, "unselected pixel is opaque (keep)");
+  // At most 4 variations per request, like the other providers.
+  const many = fakeFetch(() => ({ json: { data: [{ b64_json: toBase64(tinyPng()) }] } }));
+  await openai.generate(req({ fetch: many, model: "gpt-image-2", n: 9 }));
+  assert.equal(many.calls[0].body.n, 4);
 });
 
 test("openai maps errors to plain messages and retries transient ones", async () => {

@@ -923,6 +923,14 @@ const SCENARIOS = {
       expect($("runCard").hidden && !$("idleHint").hidden && $("prompt").value === "", `Done: card hidden ${$("runCard").hidden}, prompt "${$("prompt").value}"`);
       expect(Array.from(doc.layers).length === layers1 + 1, "Done changed the document");
       info.answered = `${thumbs.length} thumbnails, swap, Done`;
+      // One variation: nothing to choose, so no thumbnails and no Done.
+      await setN("1");
+      $("prompt").value = "selftest single";
+      $("generate").dispatchEvent(new Event("click"));
+      await tick(300);
+      expect(await idle(30), "the single run did not end");
+      expect($("runDone").hidden && $("results").hidden && !$("runCard").hidden, `one variation: Done shown ${!$("runDone").hidden}, thumbnails shown ${!$("results").hidden}`);
+      info.single = "no thumbnails, no Done";
     } finally {
       if (await idle(30)) net.fetch = real2;
       await setN(n0);

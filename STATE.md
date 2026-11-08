@@ -7,9 +7,18 @@
 ## Next action
 
 - **Resume here: step 3, 3.1 and 3.2 (global tone matching) done and committed** (`3b7c47a`,
-  `c2a05b3`, not pushed; push once at the end of the session, ask). Next: propose the next step-3
-  sub-step (discuss first, one at a time, no code before he says): whole image as a scene
-  reference, grain matching (now a real need for grainy photos), the tile offset (reproduce first).
+  `c2a05b3`, not pushed; push once at the end of the session, ask). **Now discussing 3.3, the
+  whole image as a scene reference** (no code before he says); he is loading the pier photo whose
+  added boat came out a bit small, for before/after tries. Grain matching is out of scope for the
+  public release (his call, 2026-11-08: random grain, too complex). The tile offset comes later
+  (reproduce first).
+- 1K vs 2K on the pier (500 px selection, crop ~850 px, 2 runs each): 1K slightly softer than the
+  photo and both 1K runs needed a clear Curves correction; 2K as sharp as the photo, little or
+  no correction. Generated pixels hold less detail than camera pixels: oversampling ~2x helps.
+  **His decision: Auto never below 2K** (coded: `minTier: "2K"` from the pipeline to `fitSize`;
+  a model without 2K keeps what it has; OpenAI's Auto is then always its 2K size; popup hint and
+  README say it). Done is now hidden for a single variation (`main.js`, checked in self-test
+  `panelRun`). 67/67, package, free self-test 29/29. Commit asked.
 - 3.1 Auto resolution: smallest tier covering the crop on both sides (never enlarged), up to 4K
   (`provider.autoMax || "4K"`; OpenAI direct 2K, above is experimental there); nothing shown before
   the run. Uploaded crop stays capped at 2048 px (`inputSize`): sending it larger is a research

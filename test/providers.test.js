@@ -488,7 +488,7 @@ test("after Cancel no new request is sent: a failed request is not retried (each
   assert.equal(fetch.calls.length, 1);
 });
 
-test("sizes: Auto takes the smallest size that covers the area, up to 4K (2K at OpenAI), a chosen size is used as is, and only real choices are offered", async () => {
+test("sizes: Auto takes the smallest size that covers the area, at least 2K, up to 4K (2K at OpenAI), a chosen size is used as is, and only real choices are offered", async () => {
   // What the options sheet offers: same-price sizes dropped, fixed-size models offer nothing to choose.
   assert.deepEqual(openrouter.resolutions("google/gemini-nano-banana-2.1"), ["1K", "2K", "4K"]);
   assert.deepEqual(openrouter.resolutions("google/gemini-3-pro-image"), ["2K", "4K"], "Pro bills 1K like 2K");
@@ -504,10 +504,14 @@ test("sizes: Auto takes the smallest size that covers the area, up to 4K (2K at 
     await runGeneration({ ps, provider: spy, apiKey: "k", model, resolution });
     return target;
   };
-  assert.equal((await sizeFor(gemini, "gemini-nano-banana-2.1", "auto")).imageSize, "1K", "Auto: a small selection gets 1K");
+  assert.equal((await sizeFor(gemini, "gemini-nano-banana-2.1", "auto")).imageSize, "2K", "Auto never goes below 2K, even for a small selection");
+  assert.equal((await sizeFor(gemini, "gemini-3.1-flash-lite-image", "auto")).imageSize, "1K", "a 1K-only model keeps 1K");
+  assert.equal((await sizeFor(gemini, "gemini-nano-banana-2.1", "1K")).imageSize, "1K", "1K can still be chosen");
   assert.equal((await sizeFor(gemini, "gemini-nano-banana-2.1", "auto", 650, 650)).imageSize, "2K", "Auto never enlarges the tile: an area just over 1K gets 2K");
   assert.equal((await sizeFor(gemini, "gemini-nano-banana-2.1", "auto", 2400, 2400)).imageSize, "4K", "Auto goes up to 4K for a large area");
   assert.equal((await sizeFor(openrouter, "google/gemini-3-pro-image", "auto", 2400, 2400)).imageSize, "4K");
+  const os = await sizeFor(openai, "gpt-image-2", "auto");
+  assert.ok(os.width * os.height > 1024 * 1024, `OpenAI's Auto also starts at 2K, got ${os.width}x${os.height}`);
   const oa = await sizeFor(openai, "gpt-image-2", "auto", 2400, 2400);
   assert.ok(oa.width * oa.height <= 2560 * 1440, `OpenAI's Auto stays within 2K (above is experimental), got ${oa.width}x${oa.height}`);
   assert.equal((await sizeFor(gemini, "gemini-nano-banana-2.1", "4K")).imageSize, "4K", "a chosen size is used even for a small selection");

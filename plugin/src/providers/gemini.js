@@ -41,9 +41,10 @@ function modelInfo(model) {
 /**
  * Closest supported ratio, and a size tier: the smallest whose image covers the crop on both sides
  * (the tile is never enlarged on placement) up to `maxTier`, or exactly `maxTier` with
- * { exact: true } (when the model offers it). Above `maxTier`, the largest allowed tier.
+ * { exact: true } (when the model offers it), never below `minTier` when the model has it. Above
+ * `maxTier`, the largest allowed tier.
  */
-function fitSize(model, w, h, maxTier = "2K", { exact = false } = {}) {
+function fitSize(model, w, h, maxTier = "2K", { exact = false, minTier = null } = {}) {
   const info = modelInfo(model);
   const want = Math.log(w / h);
   let ratio = info.ratios[0];
@@ -55,7 +56,11 @@ function fitSize(model, w, h, maxTier = "2K", { exact = false } = {}) {
   }
   const cap = TIER_ORDER.indexOf(maxTier) >= 0 ? TIER_ORDER.indexOf(maxTier) : 1;
   const allowed = info.tiers.filter((t) => TIER_ORDER.indexOf(t) <= cap);
-  const tiers = exact && info.tiers.includes(maxTier) ? [maxTier] : allowed.length ? allowed : [info.tiers[0]];
+  let tiers = exact && info.tiers.includes(maxTier) ? [maxTier] : allowed.length ? allowed : [info.tiers[0]];
+  // Auto's floor (2K): generated pixels hold less detail than a camera's, so a tile asked bigger and
+  // shrunk on placement looks as sharp as the photo. A model without that size keeps what it has.
+  const floor = minTier ? tiers.filter((t) => TIER_ORDER.indexOf(t) >= TIER_ORDER.indexOf(minTier)) : tiers;
+  if (floor.length) tiers = floor;
   const [bw, bh] = RATIOS_1K[ratio];
   const tier = tiers.find((t) => bw * TIER_MULT[t] >= w && bh * TIER_MULT[t] >= h) || tiers[tiers.length - 1];
   return { width: bw * TIER_MULT[tier], height: bh * TIER_MULT[tier], aspectRatio: ratio, imageSize: tier };

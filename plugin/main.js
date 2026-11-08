@@ -303,7 +303,8 @@ async function generate() {
     // The prompt is still in the box above, so the card names the model, size and time instead.
     const size = out.target.imageSize || `${out.target.width}×${out.target.height}`;
     $("runTitle").textContent = `${modelLabel(provider, model)} · ${size} · ${seconds()} s`;
-    $("runDone").hidden = false;
+    // Done clears the thumbnails once one is chosen; with a single result there is nothing to choose.
+    $("runDone").hidden = out.results.length < 2;
     renderThumbs(out.results);
     const notes = [];
     if (out.results.length < prefs.n) notes.push(`${prefs.n - out.results.length} variation(s) were blocked or failed.`);
@@ -408,7 +409,8 @@ function autoHint(provider, sizes) {
   const max = provider.autoMax || "4K";
   const top = sizes.includes(max) ? max : sizes[sizes.length - 1];
   const slow = top === "4K" ? " (slower and costs more)" : "";
-  return `Auto picks the smallest size that covers your selection, up to ${top}${slow}. Pick a size to always use it.`;
+  if (top === "2K") return "Auto uses 2K, for results as sharp as your photo. Pick a size to always use it.";
+  return `Auto uses 2K, or more for a large selection, up to ${top}${slow}. Pick a size to always use it.`;
 }
 
 /** The popup's rows, in order; a setting the model has no choice for is left out. */

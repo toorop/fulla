@@ -62,7 +62,7 @@ async function read(ps, doc, fit) {
  * @param {string} [o.prompt]    what to paint in the selection; empty removes what is selected
  * @param {number} [o.n=1]
  * @param {string} [o.quality]
- * @param {string} [o.resolution="auto"]  "auto": the smallest size that covers the selection, up to 4K (provider.autoMax);
+ * @param {string} [o.resolution="auto"]  "auto": the smallest size that covers the selection, at least 2K, up to 4K (provider.autoMax);
  *   "1K" / "2K" / "4K": that size, when the model offers it
  * @param {(label: string) => void} [o.progress]
  * @param {() => boolean} [o.cancelled]
@@ -80,8 +80,9 @@ async function runGeneration(o) {
   const doc = await ps.getDocument();
   if (!doc) throw new UserError("Open a document first.", "noDocument");
   const forced = o.resolution && o.resolution !== "auto";
-  // Auto: the smallest size that covers the area, up to the provider's Auto ceiling (4K by default).
-  const fit = (w, h) => provider.fitSize(o.model, w, h, forced ? o.resolution : provider.autoMax || "4K", { exact: forced });
+  // Auto: the smallest size that covers the area, at least 2K (oversampled: as sharp as the photo,
+  // and models keep the tones better), up to the provider's Auto ceiling (4K by default).
+  const fit = (w, h) => provider.fitSize(o.model, w, h, forced ? o.resolution : provider.autoMax || "4K", { exact: forced, minTier: forced ? null : "2K" });
 
   progress("Reading the image");
   const job = await ps.modal("Fulla: read", () => read(ps, doc, fit));

@@ -22,11 +22,15 @@ const MIN_PIXELS = 655360;
 const TIER_MAX_PIXELS = { "1K": 1024 * 1024, "2K": 2560 * 1440, "4K": 8294400 };
 const MAX_EDGE = 3840;
 
-/** A legal size close to the crop's aspect: about the crop's pixels up to `tier`, or the tier's full size with { exact: true }. */
-function fitSize(w, h, tier = "2K", { exact = false } = {}) {
+/**
+ * A legal size close to the crop's aspect: about the crop's pixels up to `tier`, or the tier's full
+ * size with { exact: true }; with `minTier`, at least that tier's full size (Auto's 2K floor).
+ */
+function fitSize(w, h, tier = "2K", { exact = false, minTier = null } = {}) {
   const maxP = TIER_MAX_PIXELS[tier] || TIER_MAX_PIXELS["2K"];
   const r = Math.min(3, Math.max(1 / 3, w / h));
-  const want = exact ? maxP : Math.min(Math.max(w * h, MIN_PIXELS), maxP);
+  const floor = Math.min(maxP, (minTier && TIER_MAX_PIXELS[minTier]) || 0);
+  const want = exact ? maxP : Math.min(Math.max(w * h, MIN_PIXELS, floor), maxP);
   // Try every legal height; keep the size closest in aspect first, then in pixel count.
   let best = null;
   let bestScore = Infinity;

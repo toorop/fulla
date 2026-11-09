@@ -11,6 +11,8 @@ const { createRunGate } = require("./src/run");
 const connect = require("./src/connect");
 const { filterItems, modelMenuItems } = require("./src/menu");
 const { helpMenu } = require("./src/help");
+const references = require("./src/references");
+const { encodePng } = require("./src/png");
 
 const $ = (id) => document.getElementById(id);
 let prefs = settings.loadPrefs();
@@ -132,7 +134,7 @@ function modelLabel(provider, id) {
 }
 
 // Locked while a run is going: what was sent is what the card shows.
-const LOCKED = ["prompt", "modelChip", "optionsChip"];
+const LOCKED = ["prompt", "modelChip", "refsChip", "optionsChip"];
 
 function setBusy(b) {
   closeMenu();
@@ -319,6 +321,8 @@ async function generate() {
       renderThumbs(out.results);
       const notes = [];
       if (out.results.length < prefs.n) notes.push(`${prefs.n - out.results.length} variation(s) were blocked or failed.`);
+      const max = refLimit();
+      if (refsState.list.length > max) notes.push(references.limitNote(refsState.list.length, max, modelLabel(provider, model)));
       if (out.softness > 1.6) notes.push(`Large area: enlarged ${out.softness.toFixed(1)}x, may look soft. Try a higher resolution or a smaller selection.`);
       setStatus(notes.join(" "));
     } catch (e) {
@@ -503,6 +507,195 @@ function toggleSettings() {
   menuChip = chip;
 }
 
+// ---------- reference images ----------
+// The active document's own references (references.js): a hidden group, one layer each. The panel
+// keeps no list of its own: it looks at the document every 1.5 s, so a reopened file, another
+// document, Ctrl+Z or a layer deleted by hand all show by themselves. The button right of the model
+// shows how many; it opens a popup like Adobe's "Reference image" one, in the floating spot.
+
+const REF_TYPES = ["jpg", "jpeg", "png", "webp", "tif", "tiff", "psd", "psb", "heic", "avif", "gif", "bmp"];
+const REF_THUMB = 160; // px, long side of a thumbnail read from the document
+let refsState = { docId: null, list: [], key: "" };
+let refsMessage = { text: "", kind: "" }; // the popup's last message (an add that failed...)
+const refThumbs = new Map(); // "doc:layer" -> data URL, read once per session
+
+/** How many references the model in use takes (0 for a provider without the feature). */
+function refLimit() {
+  const provider = getProvider(prefs.provider);
+  return provider.maxReferences ? provider.maxReferences(currentModel()) : 0;
+}
+
+/** Look at the active document's references; redraw the button (and the popup) when they changed. */
+async function refreshRefs(force) {
+  let doc = null;
+  let list = [];
+  try {
+    doc = await ps.getDocument();
+    if (doc) list = ps.listReferences(doc.id);
+  } catch (_) {
+    /* a document closing as we look: next time */
+  }
+  const key = `${doc ? doc.id : ""}|${list.map((r) => `${r.id}:${r.number}`).join(",")}`;
+  if (key === refsState.key && !force) return;
+  if (doc && refsState.docId !== doc.id) refsMessage = { text: "", kind: "" };
+  refsState = { docId: doc ? doc.id : null, list, key };
+  $("refsCount").textContent = String(list.length);
+  $("refsCount").hidden = !list.length;
+  if (menuChip === $("refsChip") && $("menu")) fillRefs($("menu"));
+}
+
+function refsSay(text, kind) {
+  refsMessage = { text, kind };
+  const m = document.getElementById("refsMsg");
+  if (m) {
+    m.textContent = text;
+    m.className = kind === "error" ? "status error" : "status";
+    m.hidden = !text;
+    scrollIfNeeded(m.parentNode);
+  }
+}
+
+function fillRefs(sheet) {
+  const body = sheet.querySelector(".sheet-body");
+  body.innerHTML = "";
+  body.appendChild(el("div", { class: "opt-title" }, "Reference images"));
+  const { docId, list } = refsState;
+  if (!docId) {
+    body.appendChild(el("div", { class: "hint" }, "Open a document first: its reference images are kept in it."));
+    return;
+  }
+  const max = refLimit();
+  if (!list.length) {
+    const empty = el("div", { class: "refs-empty" });
+    empty.appendChild(el("img", { src: "icons/image.svg", width: "48", height: "48" }));
+    empty.appendChild(el("div", { class: "hint" }, "Add images to use as references: a face from another shot, a product to place... They are kept in the document, in a hidden layer group."));
+    body.appendChild(empty);
+  } else {
+    const grid = el("div", { id: "refsGrid", class: "thumbs" });
+    list.forEach((r, i) => {
+      const cell = el("div", { id: `ref-${r.id}`, class: i < max ? "thumb ref" : "thumb ref off" });
+      const img = el("img", { id: `refimg-${r.id}` });
+      const cached = refThumbs.get(`${docId}:${r.id}`);
+      if (cached) img.setAttribute("src", cached);
+      cell.appendChild(img);
+      cell.appendChild(el("span", { class: "ref-num" }, String(r.number)));
+      const x = el("span", { class: "ref-x", title: "Remove" }, "×");
+      x.addEventListener("click", (e) => {
+        e.stopPropagation();
+        removeRef(r);
+      });
+      cell.appendChild(x);
+      grid.appendChild(cell);
+    });
+    body.appendChild(grid);
+    const names = list.length > 1 ? `ref ${list[0].number}, ref ${list[1].number}...` : `ref ${list[0].number} or "the reference"`;
+    body.appendChild(el("div", { class: "hint" }, `Refer to them as ${names} in your prompt.`));
+  }
+  body.appendChild(el("div", { id: "refsLimit", class: "hint" }, references.limitNote(list.length, max, modelLabel(getProvider(prefs.provider), currentModel()))));
+  const row = el("div", { class: "row refs-actions" });
+  const choose = button("Choose images", addRefs, "plus");
+  choose.id = "refsChoose";
+  if (list.length >= references.MAX_REFERENCES) choose.setAttribute("disabled", "");
+  row.appendChild(choose);
+  body.appendChild(row);
+  const msg = el("div", { id: "refsMsg", class: refsMessage.kind === "error" ? "status error" : "status" }, refsMessage.text);
+  msg.hidden = !refsMessage.text;
+  body.appendChild(msg);
+  scrollIfNeeded(body);
+  loadRefThumbs(docId, list);
+}
+
+/** Thumbnails come from the document (the layers' own pixels), one at a time, kept for the session. */
+async function loadRefThumbs(docId, list) {
+  for (const r of list) {
+    const k = `${docId}:${r.id}`;
+    if (!refThumbs.has(k)) {
+      try {
+        const px = await ps.modal("Fulla: reference thumbnail", () => ps.readReference(docId, r.id, REF_THUMB));
+        refThumbs.set(k, `data:image/png;base64,${toBase64(encodePng(px.rgb, px.width, px.height, 3))}`);
+      } catch (_) {
+        continue; // Photoshop busy, or the layer just went: left blank
+      }
+    }
+    const img = document.getElementById(`refimg-${r.id}`);
+    if (img && refsState.docId === docId) img.setAttribute("src", refThumbs.get(k));
+  }
+}
+
+/** Place image files as references in the active document, 8 at most in all; each is one undo step. */
+async function addRefFiles(files) {
+  await refreshRefs();
+  const docId = refsState.docId;
+  if (!docId) return refsSay("Open a document first.", "error");
+  const room = Math.max(0, references.MAX_REFERENCES - refsState.list.length);
+  refsSay("");
+  for (const f of files.slice(0, room)) {
+    try {
+      await ps.modal("Fulla: add reference", () => ps.addReference(docId, f), { historyDocId: docId });
+    } catch (e) {
+      refsSay(`Couldn't add ${f.name}: ${e.message || e}`, "error");
+      break;
+    }
+  }
+  if (files.length > room) refsSay(`${references.MAX_REFERENCES} reference images at most: ${files.length - room} not added.`, "error");
+  await refreshRefs(true);
+}
+
+async function addRefs() {
+  if (gate.busy || refsState.list.length >= references.MAX_REFERENCES) return;
+  let picked;
+  try {
+    picked = await require("uxp").storage.localFileSystem.getFileForOpening({ allowMultiple: true, types: REF_TYPES });
+  } catch (e) {
+    return refsSay(`Couldn't open the file picker: ${e.message || e}`, "error");
+  }
+  const files = Array.isArray(picked) ? picked : picked ? [picked] : [];
+  if (files.length) await addRefFiles(files);
+}
+
+async function removeRef(r) {
+  const docId = refsState.docId;
+  if (gate.busy || !docId) return;
+  try {
+    await ps.modal("Fulla: remove reference", () => ps.removeReference(docId, r.id), { historyDocId: docId });
+    refThumbs.delete(`${docId}:${r.id}`);
+  } catch (e) {
+    refsSay(`Couldn't remove ref ${r.number}: ${e.message || e}`, "error");
+  }
+  await refreshRefs(true);
+}
+
+async function toggleRefs() {
+  const chip = $("refsChip");
+  if (gate.busy) return;
+  if (menuChip === chip) return closeMenu();
+  closeMenu();
+  foldDetails();
+  await refreshRefs();
+  const app = $("app").getBoundingClientRect();
+  const box = $("promptBox").getBoundingClientRect();
+  const sheet = el("div", { id: "menu", class: "menu sheet" });
+  sheet.style.top = `${Math.round(box.bottom - app.top + 4)}px`;
+  const body = el("div", { class: "sheet-body" });
+  body.style.maxHeight = `${Math.max(80, Math.round(app.bottom - box.bottom - 30))}px`;
+  sheet.appendChild(body);
+  fillRefs(sheet);
+  $("app").appendChild(sheet);
+  menuChip = chip;
+}
+
+/**
+ * UXP draws the scroll bar of a box with overflow auto even when its content fits: scroll only when
+ * it doesn't. Measured after layout (UXP updates sizes only once the handler returns).
+ */
+function scrollIfNeeded(body) {
+  body.style.overflowY = "hidden";
+  setTimeout(() => {
+    const max = parseFloat(body.style.maxHeight) || Infinity;
+    if (body.scrollHeight > Math.min(max, body.getBoundingClientRect().height) + 1) body.style.overflowY = "auto";
+  }, 50);
+}
+
 // ---------- prompt hint ----------
 // UXP's text area keeps drawing its placeholder over a pasted prompt (no repaint on paste), so the
 // placeholder is removed while there is text and put back when the box is empty.
@@ -582,6 +775,7 @@ async function toggleModelMenu() {
 function bind() {
   $("modelChip").addEventListener("click", toggleModelMenu);
   $("optionsChip").addEventListener("click", toggleSettings);
+  $("refsChip").addEventListener("click", toggleRefs);
   $("runDone").addEventListener("click", finishRun);
   $("detailsToggle").addEventListener("click", () => {
     const show = $("detailsText").hidden;
@@ -952,10 +1146,12 @@ bind();
 renderProviders().then((any) => {
   if (!any) showTab("providers");
 });
+refreshRefs();
+setInterval(() => refreshRefs(), 1500);
 
 // Developer self-test hook. selftest.js is left out of release builds, so this is a no-op for users.
 try {
-  require("./src/selftest").watch({ generationNet, openMenu, closeMenu, panelMenu });
+  require("./src/selftest").watch({ generationNet, openMenu, closeMenu, panelMenu, addRefFiles, refreshRefs });
 } catch (_) {
   /* release build */
 }

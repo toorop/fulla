@@ -8,6 +8,7 @@ const { binarize } = require("../image");
 const { maskImagePrompt } = require("../prompts");
 const { postJson, getJson, ProviderError } = require("./http");
 const { closestRatio, chooseTier } = require("./sizing");
+const { MAX_REFERENCES } = require("../references");
 
 const HOST = "openrouter.ai";
 const URL = `https://${HOST}/api/v1/images`;
@@ -20,20 +21,22 @@ const OPENAI_RATIOS = ["1:1", "3:2", "2:3", "4:3", "3:4", "16:9", "9:16", "21:9"
 
 // Catalogue: models Fulla offers through OpenRouter. maxN = variations per request (1 = one request
 // each). OpenAI models take no `resolution` (the provider picks the pixels) but can be asked for PNG.
+// inputs = images a request may carry (input_references, checked 2026-11-09); dropScene: the whole
+// photo is left out when there are reference images, or the model would have room for none or one.
 const MODELS = [
-  { id: "google/gemini-nano-banana-2.1", label: "Nano Banana 2.1", note: "Recommended", ratios: GEMINI_RATIOS, tiers: ["1K", "2K", "4K"], maxN: 1 },
+  { id: "google/gemini-nano-banana-2.1", label: "Nano Banana 2.1", note: "Recommended", ratios: GEMINI_RATIOS, tiers: ["1K", "2K", "4K"], maxN: 1, inputs: 14 },
   // Pro bills 1K and 2K the same, so 1K is not offered; Qwen always renders 2K (1K is a downscale, same price).
-  { id: "google/gemini-3-pro-image", label: "Nano Banana Pro", ratios: GEMINI_PRO_RATIOS, tiers: ["2K", "4K"], maxN: 1 },
-  { id: "qwen/qwen-image-3", label: "Qwen Image 3", ratios: QWEN_RATIOS, tiers: ["2K"], maxN: 6 },
-  { id: "qwen/qwen-image-2.1-pro", label: "Qwen Image 2.1 Pro", ratios: QWEN_RATIOS, tiers: ["2K"], maxN: 6 },
-  { id: "openai/gpt-image-2.6-sunburst", label: "GPT Image 2.6 Sunburst", ratios: OPENAI_RATIOS, tiers: ["1K", "2K"], maxN: 4, noResolution: true, png: true },
-  { id: "openai/gpt-image-2.5-sunburst", label: "GPT Image 2.5 Sunburst", ratios: OPENAI_RATIOS, tiers: ["1K", "2K"], maxN: 4, noResolution: true, png: true },
+  { id: "google/gemini-3-pro-image", label: "Nano Banana Pro", ratios: GEMINI_PRO_RATIOS, tiers: ["2K", "4K"], maxN: 1, inputs: 14 },
+  { id: "qwen/qwen-image-3", label: "Qwen Image 3", ratios: QWEN_RATIOS, tiers: ["2K"], maxN: 6, inputs: 3, dropScene: true },
+  { id: "qwen/qwen-image-2.1-pro", label: "Qwen Image 2.1 Pro", ratios: QWEN_RATIOS, tiers: ["2K"], maxN: 6, inputs: 4, dropScene: true },
+  { id: "openai/gpt-image-2.6-sunburst", label: "GPT Image 2.6 Sunburst", ratios: OPENAI_RATIOS, tiers: ["1K", "2K"], maxN: 4, noResolution: true, png: true, inputs: 16 },
+  { id: "openai/gpt-image-2.5-sunburst", label: "GPT Image 2.5 Sunburst", ratios: OPENAI_RATIOS, tiers: ["1K", "2K"], maxN: 4, noResolution: true, png: true, inputs: 16 },
 ];
 const TIER_SIDE = { "1K": 1024, "2K": 2048, "4K": 4096 }; // about this many pixels squared per tier
 
 function modelInfo(model) {
   // Not in the catalogue (a model saved by an older version): common ratios, 1K and 2K, one image per request.
-  return MODELS.find((m) => m.id === model) || { id: model, ratios: GEMINI_PRO_RATIOS, tiers: ["1K", "2K"], maxN: 1 };
+  return MODELS.find((m) => m.id === model) || { id: model, ratios: GEMINI_PRO_RATIOS, tiers: ["1K", "2K"], maxN: 1, inputs: 3 };
 }
 
 const ratioValue = (r) => {
@@ -138,6 +141,12 @@ async function balance({ fetch, apiKey }) {
   }
 }
 
+/** How many reference images the user may add with this model: the room left after Fulla's own, 8 at most. */
+function maxReferences(model) {
+  const info = modelInfo(model);
+  return Math.max(0, Math.min(MAX_REFERENCES, info.inputs - (info.dropScene ? 2 : 3)));
+}
+
 /** Same request shape as openai.generate. */
 async function generate(req) {
   if (!req.apiKey) throw new ProviderError("Add your OpenRouter API key in the Providers tab first.", { code: "no_key" });
@@ -146,11 +155,14 @@ async function generate(req) {
   const size = req.target.aspectRatio ? req.target : fitSize(req.model, req.target.width, req.target.height, "2K");
   const n = Math.max(1, Math.min(4, req.n || 1));
   const dataUrl = (png) => ({ type: "image_url", image_url: { url: `data:image/png;base64,${toBase64(png)}` } });
+  const own = (req.refs || []).slice(0, maxReferences(req.model));
+  const scene = own.length && info.dropScene ? null : req.scene;
   const refs = [dataUrl(encodePng(req.image.rgb, width, height, 3)), dataUrl(encodePng(binarize(req.mask), width, height, 1))];
-  if (req.scene) refs.push(dataUrl(encodePng(req.scene.rgb, req.scene.width, req.scene.height, 3)));
+  if (scene) refs.push(dataUrl(encodePng(scene.rgb, scene.width, scene.height, 3)));
+  for (const r of own) refs.push(dataUrl(encodePng(r.rgb, r.width, r.height, 3)));
   const body = (count) => ({
     model: req.model,
-    prompt: maskImagePrompt(req.task, !!req.scene),
+    prompt: maskImagePrompt(req.task, !!scene, own.map((r) => r.number)),
     input_references: refs,
     ...(info.noResolution ? {} : { resolution: size.imageSize }),
     aspect_ratio: size.aspectRatio,
@@ -177,6 +189,7 @@ module.exports = {
   reportsCost: true,
   fitSize,
   /** Sizes the user may choose for this model, besides Auto (none when the provider picks the size). */
+  maxReferences,
   resolutions: (model) => (modelInfo(model).noResolution ? [] : modelInfo(model).tiers),
   generate,
   checkKey,

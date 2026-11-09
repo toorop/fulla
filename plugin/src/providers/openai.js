@@ -5,6 +5,7 @@ const { encodePng } = require("../png");
 const { alphaEditMask } = require("../image");
 const { alphaMaskPrompt } = require("../prompts");
 const { postJson, getJson, ProviderError } = require("./http");
+const { MAX_REFERENCES } = require("../references");
 
 const HOST = "api.openai.com";
 const URL = `https://${HOST}/v1/images/edits`;
@@ -119,18 +120,28 @@ async function checkKey({ fetch, apiKey }) {
  * @param {Promise} [req.whenCancelled]  resolves on Cancel: drop the request in flight at once
  * @returns {Promise<Array<{bytes: Uint8Array, mime: string}>>}
  */
+// The edits endpoint takes up to 16 images (checked 2026-11-09); the mask is a parameter, not an image.
+const MAX_INPUTS = 16;
+
+/** How many reference images the user may add: the room left after Fulla's own, 8 at most. */
+function maxReferences() {
+  return Math.min(MAX_REFERENCES, MAX_INPUTS - 2);
+}
+
 async function generate(req) {
   if (!req.apiKey) throw new ProviderError("Add your OpenAI API key in the Providers tab first.", { code: "no_key" });
   const { width, height } = req.image;
   const imagePng = encodePng(req.image.rgb, width, height, 3);
   const maskPng = encodePng(alphaEditMask(req.mask), width, height, 4);
+  const own = (req.refs || []).slice(0, maxReferences());
+  const extra = (req.scene ? [req.scene] : []).concat(own);
   const body = {
     model: req.model,
-    prompt: alphaMaskPrompt(req.task, !!req.scene),
-    // The mask applies to the first image; the second, when there, is the whole photo for context.
+    prompt: alphaMaskPrompt(req.task, !!req.scene, own.map((r) => r.number)),
+    // The mask applies to the first image; then the whole photo, when there, and the user's references.
     images: [
       { image_url: `data:image/png;base64,${toBase64(imagePng)}` },
-      ...(req.scene ? [{ image_url: `data:image/png;base64,${toBase64(encodePng(req.scene.rgb, req.scene.width, req.scene.height, 3))}` }] : []),
+      ...extra.map((r) => ({ image_url: `data:image/png;base64,${toBase64(encodePng(r.rgb, r.width, r.height, 3))}` })),
     ],
     mask: { image_url: `data:image/png;base64,${toBase64(maskPng)}` },
     n: Math.max(1, Math.min(4, req.n || 1)),
@@ -166,6 +177,7 @@ module.exports = {
   defaultModel: MODELS[0].id,
   qualities: QUALITIES,
   fitSize: (model, w, h, tier, opts) => fitSize(w, h, tier, opts),
+  maxReferences,
   resolutions: () => ["1K", "2K", "4K"],
   // Auto stays within 2K: OpenAI marks sizes above 2560x1440 as experimental. 4K can still be chosen.
   autoMax: "2K",

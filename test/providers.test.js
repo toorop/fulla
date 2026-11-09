@@ -632,6 +632,49 @@ test("scene reference: the whole photo, reduced, goes along as one more image, n
   assert.doesNotMatch(plain.calls[0].body.prompt, /whole photograph/);
 });
 
+test("reference images follow the picture, mask and whole photo, named ref N in one sentence; each model takes what it has room for", async () => {
+  const scene = { rgb: new Uint8Array(8 * 6 * 3), width: 8, height: 6 };
+  const ref = (number) => ({ number, rgb: new Uint8Array(5 * 4 * 3).fill(number), width: 5, height: 4 });
+  const nb = "google/gemini-nano-banana-2.1";
+  const or = fakeFetch(() => orOk(1));
+  await openrouter.generate(req({ fetch: or, model: nb, target: openrouter.fitSize(nb, 1024, 1024, "1K"), n: 1, scene, refs: [ref(2), ref(3)] }));
+  assert.equal(or.calls[0].body.input_references.length, 5, "picture, mask, whole photo, ref 2, ref 3");
+  assert.match(or.calls[0].body.prompt, /You are given five images;.*Image 3 is the whole photograph.*Images 4 and 5 are reference images supplied by the user, called ref 2 and ref 3 in the request\. Edit the area/);
+  // Qwen Image 3 takes 3 images: with a reference, the whole photo makes room for it.
+  const qw = fakeFetch(() => orOk(1));
+  await openrouter.generate(req({ fetch: qw, model: "qwen/qwen-image-3", target: openrouter.fitSize("qwen/qwen-image-3", 1024, 1024, "2K"), n: 1, scene, refs: [ref(1), ref(2)] }));
+  assert.equal(qw.calls[0].body.input_references.length, 3);
+  assert.match(qw.calls[0].body.prompt, /three images.*Image 3 is a reference image supplied by the user, called ref 1 or "the reference" in the request/);
+  assert.doesNotMatch(qw.calls[0].body.prompt, /whole photograph/);
+  assert.deepEqual(["google/gemini-nano-banana-2.1", "qwen/qwen-image-3", "qwen/qwen-image-2.1-pro", "openai/gpt-image-2.6-sunburst"].map(openrouter.maxReferences), [8, 1, 2, 8]);
+  const g = fakeFetch(() => geminiOk(4));
+  await gemini.generate(req({ fetch: g, model: "gemini-nano-banana-2.1", target: gemini.fitSize("gemini-nano-banana-2.1", 1024, 1024, "1K"), n: 1, scene, refs: [ref(1)] }));
+  const parts = g.calls[0].body.contents[0].parts;
+  assert.equal(parts.filter((p) => p.inline_data).length, 4);
+  assert.match(parts[0].text, /Image 4 is a reference image supplied by the user, called ref 1/);
+  const oa = fakeFetch(() => ({ json: { data: [{ b64_json: toBase64(tinyPng()) }] } }));
+  await openai.generate(req({ fetch: oa, model: "gpt-image-2", n: 1, refs: [ref(1), ref(4), ref(5)] }));
+  assert.equal(oa.calls[0].body.images.length, 4);
+  assert.match(oa.calls[0].body.prompt, /The second, third and fourth images are reference images supplied by the user, called ref 1, ref 4 and ref 5 in the request/);
+  // An empty prompt with references uses them, without saying how; without, it removes what is there.
+  assert.equal(taskFor("", 2), "Edit the area to change using the reference images. Match the surrounding lighting, perspective, colour, grain and focus.");
+  assert.match(taskFor("", 0), /^Fill the area to change/);
+});
+
+test("pipeline: the document's references are read, lowest numbers first, as many as the model takes", async () => {
+  const ps = fakePs();
+  ps.listReferences = async () => [1, 3, 4].map((number) => ({ id: 10 + number, number }));
+  ps.readReference = async (doc, id) => (ps.log.push(["readReference", id]), { rgb: new Uint8Array(12), width: 2, height: 2 });
+  const provider = { ...fakeProvider(1), maxReferences: () => 2 };
+  await runGeneration({ ps, provider, apiKey: "k", model: "m" });
+  assert.deepEqual(provider.seen.refs.map((r) => r.number), [1, 3]);
+  assert.deepEqual(ps.log.filter((l) => l[0] === "readReference").map((l) => l[1]), [11, 13]);
+  assert.match(provider.seen.task, /using the reference images/);
+  const none = { ...fakeProvider(1) };
+  await runGeneration({ ps, provider: none, apiKey: "k", model: "m" });
+  assert.deepEqual(none.seen.refs, [], "none for a model that takes none");
+});
+
 test("pipeline: the scene goes along only when asked and when the area is a small part of the photo; a reply of the wrong shape is never pasted", async () => {
   const provider = fakeProvider(1);
   await runGeneration({ ps: fakePs(), provider, apiKey: "k", model: "m", sceneRef: true });

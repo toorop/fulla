@@ -6,9 +6,22 @@
 
 ## Next action
 
-- **Resume here (2026-11-09): margin work done, waiting for his OK to commit; next, with him:
-  reference images (discussion first; his call: before the site and the release), then step 6
-  (website).** Margin (his lead, A/B on his beach photo, 0.88 $ in all): default context margin
+- **Resume here (2026-11-09): reference images, coding (discussion done, decisions below in this
+  section and in his ideas note).** Done, not committed: `references.js` (names, fixed numbers,
+  send size, max 8), `photoshop.js` `listReferences` / `addReference` / `removeReference` /
+  `readReference` (a result placed while a reference is active goes out of the group), providers'
+  `maxReferences` and `req.refs` (after picture, mask, scene; Qwen drops the scene), `prompts.js`
+  `refsNote` and the empty-prompt task, pipeline reads them. Self-test `references` passed once
+  (a hidden layer reads fine), since extended (generation with references). Panel done too:
+  button right of the model with the count (`refsChip`), popup "Reference images" (numbered
+  thumbnails read from the document, cross, limit line, "Choose images"; `main.js` polls the
+  active document every 1.5 s), manifest `localFileSystem: "request"` (file picker: Unload +
+  Load in UDT), self-test `panelRefs`. Tests 86/86, package OK, free self-test 32/32 (2026-11-09,
+  plugin reloaded). His hand try of "Choose images" works (after Unload + Load).
+  Later (his note): reference thumbnails a bit small. Next: commit with his OK, then the paid
+  tests (his photos). Not pushed: `e8cb434`, `953c2b3` (push at the end of the session). He generates the
+  test photos with Nano Banana from Claude's prompts. Hand check of Details on an error: later.
+- Margin work committed (`953c2b3`). Margin (his lead, A/B on his beach photo, 0.88 $ in all): default context margin
   5 % instead of 35 % (`geometry.js`). Adding a land yacht: at 35 % the sail came out of the
   selection 3/3 (the mask cut it), at 10 % the mast tip 3/3, at 5 % never. Removing a man: 5 %
   as clean as 35 %, 3/3 each (once the model moved him outside the selection: masked, harmless).
@@ -114,6 +127,29 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
   image sent; more room let them spill out of the selection. Removal as good. Prompt lines and
   widening the mask ruled out (his call: unreliable, or changes what should stay).
 - Reference images before the site and the release (2026-11-09, his call).
+- The user's prompt says what to do with reference images (2026-11-09, his call, true for the
+  whole plugin): the built-in text only says what each image is and how to name it, never what
+  to do with it, so nobody is held back. References are called "ref 1", "ref 2" (numbered
+  thumbnails); the built-in text maps those names to image positions. They come from files only
+  (Photoshop beta 28 dropped layers); the panel's window imitates Adobe's "Reference image" one
+  without its "Object" and "Mode" options (the prompt says it; cut-out only if tests show a gain).
+  His idea to keep them with the document: a hidden group, one layer per reference.
+  Input image limits on OpenRouter (2026-11-09, Fulla already sends 3: tile, mask, scene): Nano
+  Banana 2.1/Pro 14, GPT Image 2.5/2.6 16, Qwen 2.1 Pro 4, Qwen Image 3 only 3 (no room left).
+  Scene image kept with references, except for Qwen (his call); max = the model's room left,
+  capped at 8. Adding a reference places the file at once as an embedded smart object in a
+  hidden "Fulla references" group (layer "ref 1 — <file>"); Generate reads that layer like the
+  photo (sRGB, strips, long side <= 2048). First check: reading a hidden layer (self-test).
+  Built-in text: one sentence naming the references by position ("Images 4 and 5 are reference
+  images supplied by the user, called ref 1 and ref 2 in the request."); empty prompt with
+  references: "Edit the area to change using the reference images." plus the blending line.
+  Thumbnails mirror the active document's group (no list of the panel's own): the cross deletes
+  the layer, fixed numbers read from layer names, references stay until removed, icon shows the
+  count. Paid tests after the code (~0.85 $, OpenRouter, 2K, 3 runs each: face from a burst,
+  passer-by removal with a clean plate and empty prompt, product placed, same with a cut-out
+  reference, product with Qwen Image 3); he generates the test photos with prompts from Claude.
+  Discussion done, he validated coding (2026-11-09). Code order: free check (place into a hidden
+  group, read the hidden layer back), providers and built-in text, window and thumbnails, tests.
 - After Cancel no new request is sent (2026-11-07): each one may be billed; the one already out
   can't be recalled, its result is dropped.
 - Stay as close as possible to Photoshop's built-in Generative Fill (2026-11-07), e.g. one

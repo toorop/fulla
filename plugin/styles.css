@@ -458,3 +458,62 @@ sp-textarea {
   width: auto;
   min-width: 0;
 }
+
+/* Reference images: how many on the button, then the popup (main.js fillRefs). */
+.count {
+  margin-left: 4px;
+}
+
+.refs-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 6px;
+}
+
+.refs-empty .hint {
+  margin-top: 6px;
+  text-align: center;
+}
+
+/* Each reference: its number top left (what the prompt calls it), a cross top right. */
+.thumb.ref {
+  position: relative;
+  cursor: default;
+}
+
+.thumb.ref.off {
+  opacity: 0.4;
+}
+
+.ref-num,
+.ref-x {
+  position: absolute;
+  top: 4px;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 11px;
+  color: #ffffff;
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+.ref-num {
+  left: 4px;
+}
+
+.ref-x {
+  right: 4px;
+  cursor: pointer;
+}
+
+#refsLimit {
+  margin-top: 4px;
+}
+
+.refs-actions {
+  margin-top: 10px;
+}
+
+#refsMsg {
+  margin-top: 8px;
+}

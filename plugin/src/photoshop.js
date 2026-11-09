@@ -4,8 +4,9 @@
 
 const { app, core, action, imaging, constants } = require("photoshop");
 const uxp = require("uxp");
-const { to8bit, placeInto, toRGBA, resample, downsampleStrips } = require("./image");
+const { to8bit, placeInto, toRGB, toRGBA, resample, downsampleStrips } = require("./image");
 const { tagSrgb } = require("./png");
+const refs = require("./references");
 
 const lfs = uxp.storage.localFileSystem;
 const formats = uxp.storage.formats;
@@ -412,6 +413,9 @@ async function commit(o) {
   try {
     const layer = await placeFitted(doc, file, o.crop, o.trace);
     layer.name = o.name;
+    // Placed above the active layer: when that is a reference, out of the hidden group, just below it.
+    const group = referenceGroup(doc);
+    if (group && layer.parent && layer.parent.id === group.id) await layer.move(group, constants.ElementPlacement.PLACEAFTER);
     // Recreate the exact selection, then turn it into the layer's mask.
     await putSelectionPixels(doc.id, o.selection);
     await bp([{ _obj: "make", new: { _class: "channel" }, at: { _ref: "channel", _enum: "channel", _value: "mask" }, using: { _enum: "userMaskEnabled", _value: "revealSelection" } }]);
@@ -471,6 +475,89 @@ async function showVariation(placed, result) {
   );
 }
 
+// ---------- reference images (references.js): a hidden group, one embedded smart object each ----------
+
+function referenceGroup(doc) {
+  return Array.from(doc.layers || []).find((l) => l.name === refs.GROUP_NAME && l.kind === constants.LayerKind.GROUP) || null;
+}
+
+/** The active document's references, sorted by number: [{id, name, number}]. None without the group. */
+function listReferences(docId) {
+  const group = referenceGroup(findDoc(docId));
+  return group ? refs.listFrom(Array.from(group.layers || []).map((l) => ({ id: l.id, name: l.name }))) : [];
+}
+
+/**
+ * Place an image file in the document as the next reference: an embedded smart object (the original
+ * stays in the PSD) inside the hidden references group, made at the top of the stack if needed, and
+ * kept within the canvas so it can be read whole. The user's selection and active layers are put back.
+ * Call inside modal(..., { historyDocId }) so it is one undo step.
+ * @returns {Promise<{id: number, name: string, number: number}>}
+ */
+async function addReference(docId, file) {
+  const doc = findDoc(docId);
+  if (app.activeDocument.id !== doc.id) app.activeDocument = doc;
+  const active = Array.from(doc.activeLayers || []).map((l) => l.id);
+  const putBack = await setSelectionAside(docId);
+  try {
+    let group = referenceGroup(doc);
+    if (!group) {
+      group = await doc.createLayerGroup({ name: refs.GROUP_NAME });
+      if (doc.layers[0].id !== group.id) await group.move(doc.layers[0], constants.ElementPlacement.PLACEBEFORE);
+    }
+    group.visible = false;
+    const number = refs.nextNumber(refs.listFrom(Array.from(group.layers || []).map((l) => ({ id: l.id, name: l.name }))));
+    await bp([{ _obj: "placeEvent", null: { _path: lfs.createSessionToken(file), _kind: "local" }, freeTransformCenterState: { _enum: "quadCenterState", _value: "QCSAverage" } }]);
+    const layer = doc.activeLayers[0];
+    layer.name = refs.layerName(number, file.name);
+    const W = num(doc.width);
+    const H = num(doc.height);
+    let b = layerBounds(layer);
+    const k = Math.min(1, W / (b.right - b.left), H / (b.bottom - b.top));
+    if (k < 0.9999) {
+      await layer.scale(k * 100, k * 100, constants.AnchorPosition.MIDDLECENTER);
+      b = layerBounds(layer);
+    }
+    const dx = Math.min(0, W - b.right) + Math.max(0, -b.left);
+    const dy = Math.min(0, H - b.bottom) + Math.max(0, -b.top);
+    if (dx || dy) await layer.translate(dx, dy);
+    await layer.move(group, constants.ElementPlacement.PLACEINSIDE);
+    group.visible = false;
+    if (active.length) await bp(active.map((id, i) => ({ _obj: "select", _target: [{ _ref: "layer", _id: id }], makeVisible: false, ...(i ? { selectionModifier: { _enum: "selectionModifierType", _value: "addToSelection" } } : {}) })));
+    return { id: layer.id, name: layer.name, number };
+  } finally {
+    await putBack();
+  }
+}
+
+/** Delete one reference layer (one undo step inside modal), and the group once it is empty. */
+async function removeReference(docId, layerId) {
+  const doc = findDoc(docId);
+  const group = referenceGroup(doc);
+  const layer = group && findLayer(group.layers, layerId);
+  if (!layer) return;
+  await layer.delete();
+  if (!group.layers || !group.layers.length) await group.delete();
+}
+
+/**
+ * One reference's pixels as sent to the model: RGB, its long side at most `maxSide` (2048 by default;
+ * smaller for the panel's thumbnails), read like the photo (sRGB, in strips). Transparent parts come
+ * out neutral grey.
+ */
+async function readReference(docId, layerId, maxSide = refs.MAX_SIDE) {
+  const doc = findDoc(docId);
+  const group = referenceGroup(doc);
+  const layer = group && findLayer(group.layers, layerId);
+  if (!layer) throw new HostError("That reference image is no longer in the document.");
+  const lb = layerBounds(layer);
+  const b = { left: Math.max(0, Math.floor(lb.left)), top: Math.max(0, Math.floor(lb.top)), right: Math.min(num(doc.width), Math.ceil(lb.right)), bottom: Math.min(num(doc.height), Math.ceil(lb.bottom)) };
+  if (b.right <= b.left || b.bottom <= b.top) throw new HostError(`"${layer.name}" is empty or outside the canvas.`);
+  const size = refs.sendSize(b.right - b.left, b.bottom - b.top, maxSide);
+  const r = await readScaled(docId, b, size, false, layerId);
+  return { rgb: toRGB(r.data, r.width, r.height, r.components), width: r.width, height: r.height };
+}
+
 module.exports = {
   HostError,
   bp,
@@ -483,4 +570,8 @@ module.exports = {
   readSelection,
   commit,
   showVariation,
+  listReferences,
+  addReference,
+  removeReference,
+  readReference,
 };

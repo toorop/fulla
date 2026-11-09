@@ -38,8 +38,11 @@ const asUserError = (fn) => {
   }
 };
 
-/** Phase 1: read the selection and the pixels around it (and the whole photo, reduced, when asked). */
-async function read(ps, doc, fit, { sceneRef, upload, context }) {
+/**
+ * Phase 1: read the selection and the pixels around it (and the whole photo, reduced, when asked),
+ * and the document's reference images, as many as the model takes (lowest numbers first).
+ */
+async function read(ps, doc, fit, { sceneRef, upload, context }, maxRefs) {
   const selection = await ps.getSelectionBounds(doc.id);
   if (!selection) throw new UserError("Make a selection first (any selection tool).", "noSelection");
   const geo = asUserError(() => computeCrop({ docWidth: doc.width, docHeight: doc.height, selection, fit, context }));
@@ -66,7 +69,11 @@ async function read(ps, doc, fit, { sceneRef, upload, context }) {
     const px = await ps.readComposite(doc.id, { left: 0, top: 0, right: doc.width, bottom: doc.height }, size);
     scene = { rgb: toRGB(px.data, px.width, px.height, px.components), width: px.width, height: px.height };
   }
-  return { geo, inp, rgb, mask, scene, selection: { data: full.data, width: full.width, height: full.height, left: geo.crop.left, top: geo.crop.top } };
+  const refs = [];
+  if (maxRefs > 0 && ps.listReferences) {
+    for (const r of (await ps.listReferences(doc.id)).slice(0, maxRefs)) refs.push({ number: r.number, ...(await ps.readReference(doc.id, r.id)) });
+  }
+  return { geo, inp, rgb, mask, scene, refs, selection: { data: full.data, width: full.width, height: full.height, left: geo.crop.left, top: geo.crop.top } };
 }
 
 /**
@@ -109,7 +116,8 @@ async function runGeneration(o) {
   const fit = (w, h) => provider.fitSize(o.model, w, h, forced ? o.resolution : provider.autoMax || "4K", { exact: forced, minTier: forced ? null : "2K" });
 
   progress("Reading the image");
-  const job = await ps.modal("Fulla: read", () => read(ps, doc, fit, o));
+  const maxRefs = provider.maxReferences ? provider.maxReferences(o.model) : 0;
+  const job = await ps.modal("Fulla: read", () => read(ps, doc, fit, o, maxRefs));
   checkCancel();
 
   // A little extra room so the model can blend; the Photoshop layer mask still uses the exact selection.
@@ -123,7 +131,8 @@ async function runGeneration(o) {
     image: { rgb: job.rgb, width: job.inp.width, height: job.inp.height },
     mask: modelMask,
     scene: job.scene,
-    task: taskFor(o.prompt),
+    refs: job.refs,
+    task: taskFor(o.prompt, job.refs.length),
     n: Math.max(1, Math.min(4, o.n || 1)),
     target: job.geo.target,
     quality: o.quality,

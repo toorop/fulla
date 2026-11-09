@@ -18,7 +18,7 @@ const openrouter = require("./providers/openrouter");
 const { PROVIDERS } = require("./providers/index");
 const { estimateCost } = require("./cost");
 const settings = require("./settings");
-const { encodePng, imageSize } = require("./png");
+const { encodePng, imageSize, tagSrgb } = require("./png");
 const { toRGB, resample } = require("./image");
 
 const lfs = uxp.storage.localFileSystem;
@@ -440,6 +440,79 @@ const SCENARIOS = {
     return (await fillScenario("fill", {}, { left: 500, top: 300, right: 700, bottom: 500 })).notes;
   },
 
+  // Reference images (2026-11-09): a file added as a reference lands in the hidden group at the top of
+  // the stack, one undo step, leaving the picture, the selection and the active layer as they were; it
+  // reads back whole although hidden; a big one is kept within the canvas; numbers stay fixed.
+  async references() {
+    const doc = await newDoc();
+    const sel = { left: 100, top: 100, right: 300, bottom: 300 };
+    await select(doc, "rect", sel);
+    const activeBefore = Array.from(doc.activeLayers).map((l) => l.id).join(",");
+    const write = async (name, w, h) => {
+      const png = tagSrgb(gradientPng(w, h));
+      const f = await outFolder.createFile(name, { overwrite: true });
+      await f.write(png.buffer.slice(png.byteOffset, png.byteOffset + png.byteLength), { format: formats.binary });
+      return f;
+    };
+    const add = (f) => ps.modal("Fulla: add reference", () => ps.addReference(doc.id, f), { historyDocId: doc.id });
+    const remove = (id) => ps.modal("Fulla: remove reference", () => ps.removeReference(doc.id, id), { historyDocId: doc.id });
+    const read = (id) => ps.modal("Fulla self-test: read reference", () => ps.readReference(doc.id, id));
+    const numbers = () => ps.listReferences(doc.id).map((r) => r.number).join(",");
+
+    const h0 = historyCount(doc);
+    const a = await add(await write("ref-a.png", 600, 400));
+    expect(historyCount(doc) === h0 + 1, `adding a reference grew history by ${historyCount(doc) - h0}, expected 1`);
+    const group = doc.layers[0];
+    expect(group.name === "Fulla references" && String(group.kind) === "group", `top layer is "${group.name}" (${group.kind}), expected the references group`);
+    expect(!group.visible, "the references group is visible");
+    expect(a.number === 1 && a.name === "ref 1 — ref-a.png", `first reference is ${JSON.stringify(a)}`);
+    near(await probe(doc, 50, 400), RED, 6, "picture left of centre after adding");
+    near(await probe(doc, 1150, 400), BLUE, 6, "picture right of centre after adding");
+    const after = await ps.getSelectionBounds(doc.id);
+    expect(after && ["left", "top", "right", "bottom"].every((k) => Math.abs(after[k] - sel[k]) <= 1), `selection after adding: ${JSON.stringify(after)}`);
+    const activeAfter = Array.from(doc.activeLayers).map((l) => l.id).join(",");
+    expect(activeAfter === activeBefore, `active layers ${activeAfter}, expected ${activeBefore}`);
+
+    // The point of the approach: a layer in a hidden group reads back as it is.
+    const ra = await read(a.id);
+    expect(ra.width === 600 && ra.height === 400, `hidden reference read as ${ra.width}x${ra.height}, expected 600x400`);
+    for (const [x, y] of [[10, 10], [300, 200], [590, 390]]) {
+      const o = (y * ra.width + x) * 3;
+      near([ra.rgb[o], ra.rgb[o + 1], ra.rgb[o + 2]], [(x * 255) / 599, (y * 255) / 399, 0], 6, `hidden reference at ${x},${y}`);
+    }
+
+    // Bigger than the canvas: kept inside it, read at the canvas size at most.
+    const b = await add(await write("ref-big.png", 3000, 2000));
+    const rb = await read(b.id);
+    expect(b.number === 2 && rb.width <= 1200 && rb.height <= 800 && Math.abs(rb.width / rb.height - 1.5) < 0.02, `big reference ${b.number} read as ${rb.width}x${rb.height}`);
+
+    // A generation reads them from the document, lowest numbers first, as many as the model takes.
+    const mock = { ...mockProvider(), maxReferences: () => 1 };
+    await run(mock, { prompt: "selftest references" });
+    const sent = mock.requests[0].refs.map((r) => `${r.number}:${r.width}x${r.height}`).join(",");
+    expect(sent === "1:600x400", `references sent: ${sent}, expected 1:600x400`);
+    expect(doc.layers[0].name === "Fulla references", `the generation's layer went above the references group ("${doc.layers[0].name}" on top)`);
+    // With a reference as the active layer, the result still lands outside the hidden group, visible.
+    await ps.modal("Fulla self-test: select", () => ps.bp([{ _obj: "select", _target: [{ _ref: "layer", _id: b.id }], makeVisible: false }]));
+    await select(doc, "rect", sel);
+    const mock2 = mockProvider();
+    const out2 = await run(mock2, { prompt: "selftest references 2" });
+    expect(Array.from(doc.layers).some((l) => l.id === out2.placed.layerId), "the result went into the hidden references group");
+    near(await probe(doc, 200, 200), gradAt(200, 200, out2.crop, mock2.outSize.W, mock2.outSize.H), 12, "result visible at the selection centre");
+
+    // Fixed numbers: removing ref 1 leaves ref 2; the next one is ref 3; the empty group goes.
+    await remove(a.id);
+    expect(numbers() === "2", `after removing ref 1: ${numbers()}`);
+    const c = await add(await write("ref-c.png", 200, 200));
+    expect(c.number === 3 && numbers() === "2,3", `after adding again: ${numbers()}`);
+    await remove(b.id);
+    await remove(c.id);
+    expect(!Array.from(doc.layers).some((l) => l.name === "Fulla references"), "the empty references group stayed");
+    await undoTo(doc, h0 + 1);
+    expect(numbers() === "1", `undo back to the first add: ${numbers()}`);
+    return { history: historyCount(doc) - h0, big: [rb.width, rb.height] };
+  },
+
   async variations() {
     const doc = await newDoc();
       const sel = { left: 450, top: 250, right: 750, bottom: 550 };
@@ -632,8 +705,55 @@ const SCENARIOS = {
     return { ok: m.ok };
   },
 
+  // Reference images in the panel: the button shows how many the active document has, the popup
+  // lists them numbered with thumbnails and says what the model takes, the cross removes one, and
+  // another document shows its own (none).
+  async panelRefs() {
+    const $ = (id) => document.getElementById(id);
+    const tick = (ms = 150) => new Promise((r) => setTimeout(r, ms));
+    expect(panelHooks.addRefFiles && panelHooks.refreshRefs, "main.js did not pass addRefFiles / refreshRefs to the self-test");
+    $("tab-generate").dispatchEvent(new Event("click"));
+    const doc = await newDoc();
+    await panelHooks.refreshRefs(true);
+    expect($("refsCount").hidden, "the button shows a count for a document without references");
+    const files = [];
+    for (const [name, w, h] of [["panel-ref-a.png", 300, 200], ["panel-ref-b.png", 200, 300]]) {
+      const png = tagSrgb(gradientPng(w, h));
+      const f = await outFolder.createFile(name, { overwrite: true });
+      await f.write(png.buffer.slice(png.byteOffset, png.byteOffset + png.byteLength), { format: formats.binary });
+      files.push(f);
+    }
+    const h0 = historyCount(doc);
+    await panelHooks.addRefFiles(files);
+    expect(historyCount(doc) === h0 + 2, `two references added in ${historyCount(doc) - h0} undo steps, expected 2`);
+    expect(!$("refsCount").hidden && $("refsCount").textContent === "2", `button count "${$("refsCount").textContent}"`);
+    $("refsChip").dispatchEvent(new Event("click"));
+    await tick(300);
+    expect($("menu") && $("refsGrid"), "the references popup did not open");
+    const cells = () => Array.from(document.querySelectorAll("#refsGrid .ref"));
+    expect(cells().length === 2 && cells().map((c) => c.querySelector(".ref-num").textContent).join(",") === "1,2", "popup: numbered thumbnails 1, 2");
+    for (let i = 0; i < 20 && cells().some((c) => !c.querySelector("img").getAttribute("src")); i++) await tick(200);
+    expect(cells().every((c) => /^data:image\/png/.test(c.querySelector("img").getAttribute("src") || "")), "thumbnails not loaded");
+    const limit = $("refsLimit").textContent;
+    expect(/takes (up to )?\d|takes no reference/.test(limit), `limit line "${limit}"`);
+    cells()[0].querySelector(".ref-x").dispatchEvent(new Event("click"));
+    for (let i = 0; i < 20 && cells().length !== 1; i++) await tick(200);
+    expect(cells().length === 1 && cells()[0].querySelector(".ref-num").textContent === "2", "the cross removed ref 1, ref 2 kept its number");
+    expect($("refsCount").textContent === "1", `button count after removing: "${$("refsCount").textContent}"`);
+    $("refsChip").dispatchEvent(new Event("click"));
+    await tick();
+    expect(!$("menu"), "the button did not close its popup");
+    const other = await newDoc({ width: 600, height: 400 });
+    await panelHooks.refreshRefs();
+    expect($("refsCount").hidden, "another document shows the first one's references");
+    await ps.modal("Fulla self-test: switch", async () => (app.activeDocument = doc));
+    await panelHooks.refreshRefs();
+    expect($("refsCount").textContent === "1" && !$("refsCount").hidden, "back on the first document, its reference is shown again");
+    return { limit, other: other.id };
+  },
+
   async panelWidths() {
-    // How wide the panel must be for the button row (model, settings, Generate) to stay on one line,
+    // How wide the panel must be for the button row (model, references, settings, Generate) to stay on one line,
     // with each catalogue model's name on the model button. Measures, then puts the label back.
     const $ = (id) => document.getElementById(id);
     const tick = (ms = 120) => new Promise((r) => setTimeout(r, ms));
@@ -649,7 +769,7 @@ const SCENARIOS = {
           $("modelBadge").textContent = p.badge;
           $("modelName").textContent = m.label;
           await tick();
-          const need = $("modelChip").getBoundingClientRect().width + $("optionsChip").getBoundingClientRect().width + $("generate").getBoundingClientRect().width + 2 * 6;
+          const need = $("modelChip").getBoundingClientRect().width + $("refsChip").getBoundingClientRect().width + $("optionsChip").getBoundingClientRect().width + $("generate").getBoundingClientRect().width + 3 * 6;
           widths[`${p.badge} ${m.label}`] = Math.ceil(need + sideGap);
         }
       }
@@ -1008,6 +1128,7 @@ const SCENARIOS = {
     await select(doc, "rect", { left: 450, top: 250, right: 750, bottom: 550 });
     for (let i = 0; i < 15 && !$("runCard").hidden; i++) await tick(200);
     expect($("runCard").hidden && !$("idleHint").hidden, "the no-selection message stayed after a selection was made");
+    $("prompt").value = ""; // leave the panel as the user had it
     return info;
   },
 

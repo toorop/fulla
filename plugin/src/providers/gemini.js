@@ -7,6 +7,7 @@ const { binarize } = require("../image");
 const { maskImagePrompt } = require("../prompts");
 const { postJson, getJson, ProviderError } = require("./http");
 const { closestRatio, chooseTier } = require("./sizing");
+const { MAX_REFERENCES } = require("../references");
 
 const HOST = "generativelanguage.googleapis.com";
 const urlFor = (model) => `https://${HOST}/v1beta/models/${encodeURIComponent(model)}:generateContent`;
@@ -26,17 +27,19 @@ const WIDE = ["1:4", "4:1", "1:8", "8:1"];
 const R14 = Object.keys(RATIOS_1K);
 const R10 = R14.filter((r) => !WIDE.includes(r));
 
+// inputs = images a request may carry: 14 for Nano Banana 2.1 and Pro (Google's model pages, checked
+// 2026-11-09); not documented for 2 Lite, assumed the same.
 const MODELS = [
-  { id: "gemini-nano-banana-2.1", label: "Nano Banana 2.1", ratios: R14, tiers: ["1K", "2K", "4K"] },
+  { id: "gemini-nano-banana-2.1", label: "Nano Banana 2.1", ratios: R14, tiers: ["1K", "2K", "4K"], inputs: 14 },
   // Pro bills 1K and 2K the same (1,120 tokens, checked 2026-11-07), so 1K is not offered.
-  { id: "gemini-3-pro-image", label: "Nano Banana Pro", ratios: R10, tiers: ["2K", "4K"] },
-  { id: "gemini-3.1-flash-lite-image", label: "Nano Banana 2 Lite", note: "Fast", ratios: R14, tiers: ["1K"] },
+  { id: "gemini-3-pro-image", label: "Nano Banana Pro", ratios: R10, tiers: ["2K", "4K"], inputs: 14 },
+  { id: "gemini-3.1-flash-lite-image", label: "Nano Banana 2 Lite", note: "Fast", ratios: R14, tiers: ["1K"], inputs: 14 },
 ];
 const TIER_MULT = { "1K": 1, "2K": 2, "4K": 4 };
 
 function modelInfo(model) {
   // A model not in the catalogue (saved by an older version) gets the widest common set.
-  return MODELS.find((m) => m.id === model) || { id: model, ratios: R10, tiers: ["1K", "2K", "4K"] };
+  return MODELS.find((m) => m.id === model) || { id: model, ratios: R10, tiers: ["1K", "2K", "4K"], inputs: 3 };
 }
 
 /** Closest supported ratio and a size tier (rules in sizing.js); Gemini's exact pixels per ratio. */
@@ -136,7 +139,7 @@ function usageFrom(json) {
 // Which config field the API accepted last time, per model ("responseFormat" or "imageConfig").
 const configStyle = {};
 
-function buildBody(text, imgB64, maskB64, size, style, sceneB64) {
+function buildBody(text, imgB64, maskB64, size, style, extraB64) {
   const image = { aspectRatio: size.aspectRatio, imageSize: size.imageSize };
   const generationConfig = { responseModalities: ["IMAGE"] };
   if (style === "imageConfig") generationConfig.imageConfig = image;
@@ -149,7 +152,7 @@ function buildBody(text, imgB64, maskB64, size, style, sceneB64) {
           { text },
           { inline_data: { mime_type: "image/png", data: imgB64 } },
           { inline_data: { mime_type: "image/png", data: maskB64 } },
-          ...(sceneB64 ? [{ inline_data: { mime_type: "image/png", data: sceneB64 } }] : []),
+          ...extraB64.map((data) => ({ inline_data: { mime_type: "image/png", data } })),
         ],
       },
     ],
@@ -157,7 +160,7 @@ function buildBody(text, imgB64, maskB64, size, style, sceneB64) {
   };
 }
 
-async function generateOne(req, text, imgB64, maskB64, size, sceneB64) {
+async function generateOne(req, text, imgB64, maskB64, size, extraB64) {
   // imageConfig {aspectRatio: "16:9", imageSize: "2K"} is what the API accepts (verified 2026-10-12);
   // responseFormat.image wants enum values instead, so it is only a fallback.
   const style = configStyle[req.model] || "imageConfig";
@@ -166,7 +169,7 @@ async function generateOne(req, text, imgB64, maskB64, size, sceneB64) {
       fetch: req.fetch,
       url: urlFor(req.model),
       headers: { "x-goog-api-key": req.apiKey },
-      body: buildBody(text, imgB64, maskB64, size, s, sceneB64),
+      body: buildBody(text, imgB64, maskB64, size, s, extraB64),
       classify,
       host: HOST,
       cancelled: req.cancelled,
@@ -196,6 +199,11 @@ async function checkKey({ fetch, apiKey }) {
   return {};
 }
 
+/** How many reference images the user may add with this model: the room left after Fulla's own, 8 at most. */
+function maxReferences(model) {
+  return Math.max(0, Math.min(MAX_REFERENCES, modelInfo(model).inputs - 3));
+}
+
 /** Same request shape as openai.generate. Variations run as parallel requests. */
 async function generate(req) {
   if (!req.apiKey) throw new ProviderError("Add your Gemini API key in the Providers tab first.", { code: "no_key" });
@@ -203,10 +211,12 @@ async function generate(req) {
   const imgB64 = toBase64(encodePng(req.image.rgb, width, height, 3));
   const maskB64 = toBase64(encodePng(binarize(req.mask), width, height, 1));
   const size = req.target.aspectRatio ? req.target : fitSize(req.model, req.target.width, req.target.height, "2K");
-  const sceneB64 = req.scene ? toBase64(encodePng(req.scene.rgb, req.scene.width, req.scene.height, 3)) : null;
-  const text = maskImagePrompt(req.task, !!sceneB64);
+  const own = (req.refs || []).slice(0, maxReferences(req.model));
+  // The whole photo, then the user's references, after the picture and its mask.
+  const extraB64 = (req.scene ? [req.scene] : []).concat(own).map((r) => toBase64(encodePng(r.rgb, r.width, r.height, 3)));
+  const text = maskImagePrompt(req.task, !!req.scene, own.map((r) => r.number));
   const n = Math.max(1, Math.min(4, req.n || 1));
-  const settled = await Promise.allSettled(Array.from({ length: n }, () => generateOne(req, text, imgB64, maskB64, size, sceneB64)));
+  const settled = await Promise.allSettled(Array.from({ length: n }, () => generateOne(req, text, imgB64, maskB64, size, extraB64)));
   const ok = settled.filter((s) => s.status === "fulfilled").map((s) => s.value);
   if (!ok.length) throw settled[0].reason;
   return ok;
@@ -225,6 +235,7 @@ module.exports = {
   qualities: null,
   fitSize,
   /** Sizes the user may choose for this model, besides Auto (none when there is only one). */
+  maxReferences,
   resolutions: (model) => modelInfo(model).tiers,
   generate,
   checkKey,

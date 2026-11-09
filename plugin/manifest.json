@@ -30,7 +30,7 @@
     "network": {
       "domains": ["https://openrouter.ai", "https://api.openai.com", "https://generativelanguage.googleapis.com"]
     },
-    "localFileSystem": "plugin",
+    "localFileSystem": "request",
     "launchProcess": { "schemes": ["https"], "extensions": [] }
   }
 }

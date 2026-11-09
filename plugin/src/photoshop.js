@@ -204,6 +204,11 @@ async function readComposite(docId, bounds, size) {
   return readScaled(docId, bounds, size, false);
 }
 
+/** One layer's own pixels in `bounds`, at `size`, RGBA; its mask is not applied (self-test measures). */
+async function readLayer(docId, layerId, bounds, size) {
+  return readScaled(docId, bounds, size, false, layerId);
+}
+
 /**
  * Selection mask of `bounds`; at `size`, or full resolution when size is null. 1 byte per pixel.
  * Photoshop refuses selection reads that miss the selection, so only the selection's own bounding
@@ -474,6 +479,7 @@ module.exports = {
   getDocument,
   getSelectionBounds,
   readComposite,
+  readLayer,
   readSelection,
   commit,
   showVariation,

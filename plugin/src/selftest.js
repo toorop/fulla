@@ -1342,53 +1342,115 @@ async function live(providerId, model) {
 }
 
 /**
- * Review item A1 (dev only, paid, run with {"abInput": {...}}): the same edit on a real photo, the
- * area sent at the output size (today) and at its own pixels, per model. Records what each reply
- * cost (OpenRouter's billed amount) and saves each result next to the report.
- * @param {{photo?: string, selection: {left,top,right,bottom}, models: string[], provider?: string, prompt?: string}} o
- *   photo: a file in this plugin's data folder (default "ab-photo.png")
+ * Dev-only A/B tests on a real photo (paid; run with {"abInput": {...}}): the same edit with each
+ * variant of the pipeline's options, `runs` times (interleaved). Saves each reply and the generated
+ * area with the selection outlined in red next to the report, and measures `spill`: the pixels the
+ * result changed outside the area the model may change, counted in selection areas (0.1 = a tenth
+ * of the selection's size changed outside it). Also records what each reply cost.
+ * @param {{photo?: string, active?: boolean, selection?: {left,top,right,bottom}, models: string[], provider?: string,
+ *   prompt?: string, variants?: object[], runs?: number}} o
+ *   photo: a file in this plugin's data folder (default "ab-photo.png"), with `selection`; or
+ *   active: true, the open document and its selection's bounds (the document is left as it was).
+ *   variants: pipeline options per arm, e.g. [{context: 0.35}, {context: 0.1}] (default: review A1's
+ *   upload "target" vs "crop").
  */
 async function abInput(o) {
   const provider = { gemini, openai, openrouter }[o.provider || "openrouter"];
   expect(provider, `unknown provider "${o.provider}"`);
   const apiKey = await settings.getKey(provider.id);
   expect(apiKey, `no ${provider.name} key saved in the panel`);
-  const entry = await (await lfs.getDataFolder()).getEntry(o.photo || "ab-photo.png");
-  const doc = await ps.modal("Fulla self-test: open", () => app.open(entry));
-  made.push(doc);
-  const report = {};
+  let doc;
+  let selection = o.selection;
+  if (o.active) {
+    doc = app.activeDocument;
+    expect(doc, "no open document");
+    selection = selection || (await ps.getSelectionBounds(doc.id));
+    expect(selection, "no selection in the open document");
+  } else {
+    const entry = await (await lfs.getDataFolder()).getEntry(o.photo || "ab-photo.png");
+    doc = await ps.modal("Fulla self-test: open", () => app.open(entry));
+    made.push(doc);
+  }
+  const variants = o.variants || [{ upload: "target" }, { upload: "crop" }];
+  const label = (v) => Object.entries(v).map(([k, x]) => `${k}=${x}`).join(",");
+  const report = { selection, runs: {}, summary: {} };
   for (const model of o.models) {
-    for (const upload of ["target", "crop"]) {
-      await select(doc, "rect", o.selection);
-      const h0 = historyCount(doc);
-      const usages = [];
-      let sent = null;
-      const spy = { ...provider, generate: (req) => ((sent = [req.image.width, req.image.height]), provider.generate(req)) };
-      const t0 = Date.now();
-      const key = `${model} ${upload}`;
-      try {
-        const out = await runGeneration({ ps, provider: spy, fetch: (u, i) => fetch(u, i), apiKey, model, n: 1, resolution: "auto", prompt: o.prompt || "", sceneRef: true, upload, onUsage: (u) => usages.push(u) });
-        const bytes = out.results[0].bytes;
-        const s = imageSize(bytes);
-        const name = `ab-${model.replace(/[^a-z0-9.]+/gi, "_")}-${upload}.${s && s.type === "jpeg" ? "jpg" : s && s.type === "webp" ? "webp" : "png"}`;
-        const f = await outFolder.createFile(name, { overwrite: true });
-        await f.write(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), { format: formats.binary });
-        report[key] = {
-          seconds: Math.round((Date.now() - t0) / 1000),
-          sent,
-          crop: [out.crop.right - out.crop.left, out.crop.bottom - out.crop.top],
-          target: out.target,
-          returned: s && [s.width, s.height],
-          usd: usages.reduce((a, u) => a + (estimateCost(model, u) || 0), 0),
-          tokens: usages.map((u) => ({ inputImage: u.inputImage, inputText: u.inputText, output: u.outputImage + u.outputText })),
-          file: name,
-        };
-      } catch (e) {
-        report[key] = { seconds: Math.round((Date.now() - t0) / 1000), sent, error: String((e && e.message) || e), detail: e && e.detail, usd: usages.reduce((a, u) => a + (estimateCost(model, u) || 0), 0) };
+    for (let i = 1; i <= (o.runs || 1); i++) {
+      for (const v of variants) {
+        await select(doc, "rect", selection);
+        const h0 = historyCount(doc);
+        const usages = [];
+        let req = null;
+        const spy = { ...provider, generate: (r) => ((req = r), provider.generate(r)) };
+        const t0 = Date.now();
+        const key = `${model} ${label(v)} #${i}`;
+        const base = `ab-${model.replace(/[^a-z0-9.]+/gi, "_")}-${label(v).replace(/[^a-z0-9.]+/gi, "_")}-${i}`;
+        const usd = () => usages.reduce((a, u) => a + (estimateCost(model, u) || 0), 0);
+        try {
+          const out = await runGeneration({ ps, provider: spy, fetch: (u, i) => fetch(u, i), apiKey, model, n: 1, resolution: "auto", prompt: o.prompt || "", sceneRef: true, ...v, onUsage: (u) => usages.push(u) });
+          const bytes = out.results[0].bytes;
+          const s = imageSize(bytes);
+          const name = `${base}.${s && s.type === "jpeg" ? "jpg" : s && s.type === "webp" ? "webp" : "png"}`;
+          const f = await outFolder.createFile(name, { overwrite: true });
+          await f.write(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), { format: formats.binary });
+          // What the layer holds (its mask ignored), at the size sent, against what was sent.
+          const W = req.image.width;
+          const H = req.image.height;
+          const [layer, sel] = await ps.modal("Fulla self-test: measure", async () => [
+            await ps.readLayer(doc.id, out.placed.layerId, out.crop, { width: W, height: H }),
+            await ps.readSelection(doc.id, out.crop, { width: W, height: H }),
+          ]);
+          let inside = 0;
+          let spilled = 0;
+          const pic = new Uint8Array(W * H * 3);
+          for (let p = 0; p < W * H; p++) {
+            const l = p * 4;
+            const r = p * 3;
+            pic[r] = layer.data[l];
+            pic[r + 1] = layer.data[l + 1];
+            pic[r + 2] = layer.data[l + 2];
+            if (sel.data[p] > 127) inside++;
+            if (req.mask[p] > 127) continue;
+            const d = Math.abs(layer.data[l] - req.image.rgb[r]) + Math.abs(layer.data[l + 1] - req.image.rgb[r + 1]) + Math.abs(layer.data[l + 2] - req.image.rgb[r + 2]);
+            if (d > 60) spilled++;
+          }
+          // The selection's edge in red, 2 px.
+          const on = (x, y) => x >= 0 && y >= 0 && x < W && y < H && sel.data[y * W + x] > 127;
+          for (let y = 0; y < H; y++) {
+            for (let x = 0; x < W; x++) {
+              if (!on(x, y)) continue;
+              if (on(x - 2, y) && on(x + 2, y) && on(x, y - 2) && on(x, y + 2)) continue;
+              pic.set(RED, (y * W + x) * 3);
+            }
+          }
+          const outlined = `${base}-outlined.png`;
+          const png = encodePng(pic, W, H, 3);
+          const g = await outFolder.createFile(outlined, { overwrite: true });
+          await g.write(png.buffer.slice(png.byteOffset, png.byteOffset + png.byteLength), { format: formats.binary });
+          const spill = inside ? Math.round((spilled / inside) * 1000) / 1000 : null;
+          report.runs[key] = {
+            seconds: Math.round((Date.now() - t0) / 1000),
+            sent: [W, H],
+            crop: [out.crop.right - out.crop.left, out.crop.bottom - out.crop.top],
+            selectionShare: Math.round((inside / (W * H)) * 100) / 100,
+            target: out.target,
+            returned: s && [s.width, s.height],
+            spill,
+            usd: usd(),
+            file: name,
+            outlined,
+          };
+          const sum = (report.summary[`${model} ${label(v)}`] = report.summary[`${model} ${label(v)}`] || { spills: [], usd: 0 });
+          sum.spills.push(spill);
+          sum.usd += usd();
+        } catch (e) {
+          report.runs[key] = { seconds: Math.round((Date.now() - t0) / 1000), sent: req && [req.image.width, req.image.height], error: String((e && e.message) || e), detail: e && e.detail, usd: usd() };
+        }
+        await undoTo(doc, h0);
       }
-      await undoTo(doc, h0);
     }
   }
+  if (o.active) await select(doc, "rect", selection);
   return report;
 }
 

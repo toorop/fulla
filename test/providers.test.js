@@ -391,6 +391,19 @@ test("upload size: the area is sent at its own pixels, never upscaled; upload \"
   assert.ok(Math.abs(small.sent[0] / small.sent[1] - big.sent[0] / big.sent[1]) < 0.01, "same aspect");
 });
 
+test("context: a thin margin by default (5 %), so the area sent is mostly the selection; always containing it", async () => {
+  const selection = { left: 1000, top: 1000, right: 1800, bottom: 1600 };
+  const area = async (context) => {
+    const r = await runGeneration({ ps: fakePs({ selection }), provider: fakeProvider(1), apiKey: "k", model: "m", context });
+    const c = r.crop;
+    assert.ok(c.left <= selection.left && c.top <= selection.top && c.right >= selection.right && c.bottom >= selection.bottom, "selection inside");
+    return (c.right - c.left) * (c.bottom - c.top);
+  };
+  const wide = await area(0.35); // the old margin
+  const tight = await area();
+  assert.ok(tight < wide * 0.6, `default ${tight} vs 35 % ${wide}`);
+});
+
 test("pipeline errors are user-friendly and leave the document alone", async () => {
   const provider = fakeProvider(1);
   const none = fakePs({ selection: null });

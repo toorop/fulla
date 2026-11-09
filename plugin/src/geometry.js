@@ -32,11 +32,14 @@ function growSpan(a, b, len, max) {
  * @param {number} p.docHeight
  * @param {{left,top,right,bottom}} p.selection   selection bounds
  * @param {(w: number, h: number) => {width, height}} p.fit  provider's output size for a crop of w x h
- * @param {number} [p.context=0.35]             context margin as a fraction of the selection's longest side
+ * @param {number} [p.context=0.05]             context margin as a fraction of the selection's longest side.
+ *   Kept thin: models compose what they add in the whole image sent, so with more room around the
+ *   selection an added object spills out of it and the layer mask cuts it (A/B 2026-11-09: at 35 %
+ *   a sail's tip came out 3 times in 3, at 5 % never); and the selection gets more of the pixels.
  * @param {number} [p.minSide=512]              smallest crop side worth sending
- * @returns {{crop, target, scaleX, scaleY, softness}}
+ * @returns {{crop, target, scaleX, scaleY, softness, margin}}  margin: in document pixels
  */
-function computeCrop({ docWidth, docHeight, selection, fit, context = 0.35, minSide = 512 }) {
+function computeCrop({ docWidth, docHeight, selection, fit, context = 0.05, minSide = 512 }) {
   const sel = clampRect(selection, docWidth, docHeight);
   if (width(sel) <= 0 || height(sel) <= 0) throw new Error("Selection is outside the document");
 
@@ -67,7 +70,7 @@ function computeCrop({ docWidth, docHeight, selection, fit, context = 0.35, minS
   const scaleY = target.height / height(crop);
   // >1 means the model output gets upscaled on placement (result will look softer).
   const softness = Math.max(width(crop) / target.width, height(crop) / target.height);
-  return { crop, target, scaleX, scaleY, softness };
+  return { crop, target, scaleX, scaleY, softness, margin };
 }
 
 /** Size of the image actually uploaded: the target's aspect, no larger than maxSide on the long edge. */

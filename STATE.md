@@ -6,19 +6,24 @@
 
 ## Next action
 
-- **Resume here: step 4 is done (2026-11-08); next, with him: push, his walk-through, then
-  step 6 (website).** Code review findings and what became of each: his vault, "relecture du
-  code (novembre 2026)". All committed, nothing pushed (he pushes once per session; ask first).
-  Fixed: B2 double click, B1 request deadlines + immediate Cancel, B3 retries only on 429/502/503,
-  B4 unreadable replies never pasted, B5 selection kept after a run (his call), B6 OpenAI caps n,
-  S1 keys only in secure storage, S2 installer id guard, S3 CI actions pinned by SHA, A1 the
-  area sent at its own pixels, never upscaled (his call: better acutance, +15 % fine detail
-  measured, same price; dev-only A/B mode `{"abInput": {...}}`), A2 error Details to copy, A3
-  billed amounts without "≈", R1 shared prompts/sizing, R2 run gate in `src/run.js`, R3/R4 dead
-  code and details; found on the way: JPEG results (Nano Banana via OpenRouter) now get an sRGB
-  profile (in Adobe RGB a green moved from 60,160,60 to 0,162,48). Tests 78/78, package OK,
-  self-test 29/29 (new `adobeRgbJpeg`; a parse test now covers selftest.js).
-  He should check by hand: pasting a prompt, the selection kept after a run, Details on an error.
+- **Resume here (2026-11-09): margin work done, waiting for his OK to commit; next, with him:
+  reference images (discussion first; his call: before the site and the release), then step 6
+  (website).** Margin (his lead, A/B on his beach photo, 0.88 $ in all): default context margin
+  5 % instead of 35 % (`geometry.js`). Adding a land yacht: at 35 % the sail came out of the
+  selection 3/3 (the mask cut it), at 10 % the mast tip 3/3, at 5 % never. Removing a man: 5 %
+  as clean as 35 %, 3/3 each (once the model moved him outside the selection: masked, harmless).
+  Tone matching kept: its ring's gap is now half the margin, at most 4 % of the grid
+  (`tone.js` `gap`). Dev tools: pipeline option `context`, `ps.readLayer`, self-test
+  `abInput` with `variants`, `runs`, `active: true` (open document; `selection` optional),
+  saves each reply and an outlined PNG; its `spill` number is too coarse to see a mast tip, judge
+  on the PNGs. Tests 80/80, package OK, free self-test 29/29 (toneMatch at the 5 % default).
+- Step 6 (website): discussion only, no code until he validates, one sub-step at a time. Domain
+  decided (2026-11-09): a subdomain of his own domain (recorded in his notes), never to change
+  after the release. Next sub-steps: tech and hosting, content, SEO and GEO. CI of `5a188d2`
+  green (checked 2026-11-09).
+- Step 4 done (2026-11-08), pushed up to `5a188d2`: 18 review items fixed (list and outcome in
+  his vault, "relecture du code (novembre 2026)") plus sRGB profiles on JPEG results. Hand checks
+  (2026-11-09): pasting a prompt OK, selection kept after a run OK; Details on an error not done.
 - **Step 5 (local models) on hold, his call (2026-11-08)**: good results need a high-end GPU
   (RTX 5080: ~20 s per edit at 1.5K, Qwen Image 2.1 Turbo), whose owners don't mind ~0.04 €/image
   through an API; Qwen 2.1's licence is research-only. Not put forward on the website. Tests,
@@ -35,9 +40,8 @@
   matching (`src/tone.js`, Curves smart filter after the mask, refitted per variation); 3.3 the
   whole photo at 1024 px as a scene reference when the area is < 50 % of it (no measurable
   effect in his A/B, kept: nearly free), replies > 15 % off the target aspect dropped.
-- Clipped additions (beach test): models don't keep strictly inside the mask, the layer mask cut
-  a head. Ideas: a prompt line "anything added fits wholly inside the white area" (paid A/B), a
-  docs tip to select generously. Paste-placeholder fix: he should confirm by pasting a prompt.
+- Clipped additions: settled by the 5 % margin (2026-11-09, above); a docs tip to select
+  generously is still worth having.
 - Prompts: naming the photo's style in the prompt ("keep the film grain") made things far worse;
   our wrapper's wording made no clear difference (A/B, reverted). Tip for docs and waiting tips:
   describe the change, not the photo's style.
@@ -66,8 +70,9 @@
 
 ## Current step
 
-Step 4 (code review) done 2026-11-08. Step 5 (local models) on hold. Next: step 6 (website). Step 1 left to test some day, not blocking: sign-up with a fresh OpenRouter
-account; a real OpenAI key.
+Before the site (added 2026-11-09): context margin (done) and reference images (next). Step 5
+(local models) on hold. Step 1 left to test some day, not blocking: sign-up with a fresh
+OpenRouter account; a real OpenAI key.
 
 ## Roadmap (order agreed 2026-11-07, revised that evening; details and checkboxes in Stéphane's notes)
 
@@ -78,7 +83,8 @@ account; a real OpenAI key.
 4. Full code review: done 2026-11-08 (no serious flaw; 18 items fixed, see his notes).
 5. Local models: **on hold since 2026-11-08** (his call after tests: needs a high-end GPU; owners
    of one don't mind API prices; only privacy remains). Not put forward on the website.
-6. Website (presentation + all user docs; SEO and GEO). Domain considered: fulla.photo.
+   Before the site (2026-11-09): context margin 5 % (done), reference images.
+6. Website (presentation + all user docs; SEO and GEO). Domain: a subdomain of his own domain.
 7. First public release.
 8. fal.ai provider (real masks), compared on real photos.
 
@@ -90,6 +96,8 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Recently done
 
+- 2026-11-09 — Context margin 5 % (was 35 %) after his A/B: added objects stay in the
+  selection; tone-matching ring gap tied to the margin; A/B self-test mode generalised.
 - 2026-11-08 — Step 4: code review and its fixes (`c41e68d` to `5a920cf`), JPEG colour profile.
 - 2026-11-08 — Step 5 researched and tested (UXP loopback, stable-diffusion.cpp vs ComfyUI,
   Qwen Image 2.1 on an RTX 5080), then put on hold.
@@ -102,6 +110,10 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Decisions taken
 
+- Context margin 5 % around the selection (2026-11-09): models compose additions in the whole
+  image sent; more room let them spill out of the selection. Removal as good. Prompt lines and
+  widening the mask ruled out (his call: unreliable, or changes what should stay).
+- Reference images before the site and the release (2026-11-09, his call).
 - After Cancel no new request is sent (2026-11-07): each one may be billed; the one already out
   can't be recalled, its result is dropped.
 - Stay as close as possible to Photoshop's built-in Generative Fill (2026-11-07), e.g. one

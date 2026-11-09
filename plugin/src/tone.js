@@ -4,7 +4,7 @@
 // in Photoshop as a Curves smart filter on the run's layer. Host-free, tested in Node.
 
 const GRID = 128; // long side of the comparison grid: coarse enough to ignore grain and small shifts
-const RING_GAP = 0.04; // keep this far (fraction of the grid) from the selection: the edit and its blend
+const RING_GAP = 0.04; // keep at most this far (fraction of the grid) from the selection: the edit and its blend
 const MIN_CELLS = 40; // fewer ring cells than this (e.g. Select All): nothing to compare, no correction
 const GAIN = [0.8, 1.25]; // a ring that misleads must not wreck the picture
 const MAX_OFFSET = 60;
@@ -111,10 +111,12 @@ function curvePoints({ gain, offset }) {
  * @param {Uint8Array} p.orig   original pixels of the area sent (interleaved, origComps per pixel)
  * @param {Uint8Array} p.tile   the placed result over the same area, same size (tileComps per pixel)
  * @param {Uint8Array} p.mask   selection, 1 byte per pixel, same size
+ * @param {number} [p.gap]      distance kept from the selection, in pixels of this size (the model's blend);
+ *   at most RING_GAP of the grid, so a thin margin around the selection still leaves a ring
  * @returns {null | {channels: Array<{gain, offset}>, curves: Array<Array<{input, output}>>, cells: number}}
  *   channels and curves in R, G, B order
  */
-function fitTone({ orig, origComps = 3, tile, tileComps = 4, mask, width, height }) {
+function fitTone({ orig, origComps = 3, tile, tileComps = 4, mask, width, height, gap: gapPx }) {
   const k = GRID / Math.max(width, height);
   const gw = Math.max(1, Math.min(width, Math.round(width * k)));
   const gh = Math.max(1, Math.min(height, Math.round(height * k)));
@@ -123,7 +125,8 @@ function fitTone({ orig, origComps = 3, tile, tileComps = 4, mask, width, height
   const m = shrink(mask, width, height, 1, gw, gh, true);
 
   // Ring: cells farther than the gap from any selected cell, where the tile is opaque.
-  const gap = Math.max(1, Math.ceil(RING_GAP * Math.max(gw, gh)));
+  const most = Math.ceil(RING_GAP * Math.max(gw, gh));
+  const gap = Math.max(1, gapPx > 0 ? Math.min(most, Math.ceil(gapPx * k)) : most);
   const ring = [];
   for (let y = 0; y < gh; y++) {
     for (let x = 0; x < gw; x++) {

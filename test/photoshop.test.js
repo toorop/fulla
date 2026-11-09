@@ -253,6 +253,8 @@ test("readComposite falls back to 16-bit, converts to 8-bit, never asks Photosho
   assert.equal(r.components, 4);
   assert.equal(r.data[0], 255, "Photoshop 16-bit white (32768) becomes 255");
   assert.ok(calls.some((c) => c[0] === "dispose"));
+  await ps.readLayer(7, 42, { left: 0, top: 0, right: 100, bottom: 50 }, { width: 64, height: 32 });
+  assert.equal(calls.filter((c) => c[0] === "getPixels").pop()[4], 42, "readLayer reads that layer, not the composite");
 });
 
 test("readComposite maps a trimmed read back onto the requested area", async () => {

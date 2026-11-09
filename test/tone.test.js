@@ -22,19 +22,19 @@ function photo(gray = false) {
   return p;
 }
 
-function selMask() {
+function selMask(sel = SEL) {
   const m = new Uint8Array(W * H);
-  for (let y = SEL.top; y < SEL.bottom; y++) m.fill(255, y * W + SEL.left, y * W + SEL.right);
+  for (let y = sel.top; y < sel.bottom; y++) m.fill(255, y * W + sel.left, y * W + sel.right);
   return m;
 }
 
 /** What a model returns: the picture with its tones shifted by `cast`, and new content in the selection. */
-function tileFrom(orig, cast) {
+function tileFrom(orig, cast, sel = SEL) {
   const t = new Uint8Array(W * H * 4);
   for (let i = 0; i < W * H; i++) {
     const x = i % W;
     const y = Math.floor(i / W);
-    const inside = x >= SEL.left && x < SEL.right && y >= SEL.top && y < SEL.bottom;
+    const inside = x >= sel.left && x < sel.right && y >= sel.top && y < sel.bottom;
     for (let k = 0; k < 3; k++) t[i * 4 + k] = Math.max(0, Math.min(255, Math.round(inside ? 30 + ((x * 7 + k * 50) % 180) : cast(orig[i * 3 + k], k))));
     t[i * 4 + 3] = 255;
   }
@@ -64,6 +64,15 @@ test("tone: a colour cast measured around the selection is undone, as Curves poi
     assert.ok(Math.abs(applyCurve(fit.curves[0], v * 0.9 + 20) - v) <= 2, `red ${v}`);
     assert.ok(Math.abs(applyCurve(fit.curves[2], v - 15) - v) <= 2, `blue ${v}`);
   }
+});
+
+test("tone: a thin margin around the selection still gets its correction, the gap kept to the blend", () => {
+  const thin = { left: 12, top: 12, right: W - 12, bottom: H - 12 }; // the 5 % margin of the default crop
+  const orig = photo();
+  const tile = tileFrom(orig, (v, k) => (k === 2 ? v - 15 : v), thin);
+  assert.equal(fitTone({ orig, tile, mask: selMask(thin), width: W, height: H }), null, "the old fixed gap leaves no ring");
+  const fit = fitTone({ orig, tile, mask: selMask(thin), width: W, height: H, gap: 6 });
+  assert.ok(fit && Math.abs(fit.channels[2].offset - 15) < 3, `blue ${JSON.stringify(fit && fit.channels[2])}`);
 });
 
 test("tone: a colour cast on a black and white photo comes back neutral", () => {

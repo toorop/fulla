@@ -39,10 +39,10 @@ const asUserError = (fn) => {
 };
 
 /** Phase 1: read the selection and the pixels around it (and the whole photo, reduced, when asked). */
-async function read(ps, doc, fit, sceneRef, upload) {
+async function read(ps, doc, fit, { sceneRef, upload, context }) {
   const selection = await ps.getSelectionBounds(doc.id);
   if (!selection) throw new UserError("Make a selection first (any selection tool).", "noSelection");
-  const geo = asUserError(() => computeCrop({ docWidth: doc.width, docHeight: doc.height, selection, fit }));
+  const geo = asUserError(() => computeCrop({ docWidth: doc.width, docHeight: doc.height, selection, fit, context }));
   // Never more pixels than the area has: an upscaled image is soft, and the model copies that softness
   // (review A1, 2026-11-08: about 15 % more fine detail sent at the area's own size, same price).
   // "target" (the old way, kept for A/B tests): the output size.
@@ -85,6 +85,8 @@ async function read(ps, doc, fit, sceneRef, upload) {
  * @param {boolean} [o.sceneRef]  also send the whole photo, reduced, as a scene reference (roadmap 3.3)
  * @param {"crop"|"target"} [o.upload="crop"]  size of the image sent: the area's own pixels at most
  *   (default), or the output size, upscaling a smaller area (the old way, for A/B tests)
+ * @param {number} [o.context]  margin around the selection, as a fraction of its longest side
+ *   (geometry.js default when absent); for A/B tests of how much room the model gets
  * @param {(label: string) => void} [o.progress]
  * @param {() => boolean} [o.cancelled]
  * @param {Promise} [o.whenCancelled]  resolves on Cancel: the request in flight is dropped at once
@@ -107,7 +109,7 @@ async function runGeneration(o) {
   const fit = (w, h) => provider.fitSize(o.model, w, h, forced ? o.resolution : provider.autoMax || "4K", { exact: forced, minTier: forced ? null : "2K" });
 
   progress("Reading the image");
-  const job = await ps.modal("Fulla: read", () => read(ps, doc, fit, o.sceneRef, o.upload));
+  const job = await ps.modal("Fulla: read", () => read(ps, doc, fit, o));
   checkCancel();
 
   // A little extra room so the model can blend; the Photoshop layer mask still uses the exact selection.
@@ -154,7 +156,8 @@ async function runGeneration(o) {
   // Tone matching: the placed result is compared with what was sent, around the selection (tone.js).
   const matchTone = {
     size: job.inp,
-    fit: (tile) => fitTone({ orig: job.rgb, origComps: 3, tile: tile.data, tileComps: tile.components, mask: job.mask, width: job.inp.width, height: job.inp.height }),
+    // Half the margin is left to the model's blend; the rest is the ring compared.
+    fit: (tile) => fitTone({ orig: job.rgb, origComps: 3, tile: tile.data, tileComps: tile.components, mask: job.mask, width: job.inp.width, height: job.inp.height, gap: (job.geo.margin / 2) * (job.inp.width / (crop.right - crop.left)) }),
   };
   const placed = await ps.modal(name, () => ps.commit({ docId: doc.id, results, crop, name, feather, selection: job.selection, matchTone, trace: o.trace }), { historyDocId: doc.id });
   placed.matchTone = matchTone; // each variation shown later gets its own correction

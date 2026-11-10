@@ -6,39 +6,46 @@
 
 ## Next action
 
-- **Resume here (2026-11-10, evening): step 6, the website, his call.** Start with the first
-  open sub-step of his roadmap note (section "Étape 6"): discuss tech and hosting (static site?
-  GitHub Pages, Cloudflare Pages…; languages: English, French?), hosting cost. Discussion only,
-  no code until he validates, one sub-step at a time. Then content, SEO, GEO, captures, build.
-  Domain decided (2026-11-09): a subdomain of his own domain (in his notes), never to change
-  after the release.
-- **Docs tips gathered for the site** (all his calls: in the docs, not in the built-in text):
-  select generously, with room for the object **and its cast shadow** (a tight selection made
-  the model push or crop the mug, 2026-11-10); ask to respect the lighting (much better
-  shadows), the perspective, and the depth of field when the spot is blurred (else the object
-  comes out sharp); describe the change, not the photo's style ("keep the film grain" made
-  things far worse); a reference helps to bring back what was really there (a real place, a
-  sign), a face, a precise object; a busy reference can be cropped; generate again when a draw
-  fails (about 1 in 4 can miss at random). Details: his ideas note, section 8.
-- **Website arguments found** (his ideas note, section 8): the user's selection sets the place and
-  size of an added object (Gemini's own site made the mug too big and moved it); Photoshop's
-  Generative Fill with Gemini (same mug test): perfect but for the depth of field; Adobe cuts
-  the subject out of a reference ("Object"), risky when there is no subject (the facade test);
-  Fulla sends the whole reference and the prompt says what to take. Test results kept for the
-  site in his test photos folder (`resultats/`). What sets Fulla apart: a note in his vault.
-- Pushed up to `f9d435c` (2026-11-10); `0a9e77e` and this STATE update come after (ask before
-  committing and pushing). He pushes once per session, at the end (spares the CI).
-- Still to do by hand (him): check the Details button on an error. Ask him what "source of
-  error" he meant: after a run the new layer is active (as in Adobe's fill; Fulla always reads
-  the composite, never the active layer).
-- Later, not discussed yet: Fulla could spot a reply where the model redrew the whole picture
-  (its margin must match what was sent; tone matching already compares that ring) and say so;
-  bigger reference thumbnails (his note); the luminance seam (below).
-- **Luminance seam** (left for after the site, 2026-11-10): the wood redrawn under an added object
-  can be darker or sharper and stop at the selection's edges; a global Curves can't fix it.
-  Mostly helped by the docs tips above. Code leads: wider mask feather, a local low-frequency
-  correction near the edges. Tone matching is skipped by design when the ring is redrawn or
-  bordered.
+- **Resume here (next session, 2026-11-11, possibly on another machine): step 6, the
+  website, sub-step "design".** The discussion of tech, content, SEO and GEO is done; first ask
+  him to confirm that the GEO sub-step is closed (proposed, not yet answered), then discuss the
+  design (look of the site, home page, docs layout). Discussion only, no code until he
+  validates; one question at a time, with a recommendation. After design: captures, then build.
+- **Where the decisions are** (his vault, Fulla folder; not in this public repo): his roadmap
+  note, step 6 (tech, site map, the whole home page section by section, footer, contact); his
+  new SEO and GEO note (searches targeted, extra pages, final URLs, technical defaults, AI
+  crawlers, AI-readable help, GEO writing rules); his note on Photoshop's Generative Fill
+  (Adobe credits and pricing research, rules for lawful comparison, uses). A hand-off note in
+  the same folder sums up the session for a machine without Claude's local memory.
+- **Site decisions in one breath:** Astro, Starlight for the docs only, a home page of its own
+  that sells Fulla; English only; code in `site/` of this repo (own `package.json`); Cloudflare
+  Workers static assets, deployed by Workers Builds (root `site/`, watch paths `site/**`);
+  cost 0; stats with his self-hosted Umami; audience: photographers with little AI culture (no
+  jargon up top); docs sorted by tool (`/docs/generative-fill/…`), URLs final after release;
+  before/after as sliders; every AI crawler allowed; `llms.txt`, Markdown pages and an "Ask
+  your AI assistant" box in the docs. SEO and GEO with the Claude SEO skill set
+  (claude-seo.md): reinstall it on a new machine (read its installer first).
+- **Before publishing:** compare the same model on both sides (Adobe lists Nano Banana 2,
+  `gemini-3.1-flash-image`; Fulla's default is Nano Banana 2.1); reread Adobe's credits FAQ by
+  hand; prices in euros; never write "the only one"; at go-live, help him with the whole
+  Cloudflare setup (custom domain, Workers Builds, Cloudflare's default AI-bot blocking,
+  Search Console and Bing).
+- **His checks, when he wants:** does Photoshop refuse a face swap; is GPT Image in the model
+  list of Photoshop (Beta) 28's generative fill; the Details button on an error; what "source
+  of error" he meant with the generated layer becoming active (Fulla always reads the
+  composite, never the active layer).
+- ChatGPT plan via OAuth: researched 2026-11-10; the official route has no image generation,
+  so not now (his roadmap note, "En attente").
+- **Docs tips for the site** (his calls; in the docs, not the built-in text): select generously,
+  with room for the object and its shadow; ask for the lighting, perspective and depth of
+  field; describe the change, not the photo's style; references to bring back what was really
+  there, a face, an object; generate again when a draw fails (about 1 in 4). His ideas note, §8.
+- Git: ask before committing and pushing; he pushes once per session, at the end (spares
+  the CI).
+- Later, after the site: the luminance seam (wood redrawn under an added object, darker and
+  stopping at the selection's edge; leads: wider feather, a local low-frequency correction);
+  spotting a reply where the model redrew the whole picture (its margin must match what was
+  sent); bigger reference thumbnails.
 - Self-test with Stéphane's Google key: never run `geminiRaw` without asking (5 billed images);
   use an `only` list of the free scenarios (32 on 2026-11-10: every key of `SCENARIOS` in
   `selftest.js`, `diag` included, `geminiRaw` and `openaiRaw` left out). Warn him before a run
@@ -59,7 +66,7 @@
 
 ## Current step
 
-Step 6, website: next sub-step tech and hosting (discussion). Before the site: margin and
+Step 6, website: tech, content, SEO and GEO discussed; next sub-step: design (discussion). Before the site: margin and
 reference images done; grain settled; Auto rule changed. Step 5 on hold. Step 1 left to test
 some day, not blocking: sign-up with a fresh OpenRouter account; a real OpenAI key.
 
@@ -80,19 +87,24 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Recently done
 
+- 2026-11-10 (evening) — Step 6 discussed: tech and hosting, content (site map, whole home
+  page), SEO and GEO; research on Adobe credits, uses, comparative advertising, GPT and
+  ChatGPT-plan access. Decisions in his notes.
 - 2026-11-10 — Grainy hand result: the grain was in that one reply (a one-off; 0 in 9 A/B draws,
   0.53 $); Auto now asks about twice the area, 1K up to a ~512 px area (`0a9e77e`). A shifted
   hand result: the model redrew the whole picture (Fulla's placement checked exact).
 - 2026-11-10 — Reference images: paid tests (1.58 $); no minimum area side (`350a857`);
   `refs: false` A/B arms (`3ac1608`).
-- 2026-11-09 — Reference images (`2d2416d`): hidden group in the document, ref 1 / ref 2 in the
-  prompt, popup like Adobe's. Context margin 5 % (was 35 %) after his A/B.
-- 2026-11-08 — Step 4: code review and its fixes (`c41e68d` to `5a920cf`), JPEG colour profile.
-- 2026-11-08 — Step 5 researched and put on hold; scene reference always on (`634c9d9`);
-  README "Using Fulla", Auto up to 4K, tone matching. 2026-11-07 — steps 1 and 2.
+- 2026-11-09 — Reference images (`2d2416d`); context margin 5 %. 2026-11-08 — step 4 code
+  review and fixes (`c41e68d` to `5a920cf`); step 5 put on hold. 2026-11-07 — steps 1 and 2.
 
 ## Decisions taken
 
+- Website (2026-11-10, his calls): static, Astro (his usual tool), Starlight for the docs only,
+  the home page sells Fulla; Cloudflare Workers static assets (where he hosts); English only;
+  code in `site/` here, so a feature and its docs change in the same commit; Workers Builds
+  deploys it (no GitHub Actions, no Cloudflare token on GitHub). Docs sorted by tool: URLs
+  never change after the release, and a later retouch tool gets its own section.
 - Auto resolution (2026-11-10): the smallest size that covers the area, at least about twice it
   (oversampling: as sharp as the photo), so 1K up to a ~512 px area, else at least 2K; up to 4K
   (2K at OpenAI). A/B on a 271 px area: 1K as good as 2K, 25 % cheaper.
@@ -124,7 +136,6 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
   power users, fal.ai later. One model menu, a curated catalogue, no custom IDs.
 - Colours: read and send sRGB, embed an sRGB profile in results. With policy Off Photoshop drops
   it; handling that (putPixels instead of placing a file) is a bigger change, ask first.
-- Commit as we go, push once at the end of a session (spares the CI).
 - Whole photo as a scene reference, always on, no setting (2026-11-08).
 - Local models on hold (2026-11-08): need a high-end GPU; heavy for a solo maintainer.
 - Tone matching as a separate Curves smart filter (2026-11-08); no filter when not needed.

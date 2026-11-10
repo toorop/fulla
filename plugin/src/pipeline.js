@@ -42,10 +42,10 @@ const asUserError = (fn) => {
  * Phase 1: read the selection and the pixels around it (and the whole photo, reduced, when asked),
  * and the document's reference images, as many as the model takes (lowest numbers first).
  */
-async function read(ps, doc, fit, { sceneRef, upload, context }, maxRefs) {
+async function read(ps, doc, fit, { sceneRef, upload, context, minSide }, maxRefs) {
   const selection = await ps.getSelectionBounds(doc.id);
   if (!selection) throw new UserError("Make a selection first (any selection tool).", "noSelection");
-  const geo = asUserError(() => computeCrop({ docWidth: doc.width, docHeight: doc.height, selection, fit, context }));
+  const geo = asUserError(() => computeCrop({ docWidth: doc.width, docHeight: doc.height, selection, fit, context, minSide }));
   // Never more pixels than the area has: an upscaled image is soft, and the model copies that softness
   // (review A1, 2026-11-08: about 15 % more fine detail sent at the area's own size, same price).
   // "target" (the old way, kept for A/B tests): the output size.
@@ -94,6 +94,8 @@ async function read(ps, doc, fit, { sceneRef, upload, context }, maxRefs) {
  *   (default), or the output size, upscaling a smaller area (the old way, for A/B tests)
  * @param {number} [o.context]  margin around the selection, as a fraction of its longest side
  *   (geometry.js default when absent); for A/B tests of how much room the model gets
+ * @param {number} [o.minSide]  smallest side of the area sent (geometry.js default when absent); for
+ *   A/B tests on small selections
  * @param {(label: string) => void} [o.progress]
  * @param {() => boolean} [o.cancelled]
  * @param {Promise} [o.whenCancelled]  resolves on Cancel: the request in flight is dropped at once

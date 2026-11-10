@@ -36,10 +36,14 @@ function growSpan(a, b, len, max) {
  *   Kept thin: models compose what they add in the whole image sent, so with more room around the
  *   selection an added object spills out of it and the layer mask cuts it (A/B 2026-11-09: at 35 %
  *   a sail's tip came out 3 times in 3, at 5 % never); and the selection gets more of the pixels.
- * @param {number} [p.minSide=512]              smallest crop side worth sending
+ * @param {number} [p.minSide=0]                smallest crop side sent. No minimum by default: growing a
+ *   small selection's area left the selection a small part of the image sent, and an added object came
+ *   out at the scene's scale, too big for it (A/B 2026-11-10, a mug in a 228 x 239 px selection: with
+ *   512 px it overflowed 3 times in 3, with no minimum it fitted 2 times in 3). The whole photo sent as
+ *   a scene reference gives the context instead.
  * @returns {{crop, target, scaleX, scaleY, softness, margin}}  margin: in document pixels
  */
-function computeCrop({ docWidth, docHeight, selection, fit, context = 0.05, minSide = 512 }) {
+function computeCrop({ docWidth, docHeight, selection, fit, context = 0.05, minSide = 0 }) {
   const sel = clampRect(selection, docWidth, docHeight);
   if (width(sel) <= 0 || height(sel) <= 0) throw new Error("Selection is outside the document");
 
@@ -50,7 +54,7 @@ function computeCrop({ docWidth, docHeight, selection, fit, context = 0.05, minS
     docHeight
   );
 
-  // Small selections still get a decent amount of surrounding image.
+  // A minimum side only when asked (A/B tests).
   if (width(crop) < minSide) [crop.left, crop.right] = growSpan(crop.left, crop.right, minSide, docWidth);
   if (height(crop) < minSide) [crop.top, crop.bottom] = growSpan(crop.top, crop.bottom, minSide, docHeight);
 

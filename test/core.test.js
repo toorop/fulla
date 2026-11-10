@@ -233,7 +233,7 @@ test("computeCrop keeps the selection inside, stays in the document, matches asp
 });
 
 test("computeCrop on a tiny document never exceeds it", () => {
-  const r = computeCrop({ docWidth: 300, docHeight: 200, selection: { left: 10, top: 10, right: 50, bottom: 50 }, fit });
+  const r = computeCrop({ docWidth: 300, docHeight: 200, selection: { left: 10, top: 10, right: 50, bottom: 50 }, fit, minSide: 512 });
   assert.deepEqual(r.crop, { left: 0, top: 0, right: 300, bottom: 200 });
   assert.deepEqual(r.target, SIZES[1]);
   assert.ok(r.softness < 1);

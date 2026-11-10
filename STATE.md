@@ -6,84 +6,107 @@
 
 ## Next action
 
-- **Resume here (2026-11-09): reference images, coding (discussion done, decisions below in this
-  section and in his ideas note).** Done, not committed: `references.js` (names, fixed numbers,
-  send size, max 8), `photoshop.js` `listReferences` / `addReference` / `removeReference` /
-  `readReference` (a result placed while a reference is active goes out of the group), providers'
-  `maxReferences` and `req.refs` (after picture, mask, scene; Qwen drops the scene), `prompts.js`
-  `refsNote` and the empty-prompt task, pipeline reads them. Self-test `references` passed once
-  (a hidden layer reads fine), since extended (generation with references). Panel done too:
-  button right of the model with the count (`refsChip`), popup "Reference images" (numbered
-  thumbnails read from the document, cross, limit line, "Choose images"; `main.js` polls the
-  active document every 1.5 s), manifest `localFileSystem: "request"` (file picker: Unload +
-  Load in UDT), self-test `panelRefs`. Tests 86/86, package OK, free self-test 32/32 (2026-11-09,
-  plugin reloaded). His hand try of "Choose images" works (after Unload + Load).
-  Later (his note): reference thumbnails a bit small. Next: commit with his OK, then the paid
-  tests (his photos). Not pushed: `e8cb434`, `953c2b3` (push at the end of the session). He generates the
-  test photos with Nano Banana from Claude's prompts. Hand check of Details on an error: later.
-- Margin work committed (`953c2b3`). Margin (his lead, A/B on his beach photo, 0.88 $ in all): default context margin
-  5 % instead of 35 % (`geometry.js`). Adding a land yacht: at 35 % the sail came out of the
-  selection 3/3 (the mask cut it), at 10 % the mast tip 3/3, at 5 % never. Removing a man: 5 %
-  as clean as 35 %, 3/3 each (once the model moved him outside the selection: masked, harmless).
-  Tone matching kept: its ring's gap is now half the margin, at most 4 % of the grid
-  (`tone.js` `gap`). Dev tools: pipeline option `context`, `ps.readLayer`, self-test
-  `abInput` with `variants`, `runs`, `active: true` (open document; `selection` optional),
-  saves each reply and an outlined PNG; its `spill` number is too coarse to see a mast tip, judge
-  on the PNGs. Tests 80/80, package OK, free self-test 29/29 (toneMatch at the 5 % default).
+- **2026-11-10: test (1) done through Google direct** (his call: more credits there; same
+  `abInput` but `provider: "gemini"`, model `gemini-nano-banana-2.1`): 0.182 $, toothy smile
+  3/3, face and hair kept (run 2 closest to the reference, 1 and 3 overdo it a little), no tile
+  offset with the hidden references group (spill 0.002). **His verdict: not telling** (a plain
+  "make her smile" would do the same; no run without the reference to compare). Test (2) as
+  planned is moot too (reference with the very same framing never happens). **Re-planning the
+  tests**, new plan agreed (details and prompts in his ideas note, section 8): (1) face swap,
+  terrace A + a face-only portrait reference; (2) bakery facade, passerby removed, reference shot
+  from another angle, A/B with vs without the reference; (3), (3b), (4) as before.
+- **2026-11-10: test (1) face swap done: success 3/3** (0.187 $): the portrait's features
+  (freckles, mole, eyebrows, green eyes) on her face, turned frontal to fit the pose, her hair and
+  the terrace light kept, no offset. In his ideas note.
+- **`abInput` arm option `refs: false`** (uncommitted, `selftest.js`): leaves the document's
+  references out of that arm; each run now reports `refs` (the numbers sent). Next: test (2)
+  with `variants: [{resolution: "2K"}, {resolution: "2K", refs: false}]`, prompt "Remove the man
+  in the red jacket".
+- **2026-11-10: test (2) done** (0.359 $; `refs: false` checked in the report): passerby gone
+  6/6; with the reference, runs 1 and 3 restore the real tiled heron (legs, mound, horizon), run
+  2 draws a second head under the neck left outside the selection; without it, a plausible but
+  invented heron. Website tip: a reference matters to bring back what was really there. Results
+  of tests 1 and 2 kept for the website in his test photos folder.
+- **2026-11-10: test (3) mug done** (0.203 $): the mug is faithful (fox, speckles, chips) but
+  overflows the selection 3/3 (handle, base or half of it cut by the mask; spill 0.25-0.47).
+  Likely cause: small selection (228 x 239) and `minSide` 512 in `geometry.js`, so the selection
+  is ~21 % of the area sent, like the old 35 % margin. **`minSide` now a pipeline option**
+  (uncommitted, `pipeline.js` + test, 87/87, package OK). **Mug A/B done** (0.384 $): with the
+  512 minimum the mug overflows 3/3 (spill 0.25-0.29); with `minSide: 0` (area 271 px, selection
+  74 % of it) it fits whole 2/3, the 3rd has the handle tip clipped (spill 0.03-0.06). **His
+  call: no minimum by default** (`geometry.js` `minSide = 0`, the option kept for A/B tests;
+  tests 87/87, package OK, free self-test 32/32; uncommitted). Not checked: a removal on a tiny
+  selection. Next: commit (ask him), then test (3b) (mug cut out by hand, ~0.20 $).
+- **Resume here: reference images, paid tests (2026-11-09).** Feature built and committed
+  (`2d2416d`, not pushed); tests 86/86, package OK, free self-test 32/32, his hand try of
+  "Choose images" OK. Next, with him, one test at a time (tell the cost, get his OK, warn him not
+  to touch Photoshop): OpenRouter, Nano Banana 2.1 unless said, `abInput` with `active: true`,
+  `variants: [{ "resolution": "2K" }]`, `runs: 3`, on the document he opened, with its
+  selection and the references he added through the panel. Test photos: his folder (names in his
+  ideas note, section 8). (1) terrace: the 2nd woman's face, reference = the shot where she
+  laughs with teeth showing, prompt proposed "Give her the big smile from the reference, with her
+  teeth showing, keeping her face and hair the same" (~0.18 $); (2) square: the man in red,
+  reference = the same square without him, **empty prompt** (~0.18 $); (3) empty kitchen table +
+  fox mug reference (~0.18 $); (3b) same with the mug cut out (background removed by hand in
+  Photoshop for now, to decide on an "Object" option, ~0.18 $); (4) test 3 with Qwen Image 3
+  (scene dropped, ~0.10 $). Judge on the saved PNGs; record results in his ideas note. Then: a
+  docs tip on references (for the website step), and later bigger thumbnails (his note).
+- Uncommitted: this STATE.md update (ask before committing). Not pushed: `e8cb434`, `953c2b3`,
+  `2d2416d`; he pushes once per session, at the end (spares the CI; ask first; last push
+  `5a188d2`, its CI green). Hand check of Details on an error:
+  later (his call).
+- Reference images as built (`2d2416d`): `references.js` (names "ref N — file", fixed numbers,
+  send size 2048, max 8, limit line); `photoshop.js` `listReferences` / `addReference` /
+  `removeReference` / `readReference` (embedded smart object in a hidden "Fulla references"
+  group at the top; a result placed while a reference is the active layer goes out of the
+  group); providers' `maxReferences(model)` and `req.refs` (after picture, mask, scene; Qwen drops
+  the scene; Gemini 2 Lite's limit is assumed, not documented); `prompts.js` `refsNote` and the
+  empty-prompt task; pipeline reads them in its read scope. Panel: button right of the model with
+  the count (`refsChip`), popup "Reference images" (numbered thumbnails read from the document,
+  cross, limit line, "Choose images"; `main.js` polls the active document every 1.5 s; scroll bar
+  only when needed). Manifest `localFileSystem: "request"` (file picker; needs Unload + Load in
+  UDT). Self-tests `references`, `panelRefs`.
+- Margin (`953c2b3`): context margin 5 % instead of 35 % (`geometry.js`) after his A/B (land
+  yacht: 35 % cut the sail 3/3, 5 % never; removal as clean). Tone-matching ring gap = half the
+  margin (`tone.js`). `abInput` self-test: `variants`, `runs`, `active: true`, saves each reply
+  and an outlined PNG (its `spill` number is too coarse: judge on the PNGs).
 - Step 6 (website): discussion only, no code until he validates, one sub-step at a time. Domain
   decided (2026-11-09): a subdomain of his own domain (recorded in his notes), never to change
-  after the release. Next sub-steps: tech and hosting, content, SEO and GEO. CI of `5a188d2`
-  green (checked 2026-11-09).
-- Step 4 done (2026-11-08), pushed up to `5a188d2`: 18 review items fixed (list and outcome in
-  his vault, "relecture du code (novembre 2026)") plus sRGB profiles on JPEG results. Hand checks
-  (2026-11-09): pasting a prompt OK, selection kept after a run OK; Details on an error not done.
-- **Step 5 (local models) on hold, his call (2026-11-08)**: good results need a high-end GPU
-  (RTX 5080: ~20 s per edit at 1.5K, Qwen Image 2.1 Turbo), whose owners don't mind ~0.04 €/image
-  through an API; Qwen 2.1's licence is research-only. Not put forward on the website. Tests,
-  numbers and lessons in his vault ("essais en local (novembre 2026)"); key facts if it resumes:
-  UXP needs `http://localhost` (no port) in the manifest; stable-diffusion.cpp `sd-server` has an
-  OpenAI-style `/v1/images/edits`; send tile + prompt only (a mask image makes Qwen cut out);
-  int8 convrot text encoder (GGUF Q4_K crashes on RTX 50). Test files are in the Recycle Bin.
-- Step 3 closed for now (2026-11-08): 3.1, 3.2, 3.3 committed (`634c9d9` last, self-test 29/29).
-  On hold until they show up again (he will report): the B&W border (barely visible since tone
-  matching) and the tile offset. Grain out of the public release. The clipped-addition prompt
-  line is not urgent (seen once).
-- Step 3 as built (details in the git log): 3.1 Auto resolution, smallest tier covering the
-  crop, never below 2K, up to 4K (`provider.autoMax`), uploaded crop capped at 2048 px; 3.2 tone
-  matching (`src/tone.js`, Curves smart filter after the mask, refitted per variation); 3.3 the
-  whole photo at 1024 px as a scene reference when the area is < 50 % of it (no measurable
-  effect in his A/B, kept: nearly free), replies > 15 % off the target aspect dropped.
-- Clipped additions: settled by the 5 % margin (2026-11-09, above); a docs tip to select
-  generously is still worth having.
-- Prompts: naming the photo's style in the prompt ("keep the film grain") made things far worse;
-  our wrapper's wording made no clear difference (A/B, reverted). Tip for docs and waiting tips:
-  describe the change, not the photo's style.
-- A note listing what sets Fulla apart from Photoshop's Generative Fill (resolution, cost, BYOK,
-  free, models; local now on hold) lives in his notes, for the website step.
-- Step 2 leftovers: panel captures moved to step 6 (website); his walk-through not done yet.
+  after the release. Next sub-steps: tech and hosting, content, SEO and GEO.
+- Step 4 done (2026-11-08, pushed up to `5a188d2`): 18 review items fixed (his vault, "relecture
+  du code (novembre 2026)") plus sRGB profiles on JPEG results.
+- **Step 5 (local models) on hold, his call (2026-11-08)**: needs a high-end GPU; not on the
+  website. Tests and key facts in his vault ("essais en local (novembre 2026)"); UXP reaches a
+  local server only through `http://localhost` (no port) in the manifest.
+- Step 3 (done 2026-11-08): Auto resolution (2K floor, up to 4K, crop sent at its own size, max
+  2048 px), tone matching (Curves smart filter), whole photo at 1024 px as a scene reference when
+  the area is < 50 % of it; replies > 15 % off the target aspect dropped. On hold until seen
+  again: the B&W border, the tile offset (below). Grain out of the public release.
+- Docs and waiting tips (website step): select generously; describe the change, not the photo's
+  style ("keep the film grain" made things far worse); our wrapper's wording made no clear
+  difference (A/B, reverted). What sets Fulla apart from Adobe's fill: a note in his vault.
 - UXP layout lessons (keep): an element's measured size updates only after the handler returns
   (measure in a `setTimeout`, or keep computed values); flex children shrink unless told not to
   (pages use `flex: 1 1 0`, tabs and sheet rows don't shrink); a div that scrolls itself or whose
   row clips it can lose its bottom border; the native text field draws over any menu.
 - Self-test with Stéphane's Google key: never run `geminiRaw` without asking (5 billed images);
-  use an `only` list of the free scenarios (29/29 on 2026-11-08, `openaiRaw` left out: no key).
+  use an `only` list of the free scenarios (32 on 2026-11-09; `geminiRaw`, `openaiRaw` left out).
 - **Tile offset to dig into later** (details in his notes): a removal on the pier came out shifted
-  up-right only while earlier (hidden) test layers existed. Plan: reproduce, save sent/received
-  images (dev only), measure; fix the cause or register the tile in the ring (roadmap step 3).
-- **Push**: pushed up to `5a188d2` on 2026-11-08, end of step 4 (he pushes once per session to
-  spare the CI; ask before pushing). Check that run's CI result next session.
+  up-right only while earlier hidden test layers existed. The hidden references group is such a
+  layer: watch for an offset in the paid tests. Plan: reproduce, save sent/received images,
+  measure; fix the cause or register the tile in the ring.
 - The detailed roadmap with checkboxes lives in Stéphane's notes (not in the repo); tick it as
   sub-steps finish, and record decisions in his ideas note.
 - Blocked by: —
 - Working setup: Fulla runs from UXP Developer Tools on Photoshop (Beta) 28.0.1 (Load + Watch; a
   manifest change needs Unload + Load). Self-test folder and commands: `CLAUDE.md`; warn Stéphane
   before a run (nobody may touch Photoshop) and run it in the background. Stéphane's OpenRouter key
-  is saved in the dev plugin (connected through the panel); no Google/OpenAI keys, so
-  `geminiRaw`/`openaiRaw` fail (expected).
+  and his Google key are saved in the dev plugin; no OpenAI key (`openaiRaw` fails, expected).
 
 ## Current step
 
-Before the site (added 2026-11-09): context margin (done) and reference images (next). Step 5
+Before the site (added 2026-11-09): context margin (done), reference images (built; paid tests
+next). Step 5
 (local models) on hold. Step 1 left to test some day, not blocking: sign-up with a fresh
 OpenRouter account; a real OpenAI key.
 
@@ -96,7 +119,7 @@ OpenRouter account; a real OpenAI key.
 4. Full code review: done 2026-11-08 (no serious flaw; 18 items fixed, see his notes).
 5. Local models: **on hold since 2026-11-08** (his call after tests: needs a high-end GPU; owners
    of one don't mind API prices; only privacy remains). Not put forward on the website.
-   Before the site (2026-11-09): context margin 5 % (done), reference images.
+   Before the site (2026-11-09): context margin 5 % (done), reference images (built, testing).
 6. Website (presentation + all user docs; SEO and GEO). Domain: a subdomain of his own domain.
 7. First public release.
 8. fal.ai provider (real masks), compared on real photos.
@@ -109,17 +132,13 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Recently done
 
+- 2026-11-09 — Reference images (`2d2416d`): discussed with him point by point, then built
+  (hidden group in the document, ref 1 / ref 2 in the prompt, popup like Adobe's).
 - 2026-11-09 — Context margin 5 % (was 35 %) after his A/B: added objects stay in the
   selection; tone-matching ring gap tied to the margin; A/B self-test mode generalised.
 - 2026-11-08 — Step 4: code review and its fixes (`c41e68d` to `5a920cf`), JPEG colour profile.
-- 2026-11-08 — Step 5 researched and tested (UXP loopback, stable-diffusion.cpp vs ComfyUI,
-  Qwen Image 2.1 on an RTX 5080), then put on hold.
-- 2026-11-08 — Scene reference kept always on (3.3) and pasted-prompt placeholder fix
-  (`634c9d9`).
-- 2026-11-08 — README "Using Fulla" (`7059fce`); Auto resolution up to 4K (`3b7c47a`); tone
-  matching with a Curves smart filter (`c2a05b3`). Panel captures moved to the website step.
-- 2026-11-07 — Steps 1 and 2 (onboarding, prompt box, model button, settings popup, one layer
-  per run, help menu): details in the git log and his notes.
+- 2026-11-08 — Step 5 researched and put on hold; scene reference always on (`634c9d9`);
+  README "Using Fulla", Auto up to 4K, tone matching. 2026-11-07 — steps 1 and 2.
 
 ## Decisions taken
 
@@ -128,54 +147,35 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
   widening the mask ruled out (his call: unreliable, or changes what should stay).
 - Reference images before the site and the release (2026-11-09, his call).
 - The user's prompt says what to do with reference images (2026-11-09, his call, true for the
-  whole plugin): the built-in text only says what each image is and how to name it, never what
-  to do with it, so nobody is held back. References are called "ref 1", "ref 2" (numbered
-  thumbnails); the built-in text maps those names to image positions. They come from files only
-  (Photoshop beta 28 dropped layers); the panel's window imitates Adobe's "Reference image" one
-  without its "Object" and "Mode" options (the prompt says it; cut-out only if tests show a gain).
-  His idea to keep them with the document: a hidden group, one layer per reference.
-  Input image limits on OpenRouter (2026-11-09, Fulla already sends 3: tile, mask, scene): Nano
-  Banana 2.1/Pro 14, GPT Image 2.5/2.6 16, Qwen 2.1 Pro 4, Qwen Image 3 only 3 (no room left).
-  Scene image kept with references, except for Qwen (his call); max = the model's room left,
-  capped at 8. Adding a reference places the file at once as an embedded smart object in a
-  hidden "Fulla references" group (layer "ref 1 — <file>"); Generate reads that layer like the
-  photo (sRGB, strips, long side <= 2048). First check: reading a hidden layer (self-test).
-  Built-in text: one sentence naming the references by position ("Images 4 and 5 are reference
-  images supplied by the user, called ref 1 and ref 2 in the request."); empty prompt with
-  references: "Edit the area to change using the reference images." plus the blending line.
-  Thumbnails mirror the active document's group (no list of the panel's own): the cross deletes
-  the layer, fixed numbers read from layer names, references stay until removed, icon shows the
-  count. Paid tests after the code (~0.85 $, OpenRouter, 2K, 3 runs each: face from a burst,
-  passer-by removal with a clean plate and empty prompt, product placed, same with a cut-out
-  reference, product with Qwen Image 3); he generates the test photos with prompts from Claude.
-  Discussion done, he validated coding (2026-11-09). Code order: free check (place into a hidden
-  group, read the hidden layer back), providers and built-in text, window and thumbnails, tests.
+  whole plugin): the built-in text only says what each image is ("Images 4 and 5 are reference
+  images supplied by the user, called ref 1 and ref 2 in the request."), never what to do; an
+  empty prompt with references: "Edit the area to change using the reference images." plus the
+  blending line.
+- Reference images (2026-11-09, his calls): from files only (Photoshop beta 28 dropped layers);
+  a popup like Adobe's "Reference image" without its "Object" and "Mode" options (the prompt says
+  it; a cut-out option only if the tests show a gain); kept in the document, in a hidden group,
+  one embedded smart object each, and the panel mirrors that group (fixed numbers, the cross
+  deletes the layer, they stay until removed); the whole photo still goes along, except with
+  Qwen (no room: Qwen Image 3 takes 3 images in all); at most the model's room left, capped at 8.
 - After Cancel no new request is sent (2026-11-07): each one may be billed; the one already out
   can't be recalled, its result is dropped.
 - Stay as close as possible to Photoshop's built-in Generative Fill (2026-11-07), e.g. one
   variation → one layer, no group; several → thumbnails in the panel, click to try, validate to
   create the layer (roadmap step 2). Show clearly that a generation is running.
-- First run: no provider → Providers opens with an explanation, "Connect with OpenRouter"
-  (recommended), Google/OpenAI rows; the Generate tab stays clickable and explains (a greyed tab
-  gives no reason). The first saved key switches to Generate; removing the last key goes back.
-- OpenRouter connect uses headless OAuth PKCE (S256): nothing hosted by us, the user only sees
-  openrouter.ai and pastes a code that is useless without the plugin's verifier (trust).
-- A key is checked with a free request before it is saved; Remove then Add replaces a key.
+- First run: no provider → Providers opens with "Connect with OpenRouter" (recommended; headless
+  OAuth PKCE, nothing hosted by us) and Google/OpenAI rows; the first saved key switches to
+  Generate. A key is checked with a free request before it is saved.
 - Only current Photoshop and the beta matter (2026-11-07): with the subscription everyone can
   update. Manifest `minVersion` 27.11.0; raise it as releases come.
 - A website carries the user docs before the first public release (2026-11-07).
 - Own project, not a fork to upstream; OpenFill's MIT copyright line stays in `LICENSE`.
 - No modes and no Expand: to extend, enlarge the canvas in Photoshop and fill the new area.
 - Vocabulary: a provider is who gets the request and bills; a model is what generates.
-- First run is the adoption make-or-break (most users have no AI account): OpenRouter put forward,
-  Google and OpenAI keys offered from day one to power users, fal.ai later. One account per
-  provider type in v1.
-- One model menu, a curated catalogue of tested models for configured providers; no custom model
-  IDs (2026-11-07); never every model of an aggregator.
-- Clean, efficient UI close to everyday AI chat apps, not a form with many selects.
+- First run is the adoption make-or-break: OpenRouter put forward, Google and OpenAI keys for
+  power users, fal.ai later. One model menu, a curated catalogue of tested models, no custom IDs.
+  Clean UI close to everyday AI chat apps.
 - Colours: read and send sRGB, embed an sRGB profile in results. With policy Off Photoshop drops
   it; handling that (putPixels instead of placing a file) is a bigger change, ask first.
-- Develop with UXP Developer Tools; never install with `install.ps1` at the same time.
 - Commit as we go, push once at the end of a session (spares the CI).
 - Whole photo as a scene reference, always on, no setting (2026-11-08): nearly free, never seen
   to hurt; A/B showed no measurable effect (model randomness dominates).

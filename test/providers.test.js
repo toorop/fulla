@@ -404,6 +404,17 @@ test("context: a thin margin by default (5 %), so the area sent is mostly the se
   assert.ok(tight < wide * 0.6, `default ${tight} vs 35 % ${wide}`);
 });
 
+test("minSide: a small selection's area stays small by default (an added object must fit it), grows when asked", async () => {
+  const selection = { left: 1400, top: 700, right: 1630, bottom: 940 };
+  const side = async (minSide) => {
+    const c = (await runGeneration({ ps: fakePs({ selection }), provider: fakeProvider(1), apiKey: "k", model: "m", minSide })).crop;
+    assert.ok(c.left <= selection.left && c.top <= selection.top && c.right >= selection.right && c.bottom >= selection.bottom, "selection inside");
+    return Math.min(c.right - c.left, c.bottom - c.top);
+  };
+  assert.ok((await side()) < 300);
+  assert.ok((await side(512)) >= 512);
+});
+
 test("pipeline errors are user-friendly and leave the document alone", async () => {
   const provider = fakeProvider(1);
   const none = fakePs({ selection: null });

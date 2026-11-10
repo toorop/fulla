@@ -432,8 +432,9 @@ function autoHint(provider, sizes) {
   const max = provider.autoMax || "4K";
   const top = sizes.includes(max) ? max : sizes[sizes.length - 1];
   const slow = top === "4K" ? " (slower and costs more)" : "";
-  if (top === "2K") return "Auto uses 2K, for results as sharp as your photo. Pick a size to always use it.";
-  return `Auto uses 2K, or more for a large selection, up to ${top}${slow}. Pick a size to always use it.`;
+  const small = sizes.includes("1K") ? "1K for a small selection, " : "";
+  const large = top === "2K" ? (small ? "2K otherwise" : "2K") : `2K, or more for a large one, up to ${top}${slow}`;
+  return `Auto uses ${small}${large}: about twice the selection's size, as sharp as your photo. Pick a size to always use it.`;
 }
 
 /** The popup's rows, in order; a setting the model has no choice for is left out. */

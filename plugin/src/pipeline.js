@@ -87,7 +87,8 @@ async function read(ps, doc, fit, { sceneRef, upload, context, minSide }, maxRef
  * @param {string} [o.prompt]    what to paint in the selection; empty removes what is selected
  * @param {number} [o.n=1]
  * @param {string} [o.quality]
- * @param {string} [o.resolution="auto"]  "auto": the smallest size that covers the selection, at least 2K, up to 4K (provider.autoMax);
+ * @param {string} [o.resolution="auto"]  "auto": the smallest size that covers the selection, at least about twice its size (1K for a
+ *   small one, else 2K or more), up to 4K (provider.autoMax);
  *   "1K" / "2K" / "4K": that size, when the model offers it
  * @param {boolean} [o.sceneRef]  also send the whole photo, reduced, as a scene reference (roadmap 3.3)
  * @param {"crop"|"target"} [o.upload="crop"]  size of the image sent: the area's own pixels at most
@@ -113,9 +114,16 @@ async function runGeneration(o) {
   const doc = await ps.getDocument();
   if (!doc) throw new UserError("Open a document first.", "noDocument");
   const forced = o.resolution && o.resolution !== "auto";
-  // Auto: the smallest size that covers the area, at least 2K (oversampled: as sharp as the photo,
-  // and models keep the tones better), up to the provider's Auto ceiling (4K by default).
-  const fit = (w, h) => provider.fitSize(o.model, w, h, forced ? o.resolution : provider.autoMax || "4K", { exact: forced, minTier: forced ? null : "2K" });
+  // Auto: the smallest size that covers the area, up to the provider's Auto ceiling (4K by default),
+  // and at least about twice the area (oversampled: as sharp as the photo, and models keep the tones
+  // better): 1K when it covers twice the area (up to ~512 px), else at least 2K. A/B 2026-11-10 on a
+  // 271 px area: 1K as good as 2K, 25 % cheaper.
+  const floor = (w, h) => {
+    const s = provider.fitSize(o.model, 2 * w, 2 * h, "1K", { exact: true });
+    return s.width >= 2 * w && s.height >= 2 * h ? "1K" : "2K";
+  };
+  const fit = (w, h) =>
+    forced ? provider.fitSize(o.model, w, h, o.resolution, { exact: true }) : provider.fitSize(o.model, w, h, provider.autoMax || "4K", { minTier: floor(w, h) });
 
   progress("Reading the image");
   const maxRefs = provider.maxReferences ? provider.maxReferences(o.model) : 0;

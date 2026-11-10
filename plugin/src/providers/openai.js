@@ -26,7 +26,7 @@ const MAX_EDGE = 3840;
 
 /**
  * A legal size close to the crop's aspect: about the crop's pixels up to `tier`, or the tier's full
- * size with { exact: true }; with `minTier`, at least that tier's full size (Auto's 2K floor).
+ * size with { exact: true }; with `minTier`, at least that tier's full size (Auto's floor).
  */
 function fitSize(w, h, tier = "2K", { exact = false, minTier = null } = {}) {
   const maxP = TIER_MAX_PIXELS[tier] || TIER_MAX_PIXELS["2K"];

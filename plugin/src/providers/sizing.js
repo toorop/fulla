@@ -21,9 +21,9 @@ function closestRatio(ratios, w, h, value) {
 /**
  * A size tier among the model's `tiers`: the smallest whose image (`sizeOf(tier)`) covers w x h
  * (the tile is never enlarged on placement), up to `maxTier`; exactly `maxTier` with { exact: true }
- * when the model offers it; never below `minTier` when the model has it (Auto's 2K floor:
- * generated pixels hold less detail than a camera's, so a tile asked bigger and shrunk on placement
- * looks as sharp as the photo). When none covers, the largest allowed.
+ * when the model offers it; never below `minTier` when the model has it (Auto's floor, about
+ * twice the area: generated pixels hold less detail than a camera's, so a tile asked bigger and
+ * shrunk on placement looks as sharp as the photo). When none covers, the largest allowed.
  */
 function chooseTier(tiers, w, h, maxTier, { exact = false, minTier = null } = {}, sizeOf) {
   const cap = rank(maxTier) >= 0 ? rank(maxTier) : 1;

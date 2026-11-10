@@ -6,10 +6,28 @@
 
 ## Next action
 
-- **Resume here (2026-11-10): reference images done, paid tests over (1.58 $).** Next, his
-  call: the luminance seam under added objects (below), or step 6 (website: tech and hosting,
-  content, SEO and GEO). Depth of field: a docs tip (asking for it in the prompt works). Later:
-  bigger reference thumbnails (his note).
+- **Resume here (2026-11-10, afternoon): Auto rule changed, not committed.** Auto now asks at
+  least about twice the area: 1K when 1K covers twice the area (up to ~512 px), else at least 2K
+  as before (`pipeline.js` floor, panel hint, README, sizes test). npm test 87/87, package built,
+  free self-test 32/32. Ask him before committing. Then his call: the luminance
+  seam under added objects, or step 6 (website: tech and hosting, content, SEO and GEO). Later:
+  bigger reference thumbnails (his note). Paid tests today: 1.58 $ + 0.53 $.
+- **Grainy result, settled 2026-11-10**: his hand Generate (mug, 2K) showed a fine hatch in the
+  blurred wood. His 2K export: the grain is in the model's reply; Photoshop's bicubic shrink
+  (`layer.scale` in `placeFitted`, Image Interpolation preference) makes it ~2x more visible
+  than an area average. His call: get a better image from the model rather than fix it after.
+  Paid A/B (Google direct, his prompt, 3 runs each, 0.53 $): 2K as today / `resolution: "1K"` /
+  `upload: "target"` (area upscaled by Fulla before sending). Grain in none of the 9 (high-pass
+  residual 0.5-0.8 vs 10.6 for the hand draw): a one-off of that draw, not the upscale. Gemini
+  returns nearly the same image for the same request (2K and 1K arms send the same area: same
+  composition each run). 1K looks as good for this 271 px area, 25 % cheaper (0.048 vs
+  0.063 $); `upload: "target"` brings nothing. Wood under the mug often redrawn sharper, all
+  arms (seam topic). Black border again, once (Gemini). Results in his test photos folder.
+  **His call: Auto = at least ~2x the area** (the 2K floor of 2026-11-08 was for oversampling),
+  so 1K for areas up to ~512 px; done the same day (above).
+  Unused lead, free: a softer interpolation in `layer.scale` (check UXP has the option).
+- Docs tips found on 2026-11-10 (his calls: none in the built-in text): ask to respect the depth
+  of field when the area is blurred; ask to respect the lighting (much better shadows).
 - Paid tests of 2026-11-10 (Google direct, his call: more credits there; `abInput` with
   `provider: "gemini"`, model `gemini-nano-banana-2.1`, 2K, 3 runs; results kept for the website
   in his test photos folder; detail and docs tips in his ideas note, section 8): face swap from a
@@ -20,31 +38,21 @@
   call); Qwen Image 3 redraws the area's background (visible square), one black border, slow,
   one 504: not for references. No tile offset with the hidden references group. Not checked: a
   removal on a tiny selection now that the minimum is gone.
-- **His hand Generate on the mug table (2026-11-10)**: asking in the prompt to respect the depth
-  of field makes the mug blurred like the table. **His call: not in the built-in text, a docs
-  tip.** Colours fine (the Curves filter is slight, on or off changes nothing); the seam is
-  local luminance: the wood the model redrew under the mug is darker and stops at the
-  selection's bottom and left edges. A global Curves can't fix that; he sees a model flaw.
-  Leads to discuss (his ideas note): docs tip (room for the shadow), wider mask feather, a local
-  low-frequency correction near the edges. Tone matching runs (layer differs from the raw reply
-  in 8 of 9 Nano Banana runs) and is skipped by design when the ring is redrawn or bordered
-  (Qwen). Small self-test idea: `abInput` could record `tone` and save Photoshop's composite.
+- **Luminance seam** (his hand Generate, 2026-11-10): colours fine (the Curves filter is slight),
+  but the wood the model redrew under the mug is darker and stops at the selection's edges; a
+  global Curves can't fix it. Leads (his ideas note): docs tip (room for the shadow), wider mask
+  feather, a local low-frequency correction near the edges. Tone matching runs (layer differs
+  from the raw reply in 8 of 9 runs), skipped by design when the ring is redrawn or bordered.
 - Self-test `abInput`: an arm with `refs: false` leaves the references out; `minSide` is a
   pipeline option for A/B tests (default none). Runs report `refs` (numbers sent).
-- Everything pushed on 2026-11-10 (up to the STATE commit after `350a857`); he pushes once
-  per session, at the end (spares the CI; ask first). Hand check of Details on an error: later
-  (his call).
-- Reference images as built (`2d2416d`): `references.js` (names "ref N — file", fixed numbers,
-  send size 2048, max 8, limit line); `photoshop.js` `listReferences` / `addReference` /
-  `removeReference` / `readReference` (embedded smart object in a hidden "Fulla references"
-  group at the top; a result placed while a reference is the active layer goes out of the
-  group); providers' `maxReferences(model)` and `req.refs` (after picture, mask, scene; Qwen drops
-  the scene; Gemini 2 Lite's limit is assumed, not documented); `prompts.js` `refsNote` and the
-  empty-prompt task; pipeline reads them in its read scope. Panel: button right of the model with
-  the count (`refsChip`), popup "Reference images" (numbered thumbnails read from the document,
-  cross, limit line, "Choose images"; `main.js` polls the active document every 1.5 s; scroll bar
-  only when needed). Manifest `localFileSystem: "request"` (file picker; needs Unload + Load in
-  UDT). Self-tests `references`, `panelRefs`.
+- Pushed on 2026-11-10 up to `f9d435c` (CI green); this STATE update comes after it (ask before
+  committing). He pushes once per session, at the end (spares the CI; ask first). Hand check
+  of Details on an error: later (his call).
+- Reference images as built (`2d2416d`): `references.js`; `photoshop.js` `listReferences` /
+  `addReference` / `removeReference` / `readReference` (embedded smart objects in a hidden
+  "Fulla references" group; transparency sent on mid grey); providers' `maxReferences(model)`,
+  `req.refs`; `prompts.js` `refsNote`; panel `refsChip` and popup (`main.js` polls the document
+  every 1.5 s); manifest `localFileSystem: "request"`. Self-tests `references`, `panelRefs`.
 - Margin (`953c2b3`): 5 % instead of 35 % (`geometry.js`); tone-matching ring gap = half of it.
   `abInput` self-test: `variants`, `runs`, `active: true` (a selection is used as its bounding
   rectangle), saves each reply and an outlined PNG (judge on the PNGs, `spill` is coarse).
@@ -83,26 +91,21 @@
 ## Current step
 
 Before the site (added 2026-11-09): context margin and reference images, both done (paid tests
-2026-11-10). New lead to discuss: depth-of-field blur. Then step 6. Step 5 (local models) on hold. Step 1 left to test some day, not blocking: sign-up with a fresh
-OpenRouter account; a real OpenAI key.
+2026-11-10). Grainy result settled (one-off draw). Open: the luminance seam. Then step 6. Step 5 on hold. Step 1 left
+to test some day, not blocking: sign-up with a fresh OpenRouter account; a real OpenAI key.
 
 ## Roadmap (order agreed 2026-11-07, revised that evening; details and checkboxes in Stéphane's notes)
 
 1. Onboarding. Done.
 2. Prompt box. Done (README done; panel captures moved to step 6; his walk-through not done).
-3. Automatic resolution, tone matching (global), whole image as a scene reference (all done);
-   the tile offset seen with earlier test layers present; grain later (not in the public release).
+3. Automatic resolution, tone matching, whole image as a scene reference (done).
 4. Full code review: done 2026-11-08 (no serious flaw; 18 items fixed, see his notes).
-5. Local models: **on hold since 2026-11-08** (his call after tests: needs a high-end GPU; owners
-   of one don't mind API prices; only privacy remains). Not put forward on the website.
-   Before the site (2026-11-09): context margin 5 %, reference images (both done).
+5. Local models: **on hold since 2026-11-08**. Before the site: margin 5 %, reference images (done).
 6. Website (presentation + all user docs; SEO and GEO). Domain: a subdomain of his own domain.
 7. First public release.
 8. fal.ai provider (real masks), compared on real photos.
 
-Outside the steps: measure direct providers against OpenRouter (Stéphane finds direct often
-faster); if confirmed, the docs say OpenRouter is the simplest start and direct gives the best
-results.
+Outside the steps: measure direct providers against OpenRouter (he finds direct often faster).
 
 Each step and sub-step is discussed and validated by Stéphane, and starts only when he says so.
 

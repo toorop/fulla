@@ -6,55 +6,34 @@
 
 ## Next action
 
-- **2026-11-10: test (1) done through Google direct** (his call: more credits there; same
-  `abInput` but `provider: "gemini"`, model `gemini-nano-banana-2.1`): 0.182 $, toothy smile
-  3/3, face and hair kept (run 2 closest to the reference, 1 and 3 overdo it a little), no tile
-  offset with the hidden references group (spill 0.002). **His verdict: not telling** (a plain
-  "make her smile" would do the same; no run without the reference to compare). Test (2) as
-  planned is moot too (reference with the very same framing never happens). **Re-planning the
-  tests**, new plan agreed (details and prompts in his ideas note, section 8): (1) face swap,
-  terrace A + a face-only portrait reference; (2) bakery facade, passerby removed, reference shot
-  from another angle, A/B with vs without the reference; (3), (3b), (4) as before.
-- **2026-11-10: test (1) face swap done: success 3/3** (0.187 $): the portrait's features
-  (freckles, mole, eyebrows, green eyes) on her face, turned frontal to fit the pose, her hair and
-  the terrace light kept, no offset. In his ideas note.
-- **`abInput` arm option `refs: false`** (uncommitted, `selftest.js`): leaves the document's
-  references out of that arm; each run now reports `refs` (the numbers sent). Next: test (2)
-  with `variants: [{resolution: "2K"}, {resolution: "2K", refs: false}]`, prompt "Remove the man
-  in the red jacket".
-- **2026-11-10: test (2) done** (0.359 $; `refs: false` checked in the report): passerby gone
-  6/6; with the reference, runs 1 and 3 restore the real tiled heron (legs, mound, horizon), run
-  2 draws a second head under the neck left outside the selection; without it, a plausible but
-  invented heron. Website tip: a reference matters to bring back what was really there. Results
-  of tests 1 and 2 kept for the website in his test photos folder.
-- **2026-11-10: test (3) mug done** (0.203 $): the mug is faithful (fox, speckles, chips) but
-  overflows the selection 3/3 (handle, base or half of it cut by the mask; spill 0.25-0.47).
-  Likely cause: small selection (228 x 239) and `minSide` 512 in `geometry.js`, so the selection
-  is ~21 % of the area sent, like the old 35 % margin. **`minSide` now a pipeline option**
-  (uncommitted, `pipeline.js` + test, 87/87, package OK). **Mug A/B done** (0.384 $): with the
-  512 minimum the mug overflows 3/3 (spill 0.25-0.29); with `minSide: 0` (area 271 px, selection
-  74 % of it) it fits whole 2/3, the 3rd has the handle tip clipped (spill 0.03-0.06). **His
-  call: no minimum by default** (`geometry.js` `minSide = 0`, the option kept for A/B tests;
-  tests 87/87, package OK, free self-test 32/32; uncommitted). Not checked: a removal on a tiny
-  selection. Next: commit (ask him), then test (3b) (mug cut out by hand, ~0.20 $).
-- **Resume here: reference images, paid tests (2026-11-09).** Feature built and committed
-  (`2d2416d`, not pushed); tests 86/86, package OK, free self-test 32/32, his hand try of
-  "Choose images" OK. Next, with him, one test at a time (tell the cost, get his OK, warn him not
-  to touch Photoshop): OpenRouter, Nano Banana 2.1 unless said, `abInput` with `active: true`,
-  `variants: [{ "resolution": "2K" }]`, `runs: 3`, on the document he opened, with its
-  selection and the references he added through the panel. Test photos: his folder (names in his
-  ideas note, section 8). (1) terrace: the 2nd woman's face, reference = the shot where she
-  laughs with teeth showing, prompt proposed "Give her the big smile from the reference, with her
-  teeth showing, keeping her face and hair the same" (~0.18 $); (2) square: the man in red,
-  reference = the same square without him, **empty prompt** (~0.18 $); (3) empty kitchen table +
-  fox mug reference (~0.18 $); (3b) same with the mug cut out (background removed by hand in
-  Photoshop for now, to decide on an "Object" option, ~0.18 $); (4) test 3 with Qwen Image 3
-  (scene dropped, ~0.10 $). Judge on the saved PNGs; record results in his ideas note. Then: a
-  docs tip on references (for the website step), and later bigger thumbnails (his note).
-- Uncommitted: this STATE.md update (ask before committing). Not pushed: `e8cb434`, `953c2b3`,
-  `2d2416d`; he pushes once per session, at the end (spares the CI; ask first; last push
-  `5a188d2`, its CI green). Hand check of Details on an error:
-  later (his call).
+- **Resume here (2026-11-10): reference images done, paid tests over (1.58 $).** Next, his
+  call: the luminance seam under added objects (below), or step 6 (website: tech and hosting,
+  content, SEO and GEO). Depth of field: a docs tip (asking for it in the prompt works). Later:
+  bigger reference thumbnails (his note).
+- Paid tests of 2026-11-10 (Google direct, his call: more credits there; `abInput` with
+  `provider: "gemini"`, model `gemini-nano-banana-2.1`, 2K, 3 runs; results kept for the website
+  in his test photos folder; detail and docs tips in his ideas note, section 8): face swap from a
+  three-quarter portrait 3/3; a passerby removed with a reference shot from another angle brings
+  back the real tiled heron 2/3, a plausible invented one without it (`refs: false`); a mug from
+  a reference faithful but overflowing the small selection 3/3, fixed by dropping the 512 px
+  minimum area side (`350a857`, fits 2/3, 3/3 with a hand cut-out: no "Object" option, his
+  call); Qwen Image 3 redraws the area's background (visible square), one black border, slow,
+  one 504: not for references. No tile offset with the hidden references group. Not checked: a
+  removal on a tiny selection now that the minimum is gone.
+- **His hand Generate on the mug table (2026-11-10)**: asking in the prompt to respect the depth
+  of field makes the mug blurred like the table. **His call: not in the built-in text, a docs
+  tip.** Colours fine (the Curves filter is slight, on or off changes nothing); the seam is
+  local luminance: the wood the model redrew under the mug is darker and stops at the
+  selection's bottom and left edges. A global Curves can't fix that; he sees a model flaw.
+  Leads to discuss (his ideas note): docs tip (room for the shadow), wider mask feather, a local
+  low-frequency correction near the edges. Tone matching runs (layer differs from the raw reply
+  in 8 of 9 Nano Banana runs) and is skipped by design when the ring is redrawn or bordered
+  (Qwen). Small self-test idea: `abInput` could record `tone` and save Photoshop's composite.
+- Self-test `abInput`: an arm with `refs: false` leaves the references out; `minSide` is a
+  pipeline option for A/B tests (default none). Runs report `refs` (numbers sent).
+- Everything pushed on 2026-11-10 (up to the STATE commit after `350a857`); he pushes once
+  per session, at the end (spares the CI; ask first). Hand check of Details on an error: later
+  (his call).
 - Reference images as built (`2d2416d`): `references.js` (names "ref N — file", fixed numbers,
   send size 2048, max 8, limit line); `photoshop.js` `listReferences` / `addReference` /
   `removeReference` / `readReference` (embedded smart object in a hidden "Fulla references"
@@ -66,22 +45,20 @@
   cross, limit line, "Choose images"; `main.js` polls the active document every 1.5 s; scroll bar
   only when needed). Manifest `localFileSystem: "request"` (file picker; needs Unload + Load in
   UDT). Self-tests `references`, `panelRefs`.
-- Margin (`953c2b3`): context margin 5 % instead of 35 % (`geometry.js`) after his A/B (land
-  yacht: 35 % cut the sail 3/3, 5 % never; removal as clean). Tone-matching ring gap = half the
-  margin (`tone.js`). `abInput` self-test: `variants`, `runs`, `active: true`, saves each reply
-  and an outlined PNG (its `spill` number is too coarse: judge on the PNGs).
+- Margin (`953c2b3`): 5 % instead of 35 % (`geometry.js`); tone-matching ring gap = half of it.
+  `abInput` self-test: `variants`, `runs`, `active: true` (a selection is used as its bounding
+  rectangle), saves each reply and an outlined PNG (judge on the PNGs, `spill` is coarse).
 - Step 6 (website): discussion only, no code until he validates, one sub-step at a time. Domain
   decided (2026-11-09): a subdomain of his own domain (recorded in his notes), never to change
   after the release. Next sub-steps: tech and hosting, content, SEO and GEO.
-- Step 4 done (2026-11-08, pushed up to `5a188d2`): 18 review items fixed (his vault, "relecture
-  du code (novembre 2026)") plus sRGB profiles on JPEG results.
 - **Step 5 (local models) on hold, his call (2026-11-08)**: needs a high-end GPU; not on the
   website. Tests and key facts in his vault ("essais en local (novembre 2026)"); UXP reaches a
   local server only through `http://localhost` (no port) in the manifest.
 - Step 3 (done 2026-11-08): Auto resolution (2K floor, up to 4K, crop sent at its own size, max
   2048 px), tone matching (Curves smart filter), whole photo at 1024 px as a scene reference when
-  the area is < 50 % of it; replies > 15 % off the target aspect dropped. On hold until seen
-  again: the B&W border, the tile offset (below). Grain out of the public release.
+  the area is < 50 % of it; replies > 15 % off the target aspect dropped. The B&W border was
+  seen again on 2026-11-10 (Qwen Image 3, outside the selection); the tile offset not seen in
+  the paid tests (below). Grain out of the public release.
 - Docs and waiting tips (website step): select generously; describe the change, not the photo's
   style ("keep the film grain" made things far worse); our wrapper's wording made no clear
   difference (A/B, reverted). What sets Fulla apart from Adobe's fill: a note in his vault.
@@ -92,9 +69,9 @@
 - Self-test with Stéphane's Google key: never run `geminiRaw` without asking (5 billed images);
   use an `only` list of the free scenarios (32 on 2026-11-09; `geminiRaw`, `openaiRaw` left out).
 - **Tile offset to dig into later** (details in his notes): a removal on the pier came out shifted
-  up-right only while earlier hidden test layers existed. The hidden references group is such a
-  layer: watch for an offset in the paid tests. Plan: reproduce, save sent/received images,
-  measure; fix the cause or register the tile in the ring.
+  up-right only while earlier hidden test layers existed. None in the 2026-11-10 paid tests with
+  the hidden references group. Plan: reproduce, save sent/received images, measure; fix the
+  cause or register the tile in the ring.
 - The detailed roadmap with checkboxes lives in Stéphane's notes (not in the repo); tick it as
   sub-steps finish, and record decisions in his ideas note.
 - Blocked by: —
@@ -105,9 +82,8 @@
 
 ## Current step
 
-Before the site (added 2026-11-09): context margin (done), reference images (built; paid tests
-next). Step 5
-(local models) on hold. Step 1 left to test some day, not blocking: sign-up with a fresh
+Before the site (added 2026-11-09): context margin and reference images, both done (paid tests
+2026-11-10). New lead to discuss: depth-of-field blur. Then step 6. Step 5 (local models) on hold. Step 1 left to test some day, not blocking: sign-up with a fresh
 OpenRouter account; a real OpenAI key.
 
 ## Roadmap (order agreed 2026-11-07, revised that evening; details and checkboxes in Stéphane's notes)
@@ -119,7 +95,7 @@ OpenRouter account; a real OpenAI key.
 4. Full code review: done 2026-11-08 (no serious flaw; 18 items fixed, see his notes).
 5. Local models: **on hold since 2026-11-08** (his call after tests: needs a high-end GPU; owners
    of one don't mind API prices; only privacy remains). Not put forward on the website.
-   Before the site (2026-11-09): context margin 5 % (done), reference images (built, testing).
+   Before the site (2026-11-09): context margin 5 %, reference images (both done).
 6. Website (presentation + all user docs; SEO and GEO). Domain: a subdomain of his own domain.
 7. First public release.
 8. fal.ai provider (real masks), compared on real photos.
@@ -132,6 +108,8 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Recently done
 
+- 2026-11-10 — Reference images: paid tests (1.58 $); no minimum area side (`350a857`);
+  `refs: false` A/B arms (`3ac1608`).
 - 2026-11-09 — Reference images (`2d2416d`): discussed with him point by point, then built
   (hidden group in the document, ref 1 / ref 2 in the prompt, popup like Adobe's).
 - 2026-11-09 — Context margin 5 % (was 35 %) after his A/B: added objects stay in the
@@ -153,7 +131,7 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
   blending line.
 - Reference images (2026-11-09, his calls): from files only (Photoshop beta 28 dropped layers);
   a popup like Adobe's "Reference image" without its "Object" and "Mode" options (the prompt says
-  it; a cut-out option only if the tests show a gain); kept in the document, in a hidden group,
+  it; no cut-out option: a hand cut-out gained little, 2026-11-10); kept in the document, in a hidden group,
   one embedded smart object each, and the panel mirrors that group (fixed numbers, the cross
   deletes the layer, they stay until removed); the whole photo still goes along, except with
   Qwen (no room: Qwen Image 3 takes 3 images in all); at most the model's room left, capped at 8.

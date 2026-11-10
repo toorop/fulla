@@ -1473,7 +1473,7 @@ async function live(providerId, model) {
  *   photo: a file in this plugin's data folder (default "ab-photo.png"), with `selection`; or
  *   active: true, the open document and its selection's bounds (the document is left as it was).
  *   variants: pipeline options per arm, e.g. [{context: 0.35}, {context: 0.1}] (default: review A1's
- *   upload "target" vs "crop").
+ *   upload "target" vs "crop"); `refs: false` in an arm leaves the document's reference images out.
  */
 async function abInput(o) {
   const provider = { gemini, openai, openrouter }[o.provider || "openrouter"];
@@ -1503,6 +1503,7 @@ async function abInput(o) {
         const usages = [];
         let req = null;
         const spy = { ...provider, generate: (r) => ((req = r), provider.generate(r)) };
+        if (v.refs === false) spy.maxReferences = () => 0;
         const t0 = Date.now();
         const key = `${model} ${label(v)} #${i}`;
         const base = `ab-${model.replace(/[^a-z0-9.]+/gi, "_")}-${label(v).replace(/[^a-z0-9.]+/gi, "_")}-${i}`;
@@ -1556,6 +1557,7 @@ async function abInput(o) {
             selectionShare: Math.round((inside / (W * H)) * 100) / 100,
             target: out.target,
             returned: s && [s.width, s.height],
+            refs: (req.refs || []).map((r) => r.number),
             spill,
             usd: usd(),
             file: name,

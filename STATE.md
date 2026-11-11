@@ -1,73 +1,53 @@
 # Fulla — State
 
-<!-- Hand-off, not a log. Keep it under ~150 lines and keep `## Next action` first, so a new
-     session can resume from the first ~60 lines alone. Update after every significant action,
-     never only at the end of a task. No private paths: the repo is public. -->
+<!-- Hand-off, not a log. Keep it under ~150 lines and keep `## Next action
 
-## Next action
-
-- **Resume here (next session, 2026-11-11, possibly on another machine): step 6, the
-  website, sub-step "design".** The discussion of tech, content, SEO and GEO is done; first ask
-  him to confirm that the GEO sub-step is closed (proposed, not yet answered), then discuss the
-  design (look of the site, home page, docs layout). Discussion only, no code until he
-  validates; one question at a time, with a recommendation. After design: captures, then build.
-- **Where the decisions are** (his vault, Fulla folder; not in this public repo): his roadmap
-  note, step 6 (tech, site map, the whole home page section by section, footer, contact); his
-  new SEO and GEO note (searches targeted, extra pages, final URLs, technical defaults, AI
-  crawlers, AI-readable help, GEO writing rules); his note on Photoshop's Generative Fill
-  (Adobe credits and pricing research, rules for lawful comparison, uses). A hand-off note in
-  the same folder sums up the session for a machine without Claude's local memory.
-- **Site decisions in one breath:** Astro, Starlight for the docs only, a home page of its own
-  that sells Fulla; English only; code in `site/` of this repo (own `package.json`); Cloudflare
-  Workers static assets, deployed by Workers Builds (root `site/`, watch paths `site/**`);
-  cost 0; stats with his self-hosted Umami; audience: photographers with little AI culture (no
-  jargon up top); docs sorted by tool (`/docs/generative-fill/…`), URLs final after release;
-  before/after as sliders; every AI crawler allowed; `llms.txt`, Markdown pages and an "Ask
-  your AI assistant" box in the docs. SEO and GEO with the Claude SEO skill set
-  (claude-seo.md): reinstall it on a new machine (read its installer first).
-- **Before publishing:** compare the same model on both sides (Adobe lists Nano Banana 2,
-  `gemini-3.1-flash-image`; Fulla's default is Nano Banana 2.1); reread Adobe's credits FAQ by
-  hand; prices in euros; never write "the only one"; at go-live, help him with the whole
-  Cloudflare setup (custom domain, Workers Builds, Cloudflare's default AI-bot blocking,
-  Search Console and Bing).
-- **His checks, when he wants:** does Photoshop refuse a face swap; is GPT Image in the model
-  list of Photoshop (Beta) 28's generative fill; the Details button on an error; what "source
-  of error" he meant with the generated layer becoming active (Fulla always reads the
-  composite, never the active layer).
-- ChatGPT plan via OAuth: researched 2026-11-10; the official route has no image generation,
-  so not now (his roadmap note, "En attente").
-- **Docs tips for the site** (his calls; in the docs, not the built-in text): select generously,
-  with room for the object and its shadow; ask for the lighting, perspective and depth of
-  field; describe the change, not the photo's style; references to bring back what was really
-  there, a face, an object; generate again when a draw fails (about 1 in 4). His ideas note, §8.
-- Git: ask before committing and pushing; he pushes once per session, at the end (spares
-  the CI).
-- Later, after the site: the luminance seam (wood redrawn under an added object, darker and
-  stopping at the selection's edge; leads: wider feather, a local low-frequency correction);
-  spotting a reply where the model redrew the whole picture (its margin must match what was
-  sent); bigger reference thumbnails.
+- **Resume here: step 6, the website.** Milestones 1 and 2 of the build are done and approved
+  (2026-11-11), committed and pushed. What is left needs Stéphane first; nothing to code until
+  he gives material or says go:
+  - **His tests in Photoshop:** does the built-in generative fill refuse a face swap (if so, he
+    captures the refusal text, for the comparison page and home example 5); more tests with GPT
+    Image models through Fulla (few so far; paid, give the cost first); is GPT Image in the model
+    list of Photoshop (Beta) 28's generative fill.
+  - **macOS:** never tested. The `.ccx` through Creative Cloud should install on a Mac too, but
+    the docs and the site say nothing about macOS until it is tried.
+  - **Images:** he generates the base pictures locally and edits them with Fulla; the list
+    (names, sizes, prompts) is a note in his vault. Placeholders in `site/` until then.
+  - **Umami:** he creates the site in his Umami, then the id goes in `site/src/lib/analytics.mjs`.
+- **Next to discuss with him:** a release workflow on GitHub (tag → build the `.ccx` and the
+  Windows zip → GitHub release), part of step 7. Not decided yet.
+- **Before publishing the site:** check every figure again (Adobe's credits FAQ by hand; the
+  same model on both sides: Adobe lists Nano Banana 2, `gemini-3.1-flash-image`, Fulla's
+  default is Nano Banana 2.1), then remove the "Draft" banners (`draft: true` in the pages'
+  frontmatter); judge the background (`#1e1e1e`, on trial) with the real photos; never write
+  "the only one". At go-live, help him with Cloudflare: custom domain, Workers Builds (root
+  `site/`, watch paths `site/**`), Cloudflare's default AI-bot blocking, Search Console, Bing.
+- **Where the decisions are:** his vault, Fulla folder (not in this public repo): the roadmap
+  (step 6 in detail), the SEO and GEO note, the note on Photoshop's generative fill (prices,
+  rules for a lawful comparison), the illustrations list, the mockups (`maquettes/`), and a
+  hand-off note for a session without Claude's local memory.
+- **Site in one breath:** `site/` (Astro 7.4, Starlight 0.42), see `CLAUDE.md` for commands.
+  Home page from mockup B ("Selection": Photoshop-like workspace, marching ants, result
+  revealed, then the slider); docs under `/docs/` sorted by tool, URLs final after release;
+  comparison pages, credits explainer, Nano Banana and GPT Image pages, About; every docs page
+  also in Markdown, `llms.txt`, `llms-full.txt`, every crawler allowed; dark only on the home
+  page, dark by default with a light toggle on the docs; monochrome greys and one blue
+  (`#7aa7ff`) for focus and states. English only. Deployed by Cloudflare Workers Builds; the
+  CI skips `site/**`.
+- Git: ask before committing and pushing; he pushes once per session, at the end.
 - Self-test with Stéphane's Google key: never run `geminiRaw` without asking (5 billed images);
-  use an `only` list of the free scenarios (32 on 2026-11-10: every key of `SCENARIOS` in
-  `selftest.js`, `diag` included, `geminiRaw` and `openaiRaw` left out). Warn him before a run
-  (nobody may touch Photoshop) and run it in the background. Paid tests: Google direct by
-  default (more credits there), give the cost first.
-- Self-test `abInput` (paid A/B): `provider`, `models`, `prompt`, `variants` (pipeline options
-  per arm: `resolution`, `upload`, `context`, `minSide`, `refs: false`), `runs`, `active: true`
-  (the open document; a selection is used as its bounding rectangle; `selection` to fix it).
-  Saves each reply and an outlined PNG of the layer at the size sent (judge on the PNGs, `spill`
-  is coarse). File names come from the arm's options: distinct options keep older files.
-- Working setup: Fulla runs from UXP Developer Tools on Photoshop (Beta) 28.0.1 (Load + Watch; a
-  manifest change needs Unload + Load). Self-test folder and commands: `CLAUDE.md`. Stéphane's
-  OpenRouter key and his Google key are saved in the dev plugin; no OpenAI key (`openaiRaw`
-  fails, expected).
-- The detailed roadmap with checkboxes lives in Stéphane's notes (not in the repo); tick it as
-  sub-steps finish, and record decisions in his ideas note.
+  use an `only` list of the free scenarios (every key of `SCENARIOS` in `selftest.js` except
+  `geminiRaw` and `openaiRaw`). Warn him before a run (nobody may touch Photoshop). Paid
+  tests: Google direct by default, give the cost first. A/B input format: see `selftest.js`
+  (`abInput`). Photoshop work happens on his Windows machine only.
+- Later, after the site: the luminance seam under an added object; spotting a reply where the
+  model redrew the whole picture; bigger reference thumbnails.
 - Blocked by: —
 
 ## Current step
 
-Step 6, website: tech, content, SEO and GEO discussed; next sub-step: design (discussion). Before the site: margin and
-reference images done; grain settled; Auto rule changed. Step 5 on hold. Step 1 left to test
+Step 6, website: discussion done (tech, content, SEO, GEO, design); build milestones 1 and 2
+done 2026-11-11; waiting for his images, tests and checks before go-live. Step 5 on hold. Step 1 left to test
 some day, not blocking: sign-up with a fresh OpenRouter account; a real OpenAI key.
 
 ## Roadmap (order agreed 2026-11-07, revised that evening; details and checkboxes in Stéphane's notes)
@@ -87,6 +67,10 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Recently done
 
+- 2026-11-11 — Website: design (three mockups, B chosen; docs layout; colours), then built in
+  `site/`: home page, 18 docs pages, comparison and explainer pages, About, share image,
+  Markdown pages and `llms.txt`; README warns the plugin is a work in progress. CI skips
+  `site/**`.
 - 2026-11-10 (evening) — Step 6 discussed: tech and hosting, content (site map, whole home
   page), SEO and GEO; research on Adobe credits, uses, comparative advertising, GPT and
   ChatGPT-plan access. Decisions in his notes.
@@ -95,11 +79,15 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
   hand result: the model redrew the whole picture (Fulla's placement checked exact).
 - 2026-11-10 — Reference images: paid tests (1.58 $); no minimum area side (`350a857`);
   `refs: false` A/B arms (`3ac1608`).
-- 2026-11-09 — Reference images (`2d2416d`); context margin 5 %. 2026-11-08 — step 4 code
-  review and fixes (`c41e68d` to `5a920cf`); step 5 put on hold. 2026-11-07 — steps 1 and 2.
 
 ## Decisions taken
 
+- Website design (2026-11-11, his calls): Fulla's own look, beauty first (the audience works on
+  images); neutral dark grey background (a tinted one biases photos); monochrome with one blue;
+  light theme on the docs only. Base images generated locally, mostly in colour (to show the
+  colour matching), edited with Fulla; generated photos are said to be generated.
+- Repo stays public before the release, with a work-in-progress warning (2026-11-11, his call).
+  About says Fulla is written with an AI assistant, every change his (his call).
 - Website (2026-11-10, his calls): static, Astro (his usual tool), Starlight for the docs only,
   the home page sells Fulla; Cloudflare Workers static assets (where he hosts); English only;
   code in `site/` here, so a feature and its docs change in the same commit; Workers Builds

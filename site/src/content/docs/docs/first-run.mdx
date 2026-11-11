@@ -1,0 +1,34 @@
+---
+title: First run
+description: Connect Fulla to an AI service the first time you open it, with OpenRouter in a few clicks or with your own Google or OpenAI key.
+---
+import AskAssistant from '../../../components/AskAssistant.astro';
+
+The first time you open **Plugins > Fulla**, the panel opens on its **Providers** tab: Fulla needs an account with an AI service to make images. You have two choices.
+
+## Connect with OpenRouter (recommended)
+
+OpenRouter gives you every model Fulla offers with one account, and there is no key to create or paste.
+
+1. Click **Connect with OpenRouter**. Photoshop asks to open your browser; the browser window may open behind Photoshop.
+2. On openrouter.ai, sign in or create an account. You can set a spending limit and an expiry date for the key there.
+3. Click **Authorize**. OpenRouter shows a code.
+4. Paste that code into the panel. OpenRouter's page says "terminal": it means the panel.
+
+A new OpenRouter account needs credits before its first image. The panel says so and links the page where you add them; $5 is about 100 images.
+
+If, after creating your account, you don't land on the page with the **Authorize** button, go back to the panel and click **Open the page again**. You are signed in by then, so it goes straight there.
+
+## Use a Google or OpenAI key
+
+Already have a key? Choose **Add a key**, pick Google (Gemini API) or OpenAI, and paste it. The button next to the field opens the page where the key is created. Fulla checks the key with a free request before saving it. See [Providers](/docs/providers/) for what each service needs.
+
+## Where your key is kept
+
+Keys stay on your computer, in Photoshop's secure storage, and go only to their provider. **Test** checks a saved key again; **Remove** deletes it. More in [Privacy and security](/docs/privacy/).
+
+## Next step
+
+[Make your first fill](/docs/generative-fill/).
+
+<AskAssistant task="connect Fulla to an AI service" />

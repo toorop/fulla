@@ -1,0 +1,76 @@
+---
+// Pages outside the docs that are mostly text: comparisons, explanations, About. Written in
+// Markdown (src/pages/*.md) with this layout. A draft banner shows until the figures are
+// checked again before release.
+import Base from './Base.astro';
+
+interface Frontmatter {
+	title: string;
+	/** <title> of the page, when it differs from the H1. */
+	metaTitle?: string;
+	description: string;
+	/** Date the facts were last checked, YYYY-MM-DD (YAML reads it as a date). */
+	updated: string | Date;
+	/** Figures still to be checked before release. */
+	draft?: boolean;
+	/** 'about' marks the page as a profile page. */
+	kind?: 'article' | 'about';
+}
+const { frontmatter } = Astro.props as { frontmatter: Frontmatter };
+const url = new URL(Astro.url.pathname, Astro.site).href;
+// A YAML date may come from another realm (instanceof fails); new Date() takes both forms.
+const updated = new Date(frontmatter.updated as string);
+const updatedIso = updated.toISOString().slice(0, 10);
+const updatedText = updated.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+const author = { '@type': 'Person', name: 'Stéphane Depierrepont', url: 'https://fulla.dppst.com/about/' };
+const jsonLd = [
+	frontmatter.kind === 'about'
+		? { '@context': 'https://schema.org', '@type': 'ProfilePage', url, mainEntity: { ...author, sameAs: ['https://github.com/toorop', 'https://dppst.com/'] } }
+		: { '@context': 'https://schema.org', '@type': 'Article', headline: frontmatter.title, description: frontmatter.description, url, dateModified: updatedIso, author },
+	{
+		'@context': 'https://schema.org',
+		'@type': 'BreadcrumbList',
+		itemListElement: [
+			{ '@type': 'ListItem', position: 1, name: 'Fulla', item: 'https://fulla.dppst.com/' },
+			{ '@type': 'ListItem', position: 2, name: frontmatter.title, item: url },
+		],
+	},
+];
+---
+
+<Base title={frontmatter.metaTitle ?? `${frontmatter.title} | Fulla`} description={frontmatter.description} jsonLd={jsonLd}>
+	<article class="wrap article">
+		{frontmatter.draft && <p class="draft" role="note">Draft: the figures on this page are checked again before release.</p>}
+		<h1>{frontmatter.title}</h1>
+		<p class="updated">Last updated {updatedText}</p>
+		<div class="prose"><slot /></div>
+		<aside class="cta">
+			<p>Fulla is free. Try it on your next photo.</p>
+			<a class="btn btn-solid" href="/docs/install/">Download Fulla, free</a>
+		</aside>
+	</article>
+</Base>
+
+<style>
+	.article { max-width: calc(46rem + 2 * clamp(16px, 4vw, 48px)); padding-block: clamp(40px, 7vw, 88px) clamp(64px, 8vw, 104px); }
+	.draft { margin: 0 0 24px; padding: 10px 14px; border: 1px dashed var(--f-muted); border-radius: 8px; font-size: 14px; color: var(--f-ink); }
+	h1 { font-size: clamp(2.2rem, 4.4vw, 3.4rem); line-height: 1.02; font-weight: 800; letter-spacing: -0.035em; }
+	.updated { margin: 14px 0 40px; font-size: 14px; color: var(--f-muted); }
+	.prose { font-size: 18px; line-height: 1.7; }
+	.prose :global(p) { margin: 0 0 18px; }
+	.prose :global(> p:first-child) { font-size: 20px; line-height: 1.55; color: var(--f-ink-2); }
+	.prose :global(h2) { font-size: 28px; font-weight: 800; letter-spacing: -0.025em; line-height: 1.15; margin: 56px 0 14px; }
+	.prose :global(h3) { font-size: 20px; font-weight: 600; margin: 32px 0 8px; }
+	.prose :global(ul), .prose :global(ol) { margin: 0 0 18px; padding-left: 1.3em; }
+	.prose :global(li) { margin-bottom: 6px; }
+	.prose :global(li::marker) { color: var(--f-muted); }
+	.prose :global(strong) { color: var(--f-ink); font-weight: 600; }
+	.prose :global(table) { width: 100%; border-collapse: collapse; font-size: 16px; margin: 8px 0 24px; display: block; overflow-x: auto; }
+	.prose :global(th), .prose :global(td) { text-align: left; padding: 12px 14px 12px 0; border-bottom: 1px solid var(--f-line); vertical-align: top; }
+	.prose :global(thead th) { font-size: 14px; color: var(--f-muted); font-weight: 600; }
+	.prose :global(code) { background: var(--f-field); border: 1px solid var(--f-line); border-radius: 6px; padding: 0.1em 0.45em; font-family: var(--f-sans); font-size: 0.94em; color: var(--f-ink); }
+	.prose :global(blockquote) { margin: 24px 0; padding: 14px 20px; border-left: 2px solid var(--f-ink); background: #262626; border-radius: 0 10px 10px 0; }
+	.prose :global(blockquote p) { margin: 0; }
+	.cta { margin-top: 56px; padding: 28px; border: 1px solid var(--f-line); border-radius: 14px; background: #262626; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
+	.cta p { margin: 0; color: var(--f-ink); font-size: 20px; font-weight: 600; }
+</style>

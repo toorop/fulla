@@ -1,0 +1,18 @@
+---
+// Starlight's theme provider, changed so that dark is the default: light only when chosen.
+import { Icon } from '@astrojs/starlight/components';
+---
+
+<script is:inline>
+	window.StarlightThemeProvider = (() => {
+		const stored = typeof localStorage !== 'undefined' && localStorage.getItem('starlight-theme');
+		document.documentElement.dataset.theme = stored === 'light' ? 'light' : 'dark';
+		return { updatePickers() {} };
+	})();
+</script>
+
+<template id="theme-icons">
+	<Icon name="sun" class="light" />
+	<Icon name="moon" class="dark" />
+	<Icon name="laptop" class="auto" />
+</template>

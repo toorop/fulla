@@ -1,0 +1,37 @@
+---
+title: Troubleshooting
+description: Fixes for the common problems with Fulla, from a first image that won't start to a colour cast on the result.
+---
+import AskAssistant from '../../../components/AskAssistant.astro';
+
+When a provider blocks a run, Fulla names the reason in the card and links the page that fixes it. The common cases:
+
+## OpenRouter says I have no credits
+
+A new OpenRouter account needs credits before its first image. Add a few dollars on openrouter.ai; $5 is about 100 images.
+
+## Google refuses every image
+
+Gemini's free tier allows no image generation. Turn billing on in your Google account, then try again.
+
+## OpenAI refuses the image model
+
+Your account needs credits, and OpenAI image models may need your organization verified on platform.openai.com.
+
+## The browser didn't open when connecting to OpenRouter
+
+Photoshop asks first, and the browser window may open behind Photoshop. If you don't reach the page with the **Authorize** button, click **Open the page again** in the panel.
+
+## The result has a slight colour cast
+
+Photoshop is probably ignoring embedded profiles. See [Colours](/docs/colours/).
+
+## The added object is cut at the edge
+
+The selection was too tight. Select again with room for the object and its shadow: see [Getting good results](/docs/generative-fill/tips/).
+
+## Something else
+
+[Report a bug](https://github.com/toorop/fulla/issues) on GitHub, or use **Report a bug** in the panel's menu (≡).
+
+<AskAssistant task="fix a problem with Fulla" />

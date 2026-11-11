@@ -1,0 +1,32 @@
+---
+title: Install
+description: Install the Fulla plugin in Photoshop 2026, with the Creative Cloud app or with the Windows installer.
+---
+import AskAssistant from '../../../components/AskAssistant.astro';
+
+Fulla runs in **Photoshop 2026 (27.11 or later)**. There are two ways to install it.
+
+## With the Creative Cloud app
+
+1. Download `fulla-<version>.ccx` from the [releases page](https://github.com/toorop/fulla/releases).
+2. Double-click it. Creative Cloud installs the plugin.
+3. In Photoshop, open **Plugins > Fulla**.
+
+## Without the Creative Cloud app (Windows)
+
+1. Download `fulla-<version>-windows.zip` from the [releases page](https://github.com/toorop/fulla/releases) and unzip it.
+2. Close Photoshop.
+3. Double-click **Install Fulla.bat**. No admin rights are needed.
+4. Start Photoshop and open **Plugins > Fulla**.
+
+### What the Windows installer changes
+
+- It copies the plugin to `%APPDATA%\Adobe\UXP\Plugins\External\io.github.toorop.fulla`.
+- It adds one entry to Photoshop's plugin list, `%APPDATA%\Adobe\UXP\PluginsInfo\v1\PS.json`, after saving a backup copy next to it. Other plugins are left untouched.
+- **Uninstall Fulla.bat** removes both again.
+
+## Next step
+
+[Connect an AI service](/docs/first-run/), so Fulla can make images.
+
+<AskAssistant task="install Fulla in Photoshop" />

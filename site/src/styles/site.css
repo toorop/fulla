@@ -1,0 +1,18 @@
+/* Base styles of the pages outside the docs. */
+*, *::before, *::after { box-sizing: border-box; }
+html { color-scheme: dark; }
+body { margin: 0; background: var(--f-bg); color: var(--f-ink-2); font: 400 17px/1.6 var(--f-sans); -webkit-font-smoothing: antialiased; }
+a { color: var(--f-ink); text-underline-offset: 3px; text-decoration-color: #6a6a6a; }
+a:hover { text-decoration-color: currentColor; }
+:focus-visible { outline: 2px solid var(--f-blue); outline-offset: 3px; }
+img { max-width: 100%; }
+h1, h2, h3 { color: var(--f-ink); margin: 0; }
+.wrap { max-width: 1280px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 48px); }
+.btn { display: inline-flex; align-items: center; justify-content: center; padding: 12px 20px; border-radius: 8px; font: 600 15px/1 var(--f-sans); text-decoration: none; border: 1px solid transparent; }
+.btn-solid { background: var(--f-ink); color: #1c1c1c; }
+.btn-solid:hover { background: #fff; }
+.btn-line { border-color: var(--f-line); color: var(--f-ink); }
+.btn-line:hover { border-color: var(--f-muted); }
+.skip { position: absolute; left: -9999px; top: 8px; z-index: 50; background: var(--f-ink); color: #1c1c1c; padding: 8px 12px; border-radius: 6px; }
+.skip:focus { left: 8px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

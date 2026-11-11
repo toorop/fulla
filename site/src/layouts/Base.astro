@@ -1,0 +1,52 @@
+---
+// Layout of the pages outside the docs (home, comparison pages, About): dark only.
+import '@fontsource-variable/hanken-grotesk';
+import '../styles/tokens.css';
+import '../styles/site.css';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import { umamiAttrs } from '../lib/analytics.mjs';
+
+const umami = umamiAttrs();
+
+interface Props {
+	title: string;
+	description: string;
+	/** JSON-LD objects for this page. */
+	jsonLd?: object[];
+}
+const { title, description, jsonLd = [] } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="color-scheme" content="dark" />
+		<title>{title}</title>
+		<meta name="description" content={description} />
+		<link rel="canonical" href={canonical} />
+		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+		<link rel="sitemap" href="/sitemap-index.xml" />
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Fulla" />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta property="og:url" content={canonical} />
+		<meta property="og:image" content="https://fulla.dppst.com/og.png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="Fulla: generative fill in Photoshop. Pay only for the images you make." />
+		<meta name="twitter:card" content="summary_large_image" />
+		{umami && <script is:inline {...umami}></script>}
+		{jsonLd.map((data) => <script type="application/ld+json" set:html={JSON.stringify(data)} />)}
+	</head>
+	<body>
+		<a class="skip" href="#main">Skip to content</a>
+		<SiteHeader />
+		<main id="main"><slot /></main>
+		<SiteFooter />
+	</body>
+</html>

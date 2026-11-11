@@ -1,0 +1,26 @@
+---
+import Logo from './Logo.astro';
+---
+
+<header class="top">
+	<div class="wrap">
+		<a class="brand" href="/"><Logo />Fulla</a>
+		<nav aria-label="Main">
+			<a href="/docs/">Docs</a>
+			<a href="/fulla-vs-photoshop-generative-fill/">Fulla vs Photoshop</a>
+			<a href="https://github.com/toorop/fulla">GitHub</a>
+			<a class="btn btn-solid" href="/docs/install/">Download</a>
+		</nav>
+	</div>
+</header>
+
+<style>
+	.top .wrap { display: flex; align-items: center; height: 64px; gap: 28px; }
+	.brand { display: flex; align-items: center; gap: 10px; color: var(--f-ink); text-decoration: none; font-weight: 800; font-size: 20px; letter-spacing: -0.02em; }
+	.brand :global(svg) { width: 26px; height: 26px; }
+	nav { margin-left: auto; display: flex; align-items: center; gap: 26px; font-size: 15px; }
+	nav a { text-decoration: none; color: var(--f-ink-2); }
+	nav a:hover { color: var(--f-ink); }
+	nav a.btn-solid { color: #1c1c1c; }
+	@media (max-width: 760px) { nav a:not(.btn) { display: none; } }
+</style>

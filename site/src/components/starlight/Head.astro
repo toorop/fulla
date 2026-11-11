@@ -1,0 +1,10 @@
+---
+// Starlight's <head>, plus the Markdown version of the page for AI assistants.
+import Default from '@astrojs/starlight/components/Head.astro';
+import { markdownUrl } from '../../lib/markdown';
+
+const { id } = Astro.locals.starlightRoute;
+---
+
+<Default />
+<link rel="alternate" type="text/markdown" href={markdownUrl(id)} />

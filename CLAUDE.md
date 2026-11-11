@@ -12,6 +12,7 @@ Photoshop UXP plugin: generative fill with the user's own AI provider (OpenRoute
 - `npm test`: all unit tests (Node built-in runner, no dependencies).
 - `npm run package`: builds `dist/fulla-<version>.ccx` and `fulla-<version>-windows.zip` (self-test left out). Keep `version` equal in `package.json` and `plugin/manifest.json`.
 - `node scripts/icons.js`: regenerates panel icons.
+- Website (`site/`, Astro + Starlight, own `package.json`): `cd site && npm run dev` serves it at http://localhost:4321, `npm run build` builds `site/dist`. Home and marketing pages in `site/src/pages`, docs in `site/src/content/docs/docs/`; every docs page also exists as Markdown (`/docs/<page>.md`), with `llms.txt` and `llms-full.txt`.
 
 ## In-Photoshop self-test (dev builds only; release packages leave out `src/selftest.js`)
 - Development runs through UXP Developer Tools: Stéphane loads `plugin/manifest.json` (Load, then Watch to reload on save). Photoshop's own developer mode (Preferences > Plugins) must be on, or Load fails with "Failed to load the devtools plugin". Never install with `installer/install.ps1` at the same time (same plugin id).

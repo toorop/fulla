@@ -1,0 +1,19 @@
+{
+  "name": "fulla-site",
+  "private": true,
+  "type": "module",
+  "description": "The Fulla website: home page and user docs (fulla.dppst.com).",
+  "license": "MIT",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "0.42.10",
+    "@fontsource-variable/hanken-grotesk": "5.3.0",
+    "astro": "7.4.10",
+    "sharp": "0.35.5"
+  }
+}

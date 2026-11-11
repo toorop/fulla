@@ -1,0 +1,7 @@
+# Every crawler is welcome, search and AI alike: Fulla is free and open source, and an assistant
+# that knows it can recommend it and help its users.
+User-agent: *
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+
+Sitemap: https://fulla.dppst.com/sitemap-index.xml

@@ -1,0 +1,359 @@
+---
+// Home page: sells Fulla to photographers with little AI culture. Design B ("Selection"): the
+// hero is a Photoshop-like workspace where the selection, the prompt, Generate and the result
+// play once, then the before/after slider is the visitor's.
+import { Picture } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import Compare from '../components/Compare.astro';
+import heroBefore from '../assets/placeholders/hero-before.png';
+import heroAfter from '../assets/placeholders/hero-after.png';
+import extend from '../assets/placeholders/extend.png';
+import mug from '../assets/placeholders/mug.png';
+import heron from '../assets/placeholders/heron.png';
+import face from '../assets/placeholders/face.png';
+
+const title = 'Fulla: free generative fill plugin for Photoshop';
+const description =
+	'Fulla is a free Photoshop plugin for generative fill. Select, describe, Generate, as in Photoshop. Pay the AI service per image, from about 5 cents: no subscription, no credits.';
+
+// Where the passer-by is in the hero photo, in percent: the marching ants go there.
+// Placeholder figure for now; set again with the real photo (A1).
+const selection = { left: 49, top: 40, width: 16, height: 50 };
+
+// Draft figures (10 November 2026): to check again before release, see the pricing note.
+const prices = {
+	checked: '10 November 2026',
+	photoshop: { fill2k: '20 credits', fill2kMoney: 'about $0.10 with the smallest top-up', fill4k: '30 credits, about $0.15' },
+	fulla: { fill2k: 'about $0.05', fill4k: 'about $0.12' },
+};
+
+const jsonLd = [
+	{
+		'@context': 'https://schema.org',
+		'@type': 'SoftwareApplication',
+		name: 'Fulla',
+		description,
+		applicationCategory: 'MultimediaApplication',
+		applicationSubCategory: 'Photoshop plugin',
+		operatingSystem: 'Windows',
+		softwareRequirements: 'Adobe Photoshop 2026 (27.11 or later)',
+		license: 'https://opensource.org/licenses/MIT',
+		url: 'https://fulla.dppst.com/',
+		downloadUrl: 'https://fulla.dppst.com/docs/install/',
+		offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+		author: { '@type': 'Person', name: 'Stéphane Depierrepont', url: 'https://dppst.com/' },
+	},
+];
+---
+
+<Base title={title} description={description} jsonLd={jsonLd}>
+	<div class="wrap intro">
+		<h1>Generative fill in Photoshop. Pay only for the images you make.</h1>
+		<div>
+			<p class="lede">
+				Fulla is a free Photoshop plugin. Select an area, say what you want, click Generate: just like Photoshop's own
+				generative fill. Connect once in a few clicks, and Fulla picks a recommended model for you. From about 5 cents an
+				image, no subscription, no credits.
+			</p>
+			<div class="actions"><a class="btn btn-solid" href="/docs/install/">Download Fulla, free</a><a class="btn btn-line" href="/docs/">Get started</a></div>
+		</div>
+	</div>
+
+	<div class="board">
+		<div class="wrap board-in">
+			<div class="doc" id="doc">
+				<Compare
+					id="hero-compare"
+					before={heroBefore}
+					after={heroAfter}
+					beforeAlt="Before: a man in a raincoat walks across a quiet harbour quay"
+					afterAlt="After: the same quay, the man removed"
+					start={100}
+					sizes="(min-width: 1280px) 820px, 100vw"
+				/>
+				<div class="ants" id="ants" style={`left:${selection.left}%;top:${selection.top}%;width:${selection.width}%;height:${selection.height}%`} aria-hidden="true">
+					<svg preserveAspectRatio="none" viewBox="0 0 100 100"><rect class="w" width="100" height="100"></rect><rect class="k" width="100" height="100"></rect></svg>
+				</div>
+			</div>
+			<div class="panel" aria-hidden="true">
+				<div class="panel-title"><span>Fulla</span><span>Nano Banana 2.1</span></div>
+				<div class="prompt" id="prompt"><span class="ph">Describe what to add, or leave empty to remove</span></div>
+				<div class="row"><span class="chip">+ Reference</span><span class="gen" id="gen">Generate</span></div>
+				<div class="status" id="status"></div>
+				<div class="layers">
+					<div class="layer new" id="newlayer"><span class="th th-new"></span>Fulla: remove the man</div>
+					<div class="layer"><span class="th th-bg"></span>Background</div>
+				</div>
+			</div>
+			<p class="board-note">Drag across the photo to compare. Prompt left empty. First try, no retouching after Fulla.</p>
+		</div>
+	</div>
+
+	<section>
+		<div class="wrap">
+			<h2 class="head">If you know Photoshop's generative fill, you already know Fulla.</h2>
+			<ol class="steps">
+				<li>
+					<div class="mini" aria-hidden="true">
+						<Picture src={heroBefore} alt="" widths={[480, 800]} sizes="(min-width: 900px) 400px, 100vw" formats={['avif', 'webp']} />
+						<div class="ants on" style={`left:${selection.left}%;top:${selection.top}%;width:${selection.width}%;height:${selection.height}%`}><svg preserveAspectRatio="none" viewBox="0 0 100 100"><rect class="w" width="100" height="100"></rect><rect class="k" width="100" height="100"></rect></svg></div>
+					</div>
+					<h3>Select the area to change</h3>
+					<p>With any selection tool: lasso, marquee, Select Subject.</p>
+				</li>
+				<li>
+					<div class="mini" aria-hidden="true">
+						<Picture src={heroBefore} alt="" widths={[480, 800]} sizes="(min-width: 900px) 400px, 100vw" formats={['avif', 'webp']} />
+						<div class="ants on" style={`left:${selection.left}%;top:${selection.top}%;width:${selection.width}%;height:${selection.height}%`}><svg preserveAspectRatio="none" viewBox="0 0 100 100"><rect class="w" width="100" height="100"></rect><rect class="k" width="100" height="100"></rect></svg></div>
+						<div class="mini-prompt"><span class="ph">Empty: remove what is selected</span></div>
+					</div>
+					<h3>Say what you want</h3>
+					<p>“A small boat by the pier”, “make her smile”. Leave it empty to remove what's selected.</p>
+				</li>
+				<li>
+					<div class="mini" aria-hidden="true">
+						<Picture src={heroAfter} alt="" widths={[480, 800]} sizes="(min-width: 900px) 400px, 100vw" formats={['avif', 'webp']} />
+						<div class="mini-layers"><div class="layer on"><span class="th th-new"></span>Fulla 1</div><div class="layer"><span class="th th-bg"></span>Background</div></div>
+					</div>
+					<h3>Click Generate</h3>
+					<p>The result lands on a new layer, masked by your selection. Your photo itself is never touched.</p>
+				</li>
+			</ol>
+		</div>
+	</section>
+
+	<section>
+		<div class="wrap">
+			<h2 class="head">Why Fulla</h2>
+			<div class="props">
+				<div class="prop"><h3>Pay for what you make, nothing else</h3><p>No subscription, no credits lost at the end of the month. Fulla shows the cost in dollars after every image.</p></div>
+				<div class="prop"><h3>Sharp enough for print</h3><p>Up to 4K, depending on the size of your selection.</p></div>
+				<div class="prop"><h3>Blends into your photo</h3><p>Fulla sends the whole photo for context, then matches the colours of the result to it.</p></div>
+				<div class="prop"><h3>Show it what you mean</h3><p>Add reference images: the real pattern, the real face, the real object.</p></div>
+				<div class="prop"><h3>Your photos stay yours</h3><p>There is no Fulla server. Your photo goes straight to the AI service you chose.</p></div>
+				<div class="prop"><h3>Free, for good</h3><p>MIT licence. The code is public, and anyone can check what it does.</p></div>
+			</div>
+			<p class="aside">Curious about the models behind it? <a href="/docs/models/">See the models Fulla works with</a>.</p>
+		</div>
+	</section>
+
+	<section>
+		<div class="wrap">
+			<h2 class="head">What a fill really costs</h2>
+			<p class="sub">The same model on both sides, Nano Banana 2.</p>
+			<div class="cost">
+				<div class="card">
+					<h3>Photoshop generative fill</h3>
+					<dl>
+						<div><dt>One fill, 1K to 2K</dt><dd><span class="big">{prices.photoshop.fill2k}</span><br />{prices.photoshop.fill2kMoney}</dd></div>
+						<div><dt>One fill, 4K</dt><dd>{prices.photoshop.fill4k}</dd></div>
+						<div><dt>Paid up front</dt><dd>A monthly plan. Credits left at the end of the month are lost.</dd></div>
+						<div><dt>How you see the cost</dt><dd>A credit estimate, if tooltips are on</dd></div>
+					</dl>
+				</div>
+				<div class="card fulla">
+					<h3>Fulla</h3>
+					<dl>
+						<div><dt>One fill, 1K to 2K</dt><dd><span class="big">{prices.fulla.fill2k}</span><br />billed per image by the AI service you connect</dd></div>
+						<div><dt>One fill, 4K</dt><dd>{prices.fulla.fill4k}</dd></div>
+						<div><dt>Paid up front</dt><dd>Nothing. A few dollars of credit, used image by image.</dd></div>
+						<div><dt>How you see the cost</dt><dd>In dollars, after every image</dd></div>
+					</dl>
+				</div>
+			</div>
+			<p class="note">Prices checked on {prices.checked}. <a href="/photoshop-generative-credits/">How we worked them out</a>. Other models work too, such as GPT Image.</p>
+			<div class="after-cta"><a class="btn btn-solid" href="/docs/install/">Download Fulla, free</a></div>
+		</div>
+	</section>
+
+	<section>
+		<div class="wrap">
+			<h2 class="head">Real results, straight from the panel</h2>
+			<p class="sub">Scroll sideways for more. Drag across a photo to compare.</p>
+			<div class="reel">
+				<figure class="ex">
+					<div class="frame">
+						<Compare before={heroBefore} after={heroAfter} beforeAlt="Before: a man walks across the quay" afterAlt="After: the man removed" start={45} sizes="(min-width: 900px) 640px, 80vw" />
+					</div>
+					<figcaption><h3>Remove a passer-by</h3><p>Prompt left empty. First try. <a href="/docs/generative-fill/tips/">Tip: select generously</a></p></figcaption>
+				</figure>
+				<figure class="ex">
+					<div class="frame"><Picture src={extend} alt="Placeholder for the extend example" widths={[640, 1000]} sizes="(min-width: 900px) 640px, 80vw" formats={['avif', 'webp']} /></div>
+					<figcaption><h3>Extend a photo</h3><p>The canvas made wider, the rest filled in. <a href="/docs/generative-fill/remove-and-extend/">How to extend</a></p></figcaption>
+				</figure>
+				<figure class="ex">
+					<div class="frame"><Picture src={mug} alt="Placeholder for the mug example" widths={[640, 1000]} sizes="(min-width: 900px) 640px, 80vw" formats={['avif', 'webp']} /></div>
+					<figcaption><h3>Put the mug where you want it</h3><p>“a white enamel mug”. Your selection sets its place and size.</p></figcaption>
+				</figure>
+				<figure class="ex">
+					<div class="frame"><Picture src={heron} alt="Placeholder for the heron example" widths={[640, 1000]} sizes="(min-width: 900px) 640px, 80vw" formats={['avif', 'webp']} /></div>
+					<figcaption><h3>Bring back the heron's real pattern</h3><p>With a reference image, then without. <a href="/docs/generative-fill/reference-images/">Tip: references</a></p></figcaption>
+				</figure>
+				<figure class="ex">
+					<div class="frame"><Picture src={face} alt="Placeholder for the face example" widths={[640, 1000]} sizes="(min-width: 900px) 640px, 80vw" formats={['avif', 'webp']} /></div>
+					<figcaption><h3>Swap a face</h3><p>Sample photo generated for this demo.</p></figcaption>
+				</figure>
+			</div>
+		</div>
+	</section>
+
+	<section class="closing">
+		<div class="wrap">
+			<h2>Try it on your next photo.</h2>
+			<div class="actions"><a class="btn btn-solid big" href="/docs/install/">Download Fulla, free</a><a class="btn btn-line big" href="/docs/">Read the guide</a></div>
+			<p class="needs">
+				You need Photoshop 2026 (27.11 or later) and an account with an AI service. OpenRouter takes a few clicks from the panel; $5
+				of credit is about 100 images. <a href="https://github.com/toorop/fulla">Source code on GitHub</a>.
+			</p>
+		</div>
+	</section>
+</Base>
+
+<style>
+	.intro { padding-block: clamp(40px, 7vw, 96px) clamp(32px, 4vw, 48px); display: grid; grid-template-columns: 1.15fr 1fr; gap: 24px 64px; align-items: end; }
+	h1 { font-size: clamp(2.6rem, 5.4vw, 5rem); line-height: 0.98; font-weight: 800; letter-spacing: -0.035em; }
+	.lede { margin: 0 0 20px; max-width: 34em; }
+	.actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+	/* The workspace: a pasteboard with the document and the Fulla panel. */
+	.board { background: var(--f-board); border-block: 1px solid #111; padding: clamp(24px, 5vw, 64px) 0; }
+	.board-in { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-end; gap: clamp(20px, 3vw, 40px); }
+	.doc { position: relative; width: min(100%, 820px); box-shadow: 0 0 0 1px #000, 0 24px 60px rgba(0, 0, 0, 0.55); }
+	.ants { position: absolute; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
+	.ants.on { opacity: 1; }
+	.ants svg { width: 100%; height: 100%; overflow: visible; display: block; }
+	.ants rect { fill: none; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+	.ants .w { stroke: #fff; }
+	.ants .k { stroke: #000; stroke-dasharray: 5 5; animation: march 0.6s linear infinite; }
+	@keyframes march { to { stroke-dashoffset: -10; } }
+	.doc:not(.ready) :global(.c-handle), .doc:not(.ready) :global(input) { visibility: hidden; }
+
+	.panel { width: 300px; margin-bottom: 24px; background: var(--f-panel); border: 1px solid #1a1a1a; border-radius: 10px; padding: 14px; font-size: 13px; color: var(--f-ink-2); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45); }
+	.panel-title { display: flex; justify-content: space-between; color: var(--f-muted); font-size: 12px; margin-bottom: 12px; }
+	.prompt { background: var(--f-field); border: 1px solid var(--f-line); border-radius: 8px; min-height: 84px; padding: 10px 12px; color: var(--f-ink); font-size: 14px; }
+	.prompt .ph { color: var(--f-muted); }
+	.prompt :global(.caret) { display: inline-block; width: 1px; height: 1.1em; background: var(--f-ink); vertical-align: -2px; animation: blink 1s steps(1) infinite; }
+	@keyframes blink { 50% { opacity: 0; } }
+	.row { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; gap: 8px; }
+	.chip { border: 1px solid var(--f-line); border-radius: 6px; padding: 6px 8px; color: var(--f-muted); }
+	.gen { background: var(--f-ink); color: #1c1c1c; border-radius: 999px; padding: 8px 16px; font-weight: 600; transition: transform 0.1s; }
+	.gen.press { transform: scale(0.95); }
+	.status { margin-top: 12px; min-height: 40px; }
+	.status :global(.bar) { height: 3px; background: var(--f-line); border-radius: 2px; overflow: hidden; margin-top: 6px; }
+	.status :global(.bar i) { display: block; height: 100%; width: 0; background: var(--f-blue); }
+	.layers { margin-top: 14px; border-top: 1px solid var(--f-line); padding-top: 10px; }
+	.layer { display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-radius: 4px; }
+	.layer.on { background: #363636; color: var(--f-ink); }
+	.layer.new { background: #363636; color: var(--f-ink); max-height: 0; padding-block: 0; overflow: hidden; opacity: 0; transition: max-height 0.4s, padding 0.4s, opacity 0.4s; }
+	.layer.new.on { max-height: 40px; padding-block: 6px; opacity: 1; }
+	.th { width: 28px; height: 22px; border: 1px solid #111; flex: none; }
+	.th-bg { background: linear-gradient(#bbb 45%, #777 45%); }
+	.th-new { background: #fff; position: relative; }
+	.th-new::after { content: ''; position: absolute; inset: 4px 9px 3px 13px; background: #000; }
+	.board-note { flex-basis: 100%; text-align: center; font-size: 13px; color: var(--f-muted); margin: 8px 0 0; }
+
+	section { padding: clamp(64px, 9vw, 120px) 0; }
+	section + section { border-top: 1px solid var(--f-line); }
+	h2 { font-size: clamp(2rem, 3.8vw, 3.2rem); line-height: 1.04; font-weight: 800; letter-spacing: -0.03em; max-width: 20ch; }
+	.head { margin-bottom: clamp(36px, 5vw, 60px); }
+	.sub { margin: calc(-1 * clamp(20px, 3vw, 40px)) 0 clamp(36px, 5vw, 56px); max-width: 40em; }
+
+	/* Steps, drawn over the hero photo in three states. */
+	.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(20px, 3vw, 36px); list-style: none; padding: 0; margin: 0; counter-reset: s; }
+	.steps li { counter-increment: s; }
+	.mini { position: relative; aspect-ratio: 3 / 2; border-radius: 10px; overflow: hidden; margin-bottom: 20px; box-shadow: 0 0 0 1px #101010; background: var(--f-board); }
+	.mini :global(img) { width: 100%; height: 100%; object-fit: cover; display: block; }
+	.mini-prompt { position: absolute; right: 12px; bottom: 12px; left: 34%; background: rgba(40, 40, 40, 0.92); border: 1px solid var(--f-line); border-radius: 8px; padding: 8px 10px; font-size: 13px; color: var(--f-ink); }
+	.mini-prompt .ph { color: var(--f-muted); }
+	.mini-layers { position: absolute; right: 12px; bottom: 12px; width: 52%; background: rgba(40, 40, 40, 0.94); border: 1px solid var(--f-line); border-radius: 8px; padding: 6px; font-size: 12px; }
+	.mini-layers .layer { padding: 4px; }
+	.steps h3 { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 6px; }
+	.steps h3::before { content: counter(s) '. '; color: var(--f-muted); }
+	.steps p { margin: 0; }
+
+	/* Why: a properties list. */
+	.props { border-top: 1px solid var(--f-line); }
+	.prop { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 24px; padding: 26px 0; border-bottom: 1px solid var(--f-line); }
+	.prop h3 { font-size: clamp(20px, 2vw, 26px); font-weight: 600; letter-spacing: -0.015em; line-height: 1.2; }
+	.prop p { margin: 0; max-width: 36em; }
+	.aside { margin-top: 32px; color: var(--f-muted); }
+
+	/* Prices. */
+	.cost { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+	.card { background: #262626; border: 1px solid var(--f-line); border-radius: 14px; padding: clamp(20px, 3vw, 32px); }
+	.card.fulla { background: #2c2c2c; border-color: #4a4a4a; }
+	.card h3 { font-size: 15px; font-weight: 600; color: var(--f-muted); margin-bottom: 18px; }
+	dl { margin: 0; display: grid; gap: 18px; }
+	dt { font-size: 14px; color: var(--f-muted); }
+	dd { margin: 2px 0 0; color: var(--f-ink); }
+	.big { font-size: clamp(28px, 3vw, 40px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; }
+	.note { margin-top: 18px; font-size: 14px; color: var(--f-muted); }
+	.after-cta { margin-top: 36px; }
+
+	/* Examples: a sideways scroll of large comparisons. */
+	.reel { display: grid; grid-auto-flow: column; grid-auto-columns: min(80vw, 640px); gap: 24px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px clamp(16px, 4vw, 48px) 24px; margin: 0 calc(-1 * clamp(16px, 4vw, 48px)); scrollbar-width: thin; }
+	.ex { scroll-snap-align: start; margin: 0; }
+	.frame { border-radius: 12px; overflow: hidden; aspect-ratio: 3 / 2; background: var(--f-board); position: relative; box-shadow: 0 0 0 1px #101010; }
+	.frame :global(img) { width: 100%; height: 100%; object-fit: cover; display: block; }
+	.frame :global(.compare.is-live) { height: 100%; }
+	.ex h3 { font-size: 20px; font-weight: 600; margin: 16px 0 6px; letter-spacing: -0.01em; }
+	.ex p { margin: 0; font-size: 15px; }
+
+	.closing { text-align: center; }
+	.closing h2 { margin: 0 auto; max-width: 16ch; font-size: clamp(2.4rem, 5.4vw, 4.6rem); }
+	.closing .actions { justify-content: center; margin-top: 32px; }
+	.closing .big { padding: 18px 30px; font-size: 17px; border-radius: 999px; }
+	.needs { margin: 40px auto 0; max-width: 36em; color: var(--f-muted); font-size: 15px; }
+
+	@media (max-width: 900px) {
+		.intro, .steps, .cost, .prop { grid-template-columns: 1fr; }
+		.panel { width: 100%; max-width: 420px; margin: 0; }
+	}
+	@media (prefers-reduced-motion: reduce) { .ants .k, .prompt :global(.caret) { animation: none; } }
+</style>
+
+<script>
+	// One orchestrated moment: select, type, generate, reveal. Then the slider is the visitor's.
+	const doc = document.getElementById('doc')!;
+	const ants = document.getElementById('ants')!;
+	const prompt = document.getElementById('prompt')!;
+	const gen = document.getElementById('gen')!;
+	const status = document.getElementById('status')!;
+	const layer = document.getElementById('newlayer')!;
+	const cmp = document.getElementById('hero-compare')!;
+	const range = cmp.querySelector('input')!;
+	const setPos = (v: number) => {
+		range.value = String(v);
+		cmp.style.setProperty('--pos', v + '%');
+	};
+	const finish = () => {
+		ants.classList.remove('on');
+		layer.classList.add('on');
+		prompt.textContent = '';
+		prompt.innerHTML = '<span class="ph">Prompt left empty: remove what is selected</span>';
+		status.textContent = 'Done. Cost: $0.05';
+		doc.classList.add('ready');
+		setPos(50);
+		setTimeout(() => cmp.classList.remove('is-animating'), 1000);
+	};
+	const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+	if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+		finish();
+	} else {
+		cmp.classList.add('is-animating');
+		(async () => {
+			await wait(500);
+			ants.classList.add('on');
+			await wait(1100);
+			gen.classList.add('press');
+			await wait(140);
+			gen.classList.remove('press');
+			status.innerHTML = 'Generating…<div class="bar"><i></i></div>';
+			status.querySelector('i')!.animate([{ width: '0%' }, { width: '100%' }], { duration: 1500, easing: 'ease-in-out', fill: 'forwards' });
+			await wait(1600);
+			setPos(0);
+			await wait(900);
+			finish();
+		})();
+	}
+</script>

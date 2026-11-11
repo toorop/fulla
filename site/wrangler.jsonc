@@ -1,0 +1,10 @@
+// Cloudflare Workers with static assets, deployed by Workers Builds (root directory: site/).
+{
+	"name": "fulla-site",
+	"compatibility_date": "2026-11-11",
+	"assets": {
+		"directory": "./dist",
+		// Unknown URLs get the site's 404 page with a real 404 status.
+		"not_found_handling": "404-page"
+	}
+}

@@ -1,0 +1,47 @@
+---
+// "Stuck? Ask your AI assistant": a ready prompt that points the user's own assistant at the whole
+// guide. On Install, First run, Troubleshooting and FAQ only.
+interface Props {
+	/** What the user wants help with, finishing "help me …". */
+	task: string;
+}
+const { task } = Astro.props;
+const prompt = `I'm using the Fulla plugin in Photoshop. Read https://fulla.dppst.com/llms-full.txt and help me ${task}, step by step.`;
+const q = encodeURIComponent(prompt);
+---
+
+<section class="ask not-content" aria-labelledby="ask-title">
+	<h2 id="ask-title">Stuck? Ask your AI assistant</h2>
+	<p>Copy this into ChatGPT, Claude or any assistant. It reads the whole Fulla guide and helps you step by step.</p>
+	<p class="prompt">{prompt}</p>
+	<div class="row">
+		<button type="button" class="solid" data-prompt={prompt}>Copy prompt</button>
+		<a href={`https://chatgpt.com/?q=${q}`} rel="noopener">Open in ChatGPT</a>
+		<a href={`https://claude.ai/new?q=${q}`} rel="noopener">Open in Claude</a>
+	</div>
+</section>
+
+<style>
+	.ask { margin-top: 3rem; border: 1px solid var(--sl-color-gray-5); border-radius: 14px; padding: 1.4rem 1.5rem; background: var(--sl-color-gray-6); }
+	h2 { margin: 0 0 0.4rem; font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em; color: var(--sl-color-white); }
+	p { margin: 0 0 0.9rem; font-size: 0.95rem; }
+	.prompt { background: var(--sl-color-black); border: 1px solid var(--sl-color-gray-5); border-radius: 8px; padding: 0.75rem 0.9rem; color: var(--sl-color-white); }
+	.row { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+	.row > * { display: inline-flex; align-items: center; padding: 0.55rem 0.9rem; border-radius: 8px; border: 1px solid var(--sl-color-gray-5); background: transparent; color: var(--sl-color-white); font: 600 0.88rem/1 var(--sl-font); text-decoration: none; cursor: pointer; }
+	.row > *:hover { border-color: var(--sl-color-gray-3); }
+	.row .solid { background: var(--sl-color-white); color: var(--sl-color-black); border-color: transparent; }
+</style>
+
+<script>
+	document.querySelectorAll<HTMLButtonElement>('.ask button[data-prompt]').forEach((b) => {
+		b.addEventListener('click', async () => {
+			try {
+				await navigator.clipboard.writeText(b.dataset.prompt!);
+				b.textContent = 'Copied';
+			} catch {
+				b.textContent = 'Copy failed';
+			}
+			setTimeout(() => (b.textContent = 'Copy prompt'), 2000);
+		});
+	});
+</script>

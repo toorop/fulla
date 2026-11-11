@@ -1,0 +1,85 @@
+/* Starlight, dressed in Fulla's greys. Dark is the default theme; light is offered on the docs only. */
+:root {
+	--sl-font: var(--f-sans);
+	--sl-text-h2: 1.65rem;
+	--sl-text-h3: 1.25rem;
+	--sl-text-h4: 1.1rem;
+	--sl-color-white: #f0f0f0;
+	--sl-color-gray-1: #e2e2e2;
+	--sl-color-gray-2: #c4c4c4;
+	--sl-color-gray-3: #9a9a9a;
+	--sl-color-gray-4: #6a6a6a;
+	--sl-color-gray-5: #363636;
+	--sl-color-gray-6: #282828;
+	--sl-color-black: #1e1e1e;
+	--sl-color-accent-low: #333333;
+	--sl-color-accent: #7aa7ff;
+	--sl-color-accent-high: #f0f0f0;
+	--sl-color-text-accent: #f0f0f0;
+	--sl-color-bg-nav: #1e1e1e;
+	--sl-color-bg-sidebar: #1e1e1e;
+	--sl-color-hairline: #363636;
+	--sl-color-hairline-light: #2c2c2c;
+	--sl-color-hairline-shade: #161616;
+}
+:root[data-theme='light'] {
+	--sl-color-white: #1a1a1a;
+	--sl-color-gray-1: #262626;
+	--sl-color-gray-2: #3a3a3a;
+	--sl-color-gray-3: #646464;
+	--sl-color-gray-4: #8c8c8c;
+	--sl-color-gray-5: #d6d6d6;
+	--sl-color-gray-6: #ededed;
+	--sl-color-gray-7: #f6f6f6;
+	--sl-color-black: #ffffff;
+	--sl-color-accent-low: #e6e6e6;
+	--sl-color-accent: #2f6fe0;
+	--sl-color-accent-high: #1a1a1a;
+	--sl-color-text-accent: #1a1a1a;
+	--sl-color-bg-nav: #ffffff;
+	--sl-color-bg-sidebar: #ffffff;
+	--sl-color-hairline: #dcdcdc;
+	--sl-color-hairline-light: #e8e8e8;
+	--sl-color-hairline-shade: #cfcfcf;
+}
+
+:focus-visible { outline-color: var(--sl-color-accent); }
+
+/* Headings: the same tight, heavy grotesk as the home page. */
+.sl-markdown-content :is(h2, h3) { letter-spacing: -0.02em; }
+.sl-markdown-content h2 { font-weight: 800; }
+h1#_top { font-weight: 800; letter-spacing: -0.035em; }
+
+/* Links stay in the text colour, underlined: the blue is kept for states. */
+.sl-markdown-content a:not(:where(.not-content *)) { color: var(--sl-color-white); text-decoration-color: var(--sl-color-gray-4); text-underline-offset: 3px; }
+.sl-markdown-content a:not(:where(.not-content *)):hover { text-decoration-color: currentColor; }
+
+/* The current page in the sidebar: a grey block with a thin bar, as in the mockup. */
+.sidebar-content a[aria-current='page'],
+.sidebar-content a[aria-current='page']:hover { background: var(--sl-color-accent-low); color: var(--sl-color-white); box-shadow: inset 2px 0 0 var(--sl-color-white); font-weight: 600; }
+
+/* Asides in grey, not in colour. */
+.starlight-aside { border-inline-start-color: var(--sl-color-white); background: var(--sl-color-gray-6); }
+.starlight-aside__title { color: var(--sl-color-white); }
+
+/* A phrase typed in the prompt, shown like the panel's field: `ref 1` in Markdown. */
+.sl-markdown-content :not(pre) > code { background: var(--sl-color-gray-6); border: 1px solid var(--sl-color-gray-5); border-radius: 6px; padding: 0.1em 0.45em; font-family: var(--sl-font); font-size: 0.94em; color: var(--sl-color-white); }
+
+/* Download button in the docs header. */
+.f-download { display: inline-flex; align-items: center; padding: 0.5rem 0.95rem; border-radius: 8px; background: var(--sl-color-white); color: var(--sl-color-black); font-weight: 600; font-size: 0.9rem; text-decoration: none; white-space: nowrap; }
+.f-download:hover { opacity: 0.9; }
+
+.f-copy { display: inline-flex; align-items: center; gap: 0.4rem; flex: none; padding: 0.4rem 0.7rem; border: 1px solid var(--sl-color-gray-5); border-radius: 8px; background: transparent; color: var(--sl-color-white); font: 600 0.85rem/1 var(--sl-font); cursor: pointer; }
+.f-copy:hover { border-color: var(--sl-color-gray-3); }
+.f-copy svg { width: 15px; height: 15px; }
+
+/* Wide screens: Starlight centres the text and gives the rest to "On this page", which grows far
+   too wide on a 4K screen. Keep the table of contents at a fixed width, widen the text column,
+   and set the type a little larger on very wide screens. */
+@media (min-width: 72rem) {
+	.right-sidebar-container { width: 20rem; }
+	/* Starlight pushes the text to the right of this pane (margin auto 0); centre it instead. */
+	[data-has-sidebar][data-has-toc] .main-pane { width: calc(100% - 20rem); --sl-content-margin-inline: auto; }
+}
+@media (min-width: 90rem) { :root { --sl-content-width: 50rem; } }
+@media (min-width: 120rem) { html { font-size: 112.5%; } :root { --sl-content-width: 54rem; } }

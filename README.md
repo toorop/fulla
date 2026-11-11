@@ -4,6 +4,9 @@ Fulla brings generative fill to Photoshop 2026 (27.11 or newer), powered by your
 
 [Releases](../../releases) · [![CI](https://github.com/toorop/fulla/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/toorop/fulla/actions/workflows/ci.yml)
 
+> [!WARNING]
+> **Work in progress, not ready for use yet.** Fulla is under active development and has had no public release. Building it from this repository gives you an unfinished plugin that may change or break from one day to the next. Please wait for the first release; it will be announced on [fulla.dppst.com](https://fulla.dppst.com) and in [Releases](../../releases).
+
 > [!NOTE]
 > **Early days.** Fulla started in November 2026 from [OpenFill](https://github.com/damanjz/openfill) by Daman Reddy (MIT) and is moving in its own direction: a simpler panel, automatic resolution, and models you configure from the panel. What follows describes the plugin as it is today.
 

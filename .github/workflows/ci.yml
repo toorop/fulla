@@ -1,9 +1,13 @@
 name: ci
 
 on:
+  # The website (site/) is built and deployed by Cloudflare Workers Builds; a change there alone
+  # doesn't need the plugin's tests.
   pull_request:
+    paths-ignore: ['site/**']
   push:
     branches: [main]
+    paths-ignore: ['site/**']
 
 permissions:
   contents: read

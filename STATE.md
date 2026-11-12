@@ -88,7 +88,7 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 - 2026-11-12 — Docs image D1 on Your first fill (now `.mdx`): a boat added to A1's empty pier
   (`a1-apres.jpg` reused as the "before", same pixels) with "a small boat tied to the pier",
-  Nano Banana 2.1, 2K, $0.06 (draws not yet asked).
+  first try, Nano Banana 2.1, 2K, $0.06.
 - 2026-11-12 — Site image A5: face swap on his generated café terrace (no real person), 16:9,
   Result / Reference buttons (the reference cropped to its portrait); the prompt that worked in
   Photoshop too, translated; first try, 2K, $0.06; no comparison with Photoshop in the caption

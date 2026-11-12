@@ -5,8 +5,8 @@
 import { Picture } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import Compare from '../components/Compare.astro';
-import heroBefore from '../assets/placeholders/hero-before.png';
-import heroAfter from '../assets/placeholders/hero-after.png';
+import heroBefore from '../assets/examples/a1-avant.jpg';
+import heroAfter from '../assets/examples/a1-apres.jpg';
 import extend from '../assets/placeholders/extend.png';
 import mug from '../assets/placeholders/mug.png';
 import heron from '../assets/placeholders/heron.png';
@@ -16,9 +16,9 @@ const title = 'Fulla: free generative fill plugin for Photoshop';
 const description =
 	'Fulla is a free Photoshop plugin for generative fill. Select, describe, Generate, as in Photoshop. Pay the AI service per image, from about 5 cents: no subscription, no credits.';
 
-// Where the passer-by is in the hero photo, in percent: the marching ants go there.
-// Placeholder figure for now; set again with the real photo (A1).
-const selection = { left: 49, top: 40, width: 16, height: 50 };
+// Where the boat is in the hero photo (A1), in percent: the marching ants go there.
+// Measured from the before/after pair (2026-11-12): the area that changed.
+const selection = { left: 54.2, top: 42.8, width: 17.6, height: 20.3 };
 
 // Draft figures (10 November 2026): to check again before release, see the pricing note.
 const prices = {
@@ -66,8 +66,8 @@ const jsonLd = [
 					id="hero-compare"
 					before={heroBefore}
 					after={heroAfter}
-					beforeAlt="Before: a man in a raincoat walks across a quiet harbour quay"
-					afterAlt="After: the same quay, the man removed"
+					beforeAlt="Before: a small motorboat moored along a pier at low tide, black and white"
+					afterAlt="After: the same pier, the boat removed"
 					start={100}
 					sizes="(min-width: 1280px) 820px, 100vw"
 				/>
@@ -81,11 +81,11 @@ const jsonLd = [
 				<div class="row"><span class="chip">+ Reference</span><span class="gen" id="gen">Generate</span></div>
 				<div class="status" id="status"></div>
 				<div class="layers">
-					<div class="layer new" id="newlayer"><span class="th th-new"></span>Fulla: remove the man</div>
+					<div class="layer new" id="newlayer"><span class="th th-new"></span>Fulla: Fill</div>
 					<div class="layer"><span class="th th-bg"></span>Background</div>
 				</div>
 			</div>
-			<p class="board-note">Drag across the photo to compare. Prompt left empty. First try, no retouching after Fulla.</p>
+			<p class="board-note">Drag across the photo to compare. Prompt left empty. First try (Nano Banana 2.1, 2K, $0.06), no retouching after Fulla.</p>
 		</div>
 	</div>
 
@@ -173,9 +173,9 @@ const jsonLd = [
 			<div class="reel">
 				<figure class="ex">
 					<div class="frame">
-						<Compare before={heroBefore} after={heroAfter} beforeAlt="Before: a man walks across the quay" afterAlt="After: the man removed" start={45} sizes="(min-width: 900px) 640px, 80vw" />
+						<Compare before={heroBefore} after={heroAfter} beforeAlt="Before: a motorboat moored along the pier" afterAlt="After: the boat removed" start={45} sizes="(min-width: 900px) 640px, 80vw" />
 					</div>
-					<figcaption><h3>Remove a passer-by</h3><p>Prompt left empty. First try. <a href="/docs/generative-fill/tips/">Tip: select generously</a></p></figcaption>
+					<figcaption><h3>Remove a boat</h3><p>Prompt left empty. First try, Nano Banana 2.1, 2K, $0.06. <a href="/docs/generative-fill/tips/">Tip: select generously</a></p></figcaption>
 				</figure>
 				<figure class="ex">
 					<div class="frame"><Picture src={extend} alt="Placeholder for the extend example" widths={[640, 1000]} sizes="(min-width: 900px) 640px, 80vw" formats={['avif', 'webp']} /></div>
@@ -331,7 +331,7 @@ const jsonLd = [
 		layer.classList.add('on');
 		prompt.textContent = '';
 		prompt.innerHTML = '<span class="ph">Prompt left empty: remove what is selected</span>';
-		status.textContent = 'Done. Cost: $0.05';
+		status.textContent = 'Done. Cost: $0.06';
 		doc.classList.add('ready');
 		setPos(50);
 		setTimeout(() => cmp.classList.remove('is-animating'), 1000);

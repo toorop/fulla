@@ -11,9 +11,9 @@
     list of Photoshop (Beta) 28's generative fill.
   - **macOS:** never tested. No release and no site go-live before he has tried the `.ccx` on
     a Mac (his call, 2026-11-12), so the docs already say "Windows and macOS" for the `.ccx`.
-  - **Windows `.ccx`:** the double-click install was never tried either (only `install.ps1` and
-    UXP Developer Tools). He tests it, then decides whether to drop the Windows installer
-    (`.bat` + zip; Claude's advice: drop it if the `.ccx` works, a `.bat` scares people).
+  - **Windows installer kept as a fallback** (his call, 2026-11-12): the `.ccx` is the main way
+    (works on Windows; Creative Cloud asks for admin rights the first time); the `.bat` + zip is
+    for computers without admin rights or Creative Cloud. Never mention pirated copies.
   - **Images:** he generates the base pictures locally and edits them with Fulla; the list
     (names, sizes, prompts) is a note in his vault. Placeholders in `site/` until then.
   - **Umami:** he creates the site in his Umami, then the id goes in `site/src/lib/analytics.mjs`.
@@ -44,7 +44,7 @@
 - Git: ask before committing and pushing; he pushes once per session, at the end.
 - Self-test with Stéphane's Google key: never run `geminiRaw` without asking (5 billed images);
   use an `only` list of the free scenarios (every key of `SCENARIOS` in `selftest.js` except
-  `geminiRaw` and `openaiRaw`). Warn him before a run (nobody may touch Photoshop). Paid
+  `geminiRaw` and `openaiRaw`: 35 on 2026-11-12). Warn him before a run (nobody may touch Photoshop). Paid
   tests: Google direct by default, give the cost first. A/B input format: see `selftest.js`
   (`abInput`). Photoshop work happens on his Windows machine only.
 - Later, after the site: the luminance seam under an added object; spotting a reply where the
@@ -81,6 +81,24 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
   rights the first time only); docs say "Windows and macOS" for the `.ccx` and describe
   Photoshop's permission dialog; C2 panel captures done; two panel bugs after the first connect
   fixed (frozen progress bar, leftover button borders); free self-test 32/32.
+- 2026-11-12 — Greyscale documents: tone matching asked Curves for red/green/blue, Photoshop
+  refused and the paid result was rolled back. Now one composite curve (`fit.gray`) on the
+  `gray` channel; CMYK/Lab get no correction; a refused correction keeps the result (trace
+  `toneError`). Details showed "Photoshop ?": version from `uxp.host.version`. New scenario
+  `grayscaleTone`; free self-test 33/33.
+- 2026-11-12 — Site image A1 is his own pier photo, boat removed (Nano Banana 2.1, Google, 2K,
+  empty prompt, first try, $0.06): in `site/src/assets/examples/` (JPEG q95, 1800 px), hero
+  selection measured from the pair. He goes through his illustrations note in order next (A2...).
+  Dev server: `.claude/launch.json` (local only, excluded from git), http://localhost:4321.
+- 2026-11-12 — Extend (his YouTube thumbnails): (1) see-through strip at the canvas edge: the
+  mask's soft edge is now computed by `featherMask` (canvas edges kept) and the result placed
+  2 px past the canvas edges it touches (Photoshop smooths a scaled layer's last pixel); the
+  layer is read with its mask off for tone matching (reads now go through the baked mask);
+  (2) no colour correction: `{"toneDiag": true}` (new, free) showed the model's planks 1.5x too
+  bright, beyond the gain bounds; bounds now 0.5-2, plus a fit on tone distributions when the
+  cell-by-cell one fails; skips go to the trace (`toneSkipped`). New scenarios `extendEdge`,
+  `compositeSent` (what is sent is the visible picture, any active layer, hidden layers out):
+  free self-test 35/35. Checked by him on his extend: colours right. Planks redrawn off: the model.
 
 - 2026-11-11 — Website: design (three mockups, B chosen; docs layout; colours), then built in
   `site/`: home page, 18 docs pages, comparison and explainer pages, About, share image,
@@ -144,6 +162,7 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 - Tone matching as a separate Curves smart filter (2026-11-08); no filter when not needed.
 
 ## Open questions / blockers
+
 
 - Two panel bugs seen 2026-11-12 after the first OpenRouter connect (Photoshop Beta 28, Windows
   at 200 %), fixed but **not yet checked in Photoshop**: (1) the Generate tab showed a frozen

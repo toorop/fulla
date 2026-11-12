@@ -442,8 +442,9 @@ async function addToneFix(doc, baseId, crop, local, kind) {
         components: gray ? 1 : 3,
         chunky: true,
         colorSpace: gray ? "Grayscale" : "RGB",
-        // The document's own profile: no conversion, mid-grey stays mid-grey.
-        colorProfile: doc.colorProfileName || (gray ? "Gray Gamma 2.2" : SRGB),
+        // The document's own profile: no conversion, mid-grey stays mid-grey. A document with no
+        // profile reports "None", which Photoshop then refuses ("Unknown color profile", 2026-11-12).
+        colorProfile: doc.colorProfileName && !/^none$/i.test(doc.colorProfileName) ? doc.colorProfileName : gray ? "Gray Gamma 2.2" : SRGB,
       });
       try {
         await imaging.putPixels({ documentID: doc.id, layerID: fix.id, imageData, targetBounds: { left: crop.left, top: crop.top + y } });

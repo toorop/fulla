@@ -30,6 +30,7 @@ Photoshop UXP plugin: generative fill with the user's own AI provider (OpenRoute
 - sp-picker locks if its menu is rebuilt while closing: pickers are replaced, never edited (`main.js`).
 - Placed results shrink with Photoshop's Image Interpolation preference (`layer.scale`). A layer's pixel reads go through its user mask once the mask holds soft values (switch `userMaskEnabled` off to read the whole layer). Photoshop's mask feather also fades the canvas edge. The greyscale composite channel is `gray`.
 - A batchPlay `set` with a layer's name and blend mode set the name only (28.0.1): set the mode through the DOM (`layer.blendMode`).
+- A document with no colour profile reports `colorProfileName` "None", and imaging refuses it as a profile ("Unknown color profile"): use sRGB then. Generated pictures often come untagged.
 - UXP layout: measured sizes update after the handler returns (use `setTimeout`); flex children shrink unless told not to; a self-scrolling div can lose its bottom border; the native text field draws over any menu; a hidden element can leave pixels behind until a repaint.
 
 ## Rules

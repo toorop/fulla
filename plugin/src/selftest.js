@@ -20,7 +20,7 @@ const { estimateCost } = require("./cost");
 const settings = require("./settings");
 const { encodePng, imageSize, tagSrgb } = require("./png");
 const { toRGB, resample } = require("./image");
-const { fitTone, seamDiag } = require("./tone");
+const { fitTone, seamDiag, localTone } = require("./tone");
 const { inputSize } = require("./geometry");
 
 const lfs = uxp.storage.localFileSystem;
@@ -157,7 +157,8 @@ async function newDoc({ width = 1200, height = 800, resolution = 72, transparent
     made.push(d);
     // The PNG carries no profile, so Photoshop tags it with the user's working RGB; reads convert to
     // sRGB and pure colours would shift. Tag it sRGB so the expected colours hold on any setup.
-    await ps.bp([{ _obj: "assignProfile", _target: [{ _ref: "document", _id: d.id }], profile }]);
+    // profile null: no profile at all ("Don't Color Manage"), as a generated picture often comes.
+    await ps.bp([profile ? { _obj: "assignProfile", _target: [{ _ref: "document", _id: d.id }], profile } : { _obj: "assignProfile", _target: [{ _ref: "document", _id: d.id }], manage: false }]);
     if (bits16) d.bitsPerChannel = constants.BitsPerChannelType.SIXTEEN;
     return d;
   });
@@ -384,6 +385,44 @@ async function diag() {
   return info;
 }
 
+/** The localTone scenario in a document with that profile (null: none). */
+async function localToneIn(profile) {
+  const C1 = [150, 110, 90];
+  const C2 = [90, 120, 170];
+  const doc = await newDoc({ colors: [C1, C2], profile });
+  await select(doc, "rect", { left: 300, top: 0, right: 900, bottom: 200 });
+  const h0 = historyCount(doc);
+  const trace = [];
+  const lighter = (x, y, W, H) => (30 + (30 * x) / W) * Math.max(0, 1 - y / (0.8 * H));
+  const darker = (x, y, W, H) => -40 * Math.max(0, 1 - y / (0.8 * H));
+  // Read as everything else is (in a document with no profile, the values written are read through
+  // the working RGB): just inside the band, after the run, against the photo just outside
+  // it, before.
+  const outside = [await probe(doc, 450, 215), await probe(doc, 750, 215), await probe(doc, 450, 400)];
+  const out = await run(driftProvider([lighter, darker]), { prompt: "selftest local tone", n: 2, trace });
+  const steps = () => JSON.stringify(trace.filter((t) => /tone/i.test(t.step)));
+  expect(out.placed.fixId, `no tone fix layer: ${steps()}`);
+  const inspect = async (id) => (await ps.modal("Fulla self-test: inspect", () => ps.bp([{ _obj: "get", _target: [{ _ref: "layer", _id: id }] }])))[0];
+  const d = await inspect(out.placed.fixId);
+  const mode = d.mode && d.mode._value;
+  expect(d.name === "Fulla: tone fix" && mode === "linearLight" && d.group === true, `tone fix layer: name ${d.name}, mode ${mode}, clipped ${d.group}`);
+  expect(doc.activeLayers[0].id === out.placed.layerId, "the result stays the active layer");
+  expect(historyCount(doc) === h0 + 1, `history grew by ${historyCount(doc) - h0}, expected 1`);
+  const atEdge = async (label) => {
+    near(await probe(doc, 450, 190), outside[0], 8, `${label}: left of the band's edge`);
+    near(await probe(doc, 750, 190), outside[1], 8, `${label}: right of the band's edge`);
+    near(await probe(doc, 450, 400), outside[2], 2, `${label}: outside the band untouched`);
+  };
+  await atEdge("lighter");
+  await snapshot(doc, "localTone");
+  const first = out.placed.fixId;
+  await ps.showVariation(out.placed, out.results[1]);
+  const fixes = Array.from(doc.layers).filter((l) => l.name === "Fulla: tone fix").length;
+  expect(out.placed.fixId && out.placed.fixId !== first && fixes === 1, `variation: tone fix ${out.placed.fixId} (was ${first}), ${fixes} in the document`);
+  await atEdge("darker");
+  return { tone: steps() };
+}
+
 const SCENARIOS = {
   diag,
 
@@ -430,37 +469,11 @@ const SCENARIOS = {
   // A model that drifts in one part of its picture (2026-11-12, a beach's sky came back 42 levels too
   // bright along a filled band, fading halfway down): one curve cannot follow it; the clipped
   // "Fulla: tone fix" layer brings the band back to the photo all along its edge, per variation.
+  // Also in a document with no colour profile (his generated beach, 2026-11-12: the layer was refused).
   async localTone() {
-    const C1 = [150, 110, 90];
-    const C2 = [90, 120, 170];
-    const doc = await newDoc({ colors: [C1, C2] });
-    await select(doc, "rect", { left: 300, top: 0, right: 900, bottom: 200 });
-    const h0 = historyCount(doc);
-    const trace = [];
-    const lighter = (x, y, W, H) => (30 + (30 * x) / W) * Math.max(0, 1 - y / (0.8 * H));
-    const darker = (x, y, W, H) => -40 * Math.max(0, 1 - y / (0.8 * H));
-    const out = await run(driftProvider([lighter, darker]), { prompt: "selftest local tone", n: 2, trace });
-    const steps = () => JSON.stringify(trace.filter((t) => /tone/i.test(t.step)));
-    expect(out.placed.fixId, `no tone fix layer: ${steps()}`);
-    const inspect = async (id) => (await ps.modal("Fulla self-test: inspect", () => ps.bp([{ _obj: "get", _target: [{ _ref: "layer", _id: id }] }])))[0];
-    const d = await inspect(out.placed.fixId);
-    const mode = d.mode && d.mode._value;
-    expect(d.name === "Fulla: tone fix" && mode === "linearLight" && d.group === true, `tone fix layer: name ${d.name}, mode ${mode}, clipped ${d.group}`);
-    expect(doc.activeLayers[0].id === out.placed.layerId, "the result stays the active layer");
-    expect(historyCount(doc) === h0 + 1, `history grew by ${historyCount(doc) - h0}, expected 1`);
-    const atEdge = async (label) => {
-      near(await probe(doc, 450, 190), C1, 8, `${label}: left of the band's edge`);
-      near(await probe(doc, 750, 190), C2, 8, `${label}: right of the band's edge`);
-      near(await probe(doc, 450, 400), C1, 2, `${label}: outside the band untouched`);
-    };
-    await atEdge("lighter");
-    await snapshot(doc, "localTone");
-    const first = out.placed.fixId;
-    await ps.showVariation(out.placed, out.results[1]);
-    const fixes = Array.from(doc.layers).filter((l) => l.name === "Fulla: tone fix").length;
-    expect(out.placed.fixId && out.placed.fixId !== first && fixes === 1, `variation: tone fix ${out.placed.fixId} (was ${first}), ${fixes} in the document`);
-    await atEdge("darker");
-    return { tone: steps() };
+    const tagged = await localToneIn("sRGB IEC61966-2.1");
+    const untagged = await localToneIn(null);
+    return { tagged, untagged };
   },
 
   async probeCheck() {
@@ -1757,13 +1770,19 @@ async function toneDiag() {
   const fit = fitTone({ orig: toRGB(px.data, px.width, px.height, px.components), origComps: 3, tile: tile.data, tileComps: tile.components, mask, width: size.width, height: size.height, gap: (margin / 2) * (size.width / cw), report });
   const orig = toRGB(px.data, px.width, px.height, px.components);
   const seam = seamDiag({ orig, origComps: 3, tile: tile.data, tileComps: tile.components, mask, width: size.width, height: size.height });
+  // What the local correction decides, as the run does (measured past the model's room to blend).
+  let solid = null;
+  if (px.components === 4) solid = Uint8Array.from({ length: px.width * px.height }, (_, i) => px.data[i * 4 + 3]);
+  const room = Math.max(2, Math.round(Math.max(size.width, size.height) * 0.01));
+  const localReport = {};
+  localTone({ orig, origComps: 3, tile: tile.data, tileComps: tile.components, mask, width: size.width, height: size.height, gap: room + 1, solid, fit, report: localReport });
   // The two pictures compared, to look at: the photo under the layer, and the layer's own pixels.
   for (const [name, rgb] of [["tonediag-photo", orig], ["tonediag-layer", toRGB(tile.data, size.width, size.height, tile.components)]]) {
     const png = encodePng(rgb, size.width, size.height, 3);
     const file = await outFolder.createFile(`${name}.png`, { overwrite: true });
     await file.write(png.buffer.slice(png.byteOffset, png.byteOffset + png.byteLength), { format: formats.binary });
   }
-  return { layer: layer.name, hidden: hide.map((l) => l.name), mode: String(doc.mode), crop, selection: sel, size, margin, fitted: !!fit, seam, files: ["tonediag-photo.png", "tonediag-layer.png"], ...report };
+  return { layer: layer.name, hidden: hide.map((l) => l.name), mode: String(doc.mode), bits: String(doc.bitsPerChannel), profile: doc.colorProfileName, crop, selection: sel, size, margin, fitted: !!fit, local: localReport.local, seam, files: ["tonediag-photo.png", "tonediag-layer.png"], ...report };
 }
 
 async function runAll(opts = {}) {

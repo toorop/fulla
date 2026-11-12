@@ -78,7 +78,11 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Recently done
 
-- 2026-11-12 — Extends fixed and checked by him on the beach (both bands, "parfait"): no light line
+- 2026-11-12 — The tone fix layer was refused in a document with no colour profile (Photoshop
+  reports "None": "Unknown color profile"); sRGB then. `localTone` scenario now also runs in an
+  untagged document; `toneDiag` reports the local decision, bit depth and profile. His "parfait"
+  beach draw needed no local fix (5 levels at most), so the layer is not yet seen on a real drift.
+- 2026-11-12 — Extends fixed (his beach: both bands good): no light line
   along the photo's edge (`emptyUnder`, `image.js`); 35 % context when at least half the selection
   is empty (`EXTEND_CONTEXT`, `pipeline.js`; with 5 % a one-side band went as a 1:4 strip with a
   sliver of photo, and the model drew its own scene); local tone correction after the curve

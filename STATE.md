@@ -48,7 +48,9 @@
   page, dark by default with a light toggle on the docs; monochrome greys and one blue
   (`#7aa7ff`) for focus and states. English only. Deployed by Cloudflare Workers Builds; the
   CI skips `site/**`.
-- Git: ask before committing and pushing; he pushes once per session, at the end.
+- Git: ask before committing and pushing; push only when his dev session ends (it can span several
+  Claude sessions). Unpushed on 2026-11-12: `8117236`, `14436d3`, `a71608a` and what follows. Update
+  the site (`site/`) as we go, in the same change as the work.
 - Self-test with Stéphane's Google key: never run `geminiRaw` without asking (5 billed images);
   use an `only` list of the free scenarios (every key of `SCENARIOS` in `selftest.js` except
   `geminiRaw` and `openaiRaw`: 35 on 2026-11-12). Warn him before a run (nobody may touch Photoshop). Paid

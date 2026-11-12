@@ -49,7 +49,7 @@
   page from mockup B (Photoshop-like workspace, then the examples carousel); docs under `/docs/`,
   each also in Markdown, plus `llms.txt`; dark home page, docs dark by default with a light toggle.
 - Git: ask before committing and pushing; push only when his dev session ends (it can span several
-  Claude sessions). Unpushed on the evening of 2026-11-12: about 23 commits (`git status` shows them). Update
+  Claude sessions). Everything pushed on the evening of 2026-11-12. Update
   the site (`site/`) as we go, in the same change as the work.
 - Self-test with Stéphane's Google key: never run `geminiRaw` without asking (5 billed images);
   use an `only` list of the free scenarios (every key of `SCENARIOS` in `selftest.js` except

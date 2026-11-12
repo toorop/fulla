@@ -6,8 +6,10 @@
 
 ## Next action
 
-- **Resume here: A5 (face swap)**, only if his test shows Photoshop's generative fill refuses it
-  (decision of 2026-11-10); otherwise ask him what replaces it (step 6, the site images, card by card in the order of his illustrations
+- **Resume here: A5 (face swap) goes in whatever his Photoshop test shows** (his call 2026-11-12,
+  replacing the 2026-11-10 condition). He is testing Photoshop's generative fill on it, and looking
+  for the pair from the 10 November trial (generated people, no real person); the test's result
+  may change the caption (step 6, the site images, card by card in the order of his illustrations
   note, vault, Fulla folder; A1 and A2 done). **A2 done (2026-11-12):**
   `site/src/assets/examples/a2-avant.jpg` (checkerboard painted over the white bands, Photoshop's
   white/#ccc grid, 40 px squares at full size) and `a2-apres.jpg`, 1800 px q95; its card is 16:9,
@@ -87,8 +89,8 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 - 2026-11-12 — Site image A4: his archive photo of the 2D2 5402 (author unknown, his call to
   use it), the man removed with another shot of the same series as reference; square card;
   `Compare.astro` takes `variants` (other "after" images) and `reference`, switched by buttons on
-  the photo (Reference / With reference / Without reference; the reference fills the frame and
-  sets the slider aside). Prompt translated, first try with the reference, 2K, $0.06. The mug
+  the photo (With reference, the default, first / Without reference / Reference last; the
+  reference fills the frame and sets the slider aside). Prompt translated, first try with the reference, 2K, $0.06. The mug
   keeps its corner inset (his call).
 - 2026-11-12 — Site image A3 (new generated table and enamel mug, 1672 x 941, kept at that
   width): 16:9 card, the reference shown small in a corner, slider starting at 8 % so the mug

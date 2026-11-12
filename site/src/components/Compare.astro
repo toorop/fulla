@@ -35,7 +35,7 @@ const switchable = variants.length > 0 || reference;
 const widths = [640, 1000, 1400, 1800].filter((w) => w <= after.width);
 ---
 
-<div class:list={['compare', cls]} data-compare style={`--pos: ${start}%`} id={id}>
+<div class:list={['compare', 'not-content', cls]} data-compare style={`--pos: ${start}%`} id={id}>
 	<figure class="c-after"><Picture src={after} alt={afterAlt} widths={widths} sizes={sizes} formats={['avif', 'webp']} /><figcaption>{switchable ? `After, ${afterLabel.toLowerCase()}` : 'After'}</figcaption></figure>
 	{variants.map((v, i) => <figure class="c-after c-alt" data-v={i + 1}><Picture src={v.image} alt={v.alt} widths={widths} sizes={sizes} formats={['avif', 'webp']} /><figcaption>After, {v.label.toLowerCase()}</figcaption></figure>)}
 	<figure class="c-before"><Picture src={before} alt={beforeAlt} widths={widths} sizes={sizes} formats={['avif', 'webp']} /><figcaption>Before</figcaption></figure>
@@ -81,7 +81,7 @@ const widths = [640, 1000, 1400, 1800].filter((w) => w <= after.width);
 	.c-handle::after { content: ''; position: absolute; top: 50%; left: -14px; width: 28px; height: 28px; margin-top: -14px; border-radius: 6px; background: #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); }
 	.compare:has(input:focus-visible) .c-handle::after { outline: 2px solid var(--f-blue); outline-offset: 3px; }
 	/* The variant switch, on the photo, above the slider's input. */
-	.c-variants { position: absolute; top: 10px; left: 10px; z-index: 2; display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: rgba(24, 24, 24, 0.8); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4); }
+	.c-variants { position: absolute; top: 10px; left: 10px; z-index: 2; display: flex; flex-wrap: wrap; gap: 2px; max-width: calc(100% - 20px); padding: 3px; border-radius: 18px; background: rgba(24, 24, 24, 0.8); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4); }
 	.c-variants[hidden] { display: none; }
 	.c-variants button { padding: 6px 12px; border: 0; border-radius: 999px; background: none; color: #e6e6e6; font: 600 13px/1 var(--f-sans); cursor: pointer; }
 	.c-variants button:hover { color: #fff; background: rgba(255, 255, 255, 0.12); }

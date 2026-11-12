@@ -1,0 +1,33 @@
+---
+title: Variations
+description: Ask for up to 4 variations in one run, then click a thumbnail to put it in the layer.
+---
+
+import { Image } from 'astro:assets';
+import Compare from '../../../../components/Compare.astro';
+import before from '../../../../assets/examples/d4-avant.jpg';
+import v1 from '../../../../assets/examples/d4-v1.jpg';
+import v2 from '../../../../assets/examples/d4-v2.jpg';
+import v3 from '../../../../assets/examples/d4-v3.jpg';
+import v4 from '../../../../assets/examples/d4-v4.jpg';
+import panel from '../../../../assets/examples/c6-variations.png';
+
+Fulla can make **1 to 4 variations** in one run, so you can pick the best.
+
+## Ask for variations
+
+1. Click the **settings button** (the sliders) next to the model button.
+2. Set **Variations** to 2, 3 or 4.
+3. Click **Generate**.
+
+## Pick one
+
+Thumbnails appear in the card. Click one to put it in the layer; it is one undo step, and you can try each in turn. Click **Done** once you have chosen: the card, the thumbnails and the prompt are cleared, and the layer stays.
+
+<Image src={panel} alt="The Fulla panel after a run of 4 variations: the prompt, the card with Nano Banana 2.1, 2K, 33 s, four thumbnails of a sea kayak, the fourth selected, and the cost of about $0.24" width={322} />
+
+<Compare before={before} after={v1} beforeAlt="Before: a wooden jetty with a lighthouse, the sea in the foreground" afterAlt="Variation 1: a person in a sea kayak paddling in the foreground" afterLabel="Variation 1" variants={[{ label: 'Variation 2', image: v2, alt: 'Variation 2: another sea kayak, another pose' }, { label: 'Variation 3', image: v3, alt: 'Variation 3: another sea kayak' }, { label: 'Variation 4', image: v4, alt: 'Variation 4: another sea kayak' }]} start={30} sizes="(min-width: 1000px) 720px, 100vw" />
+
+Four variations of one run, switched on the photo: “Add a person in a sea kayak.” Nano Banana 2.1, 2K, $0.24 for the four.
+
+Each variation is one image, billed as one image.

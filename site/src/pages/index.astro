@@ -170,32 +170,46 @@ const jsonLd = [
 	<section>
 		<div class="wrap">
 			<h2 class="head">Real results, straight from the panel</h2>
-			<p class="sub">Scroll sideways for more. Drag across a photo to compare.</p>
-			<div class="reel">
-				<figure class="ex">
-					<div class="frame">
-						<Compare before={heroBefore} after={heroAfter} beforeAlt="Before: a motorboat moored along the pier" afterAlt="After: the boat removed" start={45} sizes="(min-width: 900px) 640px, 80vw" />
-					</div>
-					<figcaption><h3>Remove a boat</h3><p>Prompt left empty. First try, Nano Banana 2.1, 2K, $0.06. <a href="/docs/generative-fill/tips/">Tip: select generously</a></p></figcaption>
-				</figure>
-				<figure class="ex wide">
-					<div class="frame">
-						<Compare before={extendBefore} after={extendAfter} beforeAlt="Before: a beach at sunset on a canvas made wider and taller, the new bands empty" afterAlt="After: the sky, the dunes and the beach continued into both bands" start={30} sizes="(min-width: 900px) 760px, 95vw" />
-					</div>
-					<figcaption><h3>Extend a photo</h3><p>Canvas enlarged in Photoshop, each empty band filled in turn. Prompt left empty. First try for each band, Nano Banana 2.1, 4K, $0.12 each. Sample photo generated for this demo. <a href="/docs/generative-fill/remove-and-extend/">How to extend</a></p></figcaption>
-				</figure>
-				<figure class="ex">
-					<div class="frame"><Picture src={mug} alt="Placeholder for the mug example" widths={[640, 1000]} sizes="(min-width: 900px) 640px, 80vw" formats={['avif', 'webp']} /></div>
-					<figcaption><h3>Put the mug where you want it</h3><p>“a white enamel mug”. Your selection sets its place and size.</p></figcaption>
-				</figure>
-				<figure class="ex">
-					<div class="frame"><Picture src={heron} alt="Placeholder for the heron example" widths={[640, 1000]} sizes="(min-width: 900px) 640px, 80vw" formats={['avif', 'webp']} /></div>
-					<figcaption><h3>Bring back the heron's real pattern</h3><p>With a reference image, then without. <a href="/docs/generative-fill/reference-images/">Tip: references</a></p></figcaption>
-				</figure>
-				<figure class="ex">
-					<div class="frame"><Picture src={face} alt="Placeholder for the face example" widths={[640, 1000]} sizes="(min-width: 900px) 640px, 80vw" formats={['avif', 'webp']} /></div>
-					<figcaption><h3>Swap a face</h3><p>Sample photo generated for this demo.</p></figcaption>
-				</figure>
+			<p class="sub">Drag across a photo to compare.</p>
+			<div class="carousel" data-carousel>
+				<button class="nav prev" type="button" hidden><span class="arrow" aria-hidden="true">&larr;</span><span class="nav-label"></span></button>
+				<div class="reel" tabindex="-1">
+					<figure class="ex">
+						<div class="ex-in">
+							<div class="frame">
+								<Compare before={heroBefore} after={heroAfter} beforeAlt="Before: a motorboat moored along the pier" afterAlt="After: the boat removed" start={45} sizes="(min-width: 1100px) 900px, 95vw" />
+							</div>
+							<figcaption><h3>Remove a boat</h3><p>Prompt left empty. First try, Nano Banana 2.1, 2K, $0.06. <a href="/docs/generative-fill/tips/">Tip: select generously</a></p></figcaption>
+						</div>
+					</figure>
+					<figure class="ex wide">
+						<div class="ex-in">
+							<div class="frame">
+								<Compare before={extendBefore} after={extendAfter} beforeAlt="Before: a beach at sunset on a canvas made wider and taller, the new bands empty" afterAlt="After: the sky, the dunes and the beach continued into both bands" start={30} sizes="(min-width: 1100px) 900px, 95vw" />
+							</div>
+							<figcaption><h3>Extend a photo</h3><p>Canvas enlarged in Photoshop, each empty band filled in turn. Prompt left empty. First try for each band, Nano Banana 2.1, 4K, $0.12 each. Sample photo generated for this demo. <a href="/docs/generative-fill/remove-and-extend/">How to extend</a></p></figcaption>
+						</div>
+					</figure>
+					<figure class="ex">
+						<div class="ex-in">
+							<div class="frame"><Picture src={mug} alt="Placeholder for the mug example" widths={[640, 1000]} sizes="(min-width: 1100px) 900px, 95vw" formats={['avif', 'webp']} /></div>
+							<figcaption><h3>Put the mug where you want it</h3><p>“a white enamel mug”. Your selection sets its place and size.</p></figcaption>
+						</div>
+					</figure>
+					<figure class="ex">
+						<div class="ex-in">
+							<div class="frame"><Picture src={heron} alt="Placeholder for the heron example" widths={[640, 1000]} sizes="(min-width: 1100px) 900px, 95vw" formats={['avif', 'webp']} /></div>
+							<figcaption><h3>Bring back the heron's real pattern</h3><p>With a reference image, then without. <a href="/docs/generative-fill/reference-images/">Tip: references</a></p></figcaption>
+						</div>
+					</figure>
+					<figure class="ex">
+						<div class="ex-in">
+							<div class="frame"><Picture src={face} alt="Placeholder for the face example" widths={[640, 1000]} sizes="(min-width: 1100px) 900px, 95vw" formats={['avif', 'webp']} /></div>
+							<figcaption><h3>Swap a face</h3><p>Sample photo generated for this demo.</p></figcaption>
+						</div>
+					</figure>
+				</div>
+				<button class="nav next" type="button" hidden><span class="arrow" aria-hidden="true">&rarr;</span><span class="nav-label"></span></button>
 			</div>
 		</div>
 	</section>
@@ -293,11 +307,32 @@ const jsonLd = [
 	.note { margin-top: 18px; font-size: 14px; color: var(--f-muted); }
 	.after-cta { margin-top: 36px; }
 
-	/* Examples: a sideways scroll of large comparisons. */
-	/* Every frame is as tall as a 3:2 one; a 16:9 example gets a wider card. */
-	.reel { --ex-w: min(80vw, 640px); display: grid; grid-auto-flow: column; grid-auto-columns: auto; gap: 24px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px clamp(16px, 4vw, 48px) 24px; margin: 0 calc(-1 * clamp(16px, 4vw, 48px)); scrollbar-width: thin; }
-	.ex { scroll-snap-align: start; margin: 0; width: var(--ex-w); }
-	.ex.wide { width: calc(var(--ex-w) * 2 / 3 * 16 / 9); }
+	/* Examples: one at a time, an arrow on each side named after the example it leads to.
+	   Without JavaScript, a sideways scroll. Frames are --h tall where the width allows. */
+	.carousel { --h: min(62vh, 560px); display: grid; grid-template-columns: 130px minmax(0, 1fr) 130px; gap: 0 24px; align-items: start; }
+	.reel { grid-column: 2; grid-row: 1; display: grid; grid-auto-flow: column; grid-auto-columns: 100%; gap: 48px; overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; }
+	.reel:focus { outline: none; }
+	.is-live .reel { scrollbar-width: none; }
+	.is-live .reel::-webkit-scrollbar { display: none; }
+	.ex { scroll-snap-align: start; margin: 0; display: flex; justify-content: center; }
+	.ex-in { width: min(100%, calc(var(--h) * 3 / 2)); }
+	.wide .ex-in { width: min(100%, calc(var(--h) * 16 / 9)); }
+	.nav { grid-row: 1; margin-top: calc(var(--fh, var(--h)) / 2 - 28px); display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 4px; background: none; border: 0; border-radius: 8px; color: var(--f-muted); font: inherit; font-size: 14px; line-height: 1.3; text-align: center; cursor: pointer; }
+	.nav.prev { grid-column: 1; }
+	.nav.next { grid-column: 3; }
+	.nav[hidden] { display: none; }
+	.nav.off { visibility: hidden; }
+	.nav:hover { color: var(--f-ink-2); }
+	.arrow { display: grid; place-items: center; width: 56px; height: 56px; flex: none; border-radius: 50%; border: 1px solid var(--f-line); background: #262626; color: var(--f-ink); font-size: 22px; transition: border-color 0.15s, background-color 0.15s; }
+	.nav:hover .arrow { border-color: var(--f-muted); background: #2e2e2e; }
+	@media (max-width: 899px) {
+		.carousel { grid-template-columns: 1fr 1fr; gap: 20px 12px; }
+		.reel { grid-column: 1 / -1; }
+		.nav { grid-row: 2; margin-top: 0; flex-direction: row; gap: 12px; text-align: left; }
+		.nav.prev { grid-column: 1; justify-self: start; }
+		.nav.next { grid-column: 2; justify-self: end; flex-direction: row-reverse; text-align: right; }
+		.arrow { width: 44px; height: 44px; }
+	}
 	.frame { border-radius: 12px; overflow: hidden; aspect-ratio: 3 / 2; background: var(--f-board); position: relative; box-shadow: 0 0 0 1px #101010; }
 	.wide .frame { aspect-ratio: 16 / 9; }
 	.frame :global(img) { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -319,6 +354,53 @@ const jsonLd = [
 </style>
 
 <script>
+	// Examples: the arrows move one example at a time and name the one they lead to. Swiping and
+	// the keyboard still scroll the reel; the arrows follow whatever example is in view.
+	document.querySelectorAll<HTMLElement>('[data-carousel]').forEach((car) => {
+		const reel = car.querySelector<HTMLElement>('.reel')!;
+		const slides = [...reel.children] as HTMLElement[];
+		const prev = car.querySelector<HTMLButtonElement>('.prev')!;
+		const next = car.querySelector<HTMLButtonElement>('.next')!;
+		const titles = slides.map((s) => s.querySelector('h3')!.textContent!.trim());
+		const smooth = matchMedia('(prefers-reduced-motion: no-preference)').matches;
+		let cur = -1;
+		const left = (i: number) => slides[i].offsetLeft - slides[0].offsetLeft;
+		const go = (i: number) => reel.scrollTo({ left: left(i), behavior: smooth ? 'smooth' : 'auto' });
+		const label = (b: HTMLButtonElement, k: number, word: string) => {
+			const ok = k >= 0 && k < slides.length;
+			b.classList.toggle('off', !ok);
+			b.disabled = !ok;
+			b.querySelector('.nav-label')!.textContent = ok ? titles[k] : '';
+			b.setAttribute('aria-label', ok ? `${word} example: ${titles[k]}` : `No ${word.toLowerCase()} example`);
+		};
+		const update = () => {
+			let i = 0;
+			slides.forEach((_, k) => { if (Math.abs(left(k) - reel.scrollLeft) < Math.abs(left(i) - reel.scrollLeft)) i = k; });
+			car.style.setProperty('--fh', slides[i].querySelector<HTMLElement>('.frame')!.offsetHeight + 'px');
+			if (i === cur) return;
+			cur = i;
+			slides.forEach((s, k) => (s.inert = k !== i));
+			label(prev, i - 1, 'Previous');
+			label(next, i + 1, 'Next');
+		};
+		car.setAttribute('role', 'region');
+		car.setAttribute('aria-roledescription', 'carousel');
+		car.setAttribute('aria-label', 'Examples');
+		slides.forEach((s, k) => {
+			s.setAttribute('role', 'group');
+			s.setAttribute('aria-roledescription', 'slide');
+			s.setAttribute('aria-label', `${k + 1} of ${slides.length}: ${titles[k]}`);
+		});
+		prev.addEventListener('click', () => go(cur - 1));
+		next.addEventListener('click', () => go(cur + 1));
+		let t = 0;
+		reel.addEventListener('scroll', () => { clearTimeout(t); t = window.setTimeout(update, 80); });
+		addEventListener('resize', update);
+		prev.hidden = next.hidden = false;
+		car.classList.add('is-live');
+		update();
+	});
+
 	// One orchestrated moment: select, type, generate, reveal. Then the slider is the visitor's.
 	const doc = document.getElementById('doc')!;
 	const ants = document.getElementById('ants')!;

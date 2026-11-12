@@ -6,11 +6,8 @@
 
 ## Next action
 
-- **Resume here: D1, waiting for his draw** (home page examples A1 to A5 all done 2026-11-12).
-  His call: the pier the other way round, a boat added to A1's "after" with the prompt the docs
-  already quote, "a small boat tied to the pier"; files `d1-avant.png`, `d1-apres.png` in
-  `captures/site/` plus caption facts; it goes on the docs page Your first fill
-  (`generative-fill/index.md`) (step 6, the site images, card by card in the order of his illustrations
+- **Resume here: D2 (resolution, 1K forced against Auto on a real 24 MP photo)** (home page
+  examples A1 to A5 and D1 done 2026-11-12) (step 6, the site images, card by card in the order of his illustrations
   note, vault, Fulla folder; A1 and A2 done). **A2 done (2026-11-12):**
   `site/src/assets/examples/a2-avant.jpg` (checkerboard painted over the white bands, Photoshop's
   white/#ccc grid, 40 px squares at full size) and `a2-apres.jpg`, 1800 px q95; its card is 16:9,
@@ -89,6 +86,9 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Recently done
 
+- 2026-11-12 — Docs image D1 on Your first fill (now `.mdx`): a boat added to A1's empty pier
+  (`a1-apres.jpg` reused as the "before", same pixels) with "a small boat tied to the pier",
+  Nano Banana 2.1, 2K, $0.06 (draws not yet asked).
 - 2026-11-12 — Site image A5: face swap on his generated café terrace (no real person), 16:9,
   Result / Reference buttons (the reference cropped to its portrait); the prompt that worked in
   Photoshop too, translated; first try, 2K, $0.06; no comparison with Photoshop in the caption

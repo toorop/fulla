@@ -3,6 +3,10 @@ title: Your first fill
 description: Select an area, describe what you want and click Generate. The result lands on a new layer, masked by your selection.
 ---
 
+import Compare from '../../../../components/Compare.astro';
+import pierBefore from '../../../../assets/examples/a1-apres.jpg';
+import pierAfter from '../../../../assets/examples/d1-apres.jpg';
+
 Generative fill changes the area you select: add something, change it, or remove it. If you know Photoshop's own generative fill, you already know how Fulla works.
 
 ## Make a fill
@@ -10,6 +14,10 @@ Generative fill changes the area you select: add something, change it, or remove
 1. **Select** an area of your photo, with any selection tool.
 2. **Describe** in the box at the top of the panel what to add or change there: `a small boat tied to the pier`, `make her smile`. Leave it empty to remove what is selected. Drag the grip under the box to make it taller.
 3. Click **Generate**.
+
+<Compare before={pierBefore} after={pierAfter} beforeAlt="Before: an empty pier at low tide, black and white" afterAlt="After: a small rowing boat resting on the mud beside the pier" start={50} sizes="(min-width: 1000px) 720px, 100vw" />
+
+A boat added beside a pier with `a small boat tied to the pier`. Nano Banana 2.1, 2K, $0.06.
 
 A card under the box shows the run, with a moving bar and the seconds. Photoshop stays free to use meanwhile, and the button turns into **Cancel**.
 

@@ -6,12 +6,8 @@
 
 ## Next action
 
-- **Resume here: A4 becomes the locomotive** (his archive photo, a man removed in front of a
-  2D2 5400; his call 2026-11-12: author unknown, he accepts the risk). The point is a reference
-  bringing back what was really hidden. Candidate reference: Commons `France Rail 021 Le Mans
-  2.jpg` (2D2 5409, Ben Brooksbank, CC BY-SA 4.0: credit under the example); he checks it shows
-  the same side as his photo, then tests with and without it (about $0.36 for 3 + 3 draws)
-  (step 6, the site images, card by card in the order of his illustrations
+- **Resume here: A5 (face swap)**, only if his test shows Photoshop's generative fill refuses it
+  (decision of 2026-11-10); otherwise ask him what replaces it (step 6, the site images, card by card in the order of his illustrations
   note, vault, Fulla folder; A1 and A2 done). **A2 done (2026-11-12):**
   `site/src/assets/examples/a2-avant.jpg` (checkerboard painted over the white bands, Photoshop's
   white/#ccc grid, 40 px squares at full size) and `a2-apres.jpg`, 1800 px q95; its card is 16:9,
@@ -88,6 +84,12 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Recently done
 
+- 2026-11-12 — Site image A4: his archive photo of the 2D2 5402 (author unknown, his call to
+  use it), the man removed with another shot of the same series as reference; square card;
+  `Compare.astro` takes `variants` (other "after" images) and `reference`, switched by buttons on
+  the photo (Reference / With reference / Without reference; the reference fills the frame and
+  sets the slider aside). Prompt translated, first try with the reference, 2K, $0.06. The mug
+  keeps its corner inset (his call).
 - 2026-11-12 — Site image A3 (new generated table and enamel mug, 1672 x 941, kept at that
   width): 16:9 card, the reference shown small in a corner, slider starting at 8 % so the mug
   shows; his prompt translated ("Put the mug from the reference image on the table."), first try

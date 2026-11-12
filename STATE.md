@@ -6,15 +6,13 @@
 
 ## Next action
 
-- **Resume here: wire A2 into the home page** (step 6, the site images, card by card in the order of
-  his illustrations note, vault, Fulla folder; A1 done). **Pair received and checked (2026-11-12):**
-  `captures/site/a2-avant.png` and `a2-apres.png` next to his notes, 3840 x 2160 (16:9), same
-  document, the photo identical outside the bands. The empty bands of the "before" are **pure
-  white, not transparent**: left band 355 px wide, top band 268 px high (the white area matches
-  them exactly); paint the checkerboard there yourself. His generated beach (generated photo:
-  say so under the example), Nano Banana 2.1, empty prompt, one band at a time. **Caption facts
-  still to ask him:** draws per band (failures included) and the cost shown. The picture is 16:9,
-  the home page's frame is 3:2: adapt the frame for this example. For each card: resize to
+- **Resume here: A3** (step 6, the site images, card by card in the order of his illustrations
+  note, vault, Fulla folder; A1 and A2 done). **A2 done (2026-11-12):**
+  `site/src/assets/examples/a2-avant.jpg` (checkerboard painted over the white bands, Photoshop's
+  white/#ccc grid, 40 px squares at full size) and `a2-apres.jpg`, 1800 px q95; its card is 16:9,
+  as tall as the 3:2 ones and wider (`.ex.wide`); placeholder `extend.png` removed. Caption: empty
+  prompt, first try for each band, Nano Banana 2.1, 4K, $0.12 each (he said "0.12 €": assumed
+  the panel's dollars), generated sample photo. For each next card: resize to
   1800 px JPEG q95 into `site/src/assets/examples/`, wire it in, fill the caption facts. He is
   retesting a top band to see the "Fulla: tone fix" layer on a real drift (not seen yet; names
   for his captures: `captures/2026-11-12 plage - 4 bande du haut avec tone fix.png`, `- 5 ... sans
@@ -85,6 +83,8 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Recently done
 
+- 2026-11-12 — Site image A2 (his generated beach, extended left and top) on the home page, in a
+  16:9 card.
 - 2026-11-12 — The tone fix layer was refused in a document with no colour profile (Photoshop
   reports "None": "Unknown color profile"); sRGB then. `localTone` scenario now also runs in an
   untagged document; `toneDiag` reports the local decision, bit depth and profile. His "parfait"

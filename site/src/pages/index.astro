@@ -7,7 +7,8 @@ import Base from '../layouts/Base.astro';
 import Compare from '../components/Compare.astro';
 import heroBefore from '../assets/examples/a1-avant.jpg';
 import heroAfter from '../assets/examples/a1-apres.jpg';
-import extend from '../assets/placeholders/extend.png';
+import extendBefore from '../assets/examples/a2-avant.jpg';
+import extendAfter from '../assets/examples/a2-apres.jpg';
 import mug from '../assets/placeholders/mug.png';
 import heron from '../assets/placeholders/heron.png';
 import face from '../assets/placeholders/face.png';
@@ -177,9 +178,11 @@ const jsonLd = [
 					</div>
 					<figcaption><h3>Remove a boat</h3><p>Prompt left empty. First try, Nano Banana 2.1, 2K, $0.06. <a href="/docs/generative-fill/tips/">Tip: select generously</a></p></figcaption>
 				</figure>
-				<figure class="ex">
-					<div class="frame"><Picture src={extend} alt="Placeholder for the extend example" widths={[640, 1000]} sizes="(min-width: 900px) 640px, 80vw" formats={['avif', 'webp']} /></div>
-					<figcaption><h3>Extend a photo</h3><p>The canvas made wider, the rest filled in. <a href="/docs/generative-fill/remove-and-extend/">How to extend</a></p></figcaption>
+				<figure class="ex wide">
+					<div class="frame">
+						<Compare before={extendBefore} after={extendAfter} beforeAlt="Before: a beach at sunset on a canvas made wider and taller, the new bands empty" afterAlt="After: the sky, the dunes and the beach continued into both bands" start={30} sizes="(min-width: 900px) 760px, 95vw" />
+					</div>
+					<figcaption><h3>Extend a photo</h3><p>Canvas enlarged in Photoshop, each empty band filled in turn. Prompt left empty. First try for each band, Nano Banana 2.1, 4K, $0.12 each. Sample photo generated for this demo. <a href="/docs/generative-fill/remove-and-extend/">How to extend</a></p></figcaption>
 				</figure>
 				<figure class="ex">
 					<div class="frame"><Picture src={mug} alt="Placeholder for the mug example" widths={[640, 1000]} sizes="(min-width: 900px) 640px, 80vw" formats={['avif', 'webp']} /></div>
@@ -291,9 +294,12 @@ const jsonLd = [
 	.after-cta { margin-top: 36px; }
 
 	/* Examples: a sideways scroll of large comparisons. */
-	.reel { display: grid; grid-auto-flow: column; grid-auto-columns: min(80vw, 640px); gap: 24px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px clamp(16px, 4vw, 48px) 24px; margin: 0 calc(-1 * clamp(16px, 4vw, 48px)); scrollbar-width: thin; }
-	.ex { scroll-snap-align: start; margin: 0; }
+	/* Every frame is as tall as a 3:2 one; a 16:9 example gets a wider card. */
+	.reel { --ex-w: min(80vw, 640px); display: grid; grid-auto-flow: column; grid-auto-columns: auto; gap: 24px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px clamp(16px, 4vw, 48px) 24px; margin: 0 calc(-1 * clamp(16px, 4vw, 48px)); scrollbar-width: thin; }
+	.ex { scroll-snap-align: start; margin: 0; width: var(--ex-w); }
+	.ex.wide { width: calc(var(--ex-w) * 2 / 3 * 16 / 9); }
 	.frame { border-radius: 12px; overflow: hidden; aspect-ratio: 3 / 2; background: var(--f-board); position: relative; box-shadow: 0 0 0 1px #101010; }
+	.wide .frame { aspect-ratio: 16 / 9; }
 	.frame :global(img) { width: 100%; height: 100%; object-fit: cover; display: block; }
 	.frame :global(.compare.is-live) { height: 100%; }
 	.ex h3 { font-size: 20px; font-weight: 600; margin: 16px 0 6px; letter-spacing: -0.01em; }

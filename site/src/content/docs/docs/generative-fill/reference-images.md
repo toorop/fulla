@@ -10,7 +10,7 @@ A reference image shows the model what you mean: the real face from another shot
 When words aren't enough to describe something that has to look exactly right:
 
 - **Bring back what was really there**: a face from another frame of the same session, a sign or a pattern hidden behind a passer-by.
-- **Place a real object**: your product, your mug, at the place and size of your selection.
+- **Place a real object**: your product, your mug, at the place and size of your selection. Give the selection the proportions of the object with its shadow (see [Select generously](/docs/generative-fill/tips/#select-generously)).
 - **Match a material**: the wood of the next table, the fabric of a dress.
 
 For a background that only needs to look plausible, a reference isn't needed.

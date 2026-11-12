@@ -7,7 +7,9 @@ A few habits make the difference between a fill that shows and one that doesn't.
 
 ## Select generously
 
-Leave room around what you add or remove: for an object, room for the object **and its shadow**. A tight selection can cut an added object at its edge.
+Leave room around what you add or remove.
+
+To add an object, the model fits it to your selection: **give the selection the proportions of the finished object, shadow included**. With the wrong proportions, the object comes out cut at the edge of the selection, most often its shadow. In low, raking light the shadow is long: widen the selection on the side where it falls.
 
 ## Ask for the light, the perspective and the depth of field
 

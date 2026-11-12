@@ -9,7 +9,9 @@ import heroBefore from '../assets/examples/a1-avant.jpg';
 import heroAfter from '../assets/examples/a1-apres.jpg';
 import extendBefore from '../assets/examples/a2-avant.jpg';
 import extendAfter from '../assets/examples/a2-apres.jpg';
-import mug from '../assets/placeholders/mug.png';
+import mugBefore from '../assets/examples/a3-avant.jpg';
+import mugAfter from '../assets/examples/a3-apres.jpg';
+import mugRef from '../assets/examples/a3-ref.jpg';
 import heron from '../assets/placeholders/heron.png';
 import face from '../assets/placeholders/face.png';
 
@@ -190,10 +192,13 @@ const jsonLd = [
 							<figcaption><h3>Extend a photo</h3><p>Canvas enlarged in Photoshop, each empty band filled in turn. Prompt left empty. First try for each band, Nano Banana 2.1, 4K, $0.12 each. Sample photo generated for this demo. <a href="/docs/generative-fill/remove-and-extend/">How to extend</a></p></figcaption>
 						</div>
 					</figure>
-					<figure class="ex">
+					<figure class="ex wide">
 						<div class="ex-in">
-							<div class="frame"><Picture src={mug} alt="Placeholder for the mug example" widths={[640, 1000]} sizes="(min-width: 1100px) 900px, 95vw" formats={['avif', 'webp']} /></div>
-							<figcaption><h3>Put the mug where you want it</h3><p>“a white enamel mug”. Your selection sets its place and size.</p></figcaption>
+							<div class="frame">
+								<Compare before={mugBefore} after={mugAfter} beforeAlt="Before: a wooden kitchen table in low morning light, a croissant on a plate, empty space on the left" afterAlt="After: the white enamel mug from the reference image standing on the table, its shadow cast by the low light" start={8} sizes="(min-width: 1100px) 900px, 95vw" />
+								<div class="ref"><Picture src={mugRef} alt="Reference image: a white enamel mug with a dark blue rim" widths={[300, 600]} sizes="(min-width: 900px) 200px, 30vw" formats={['avif', 'webp']} /><span>Reference</span></div>
+							</div>
+							<figcaption><h3>Put the mug where you want it</h3><p>“Put the mug from the reference image on the table.” Your selection sets its place and size. First try with this selection, Nano Banana 2.1, 2K, $0.06. Sample photos generated for this demo. <a href="/docs/generative-fill/tips/#select-generously">Tip: leave room for the shadow</a></p></figcaption>
 						</div>
 					</figure>
 					<figure class="ex">
@@ -339,6 +344,10 @@ const jsonLd = [
 	}
 	.frame { border-radius: 12px; overflow: hidden; aspect-ratio: 3 / 2; background: var(--f-board); position: relative; box-shadow: 0 0 0 1px #101010; }
 	.wide .frame { aspect-ratio: 16 / 9; }
+	/* A reference image, shown small in a corner of its example. */
+	.ref { position: absolute; top: 12px; right: 12px; width: 22%; pointer-events: none; border-radius: 6px; overflow: hidden; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85), 0 6px 18px rgba(0, 0, 0, 0.5); }
+	.frame .ref :global(img) { height: auto; aspect-ratio: 3 / 2; }
+	.ref span { position: absolute; left: 6px; bottom: 6px; padding: 2px 6px; border-radius: 4px; font-size: 11px; color: #fff; background: rgba(0, 0, 0, 0.6); }
 	.frame :global(img) { width: 100%; height: 100%; object-fit: cover; display: block; }
 	.frame :global(.compare.is-live) { height: 100%; }
 	.ex h3 { font-size: 20px; font-weight: 600; margin: 16px 0 6px; letter-spacing: -0.01em; }

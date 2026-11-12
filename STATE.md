@@ -6,12 +6,7 @@
 
 ## Next action
 
-- **Resume here: A3, waiting for his new draw** (2026-11-12, his call: redo rather than reuse the
-  10 November trial): same kitchen table, the fox mug as reference, a selection 1.5 to 2 times the
-  mug with room for its shadow, Nano Banana 2.1, an English prompt (shown in the caption). He
-  drops `a3-avant.png`, `a3-apres.png`, `a3-ref.png` in `captures/site/` with the caption facts
-  (prompt, draws, cost); Claude makes the reference thumbnail in a corner. Carousel done and
-  approved (step 6, the site images, card by card in the order of his illustrations
+- **Resume here: A4 (the heron, with and without a reference)** (step 6, the site images, card by card in the order of his illustrations
   note, vault, Fulla folder; A1 and A2 done). **A2 done (2026-11-12):**
   `site/src/assets/examples/a2-avant.jpg` (checkerboard painted over the white bands, Photoshop's
   white/#ccc grid, 40 px squares at full size) and `a2-apres.jpg`, 1800 px q95; its card is 16:9,
@@ -88,6 +83,12 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Recently done
 
+- 2026-11-12 — Site image A3 (new generated table and enamel mug, 1672 x 941, kept at that
+  width): 16:9 card, the reference shown small in a corner, slider starting at 8 % so the mug
+  shows; his prompt translated ("Put the mug from the reference image on the table."), first try
+  with that selection, 2K, $0.06. Docs (Tips, Reference images): the selection takes the
+  proportions of the finished object, shadow included; widen it on the shadow's side in raking
+  light (his finding: otherwise the shadow comes out cut).
 - 2026-11-12 — Home page examples: one at a time (his request: he had not seen the sideways
   scrollbar), an arrow on each side named after the example it leads to (under the photo on a
   phone), looping both ways; light disc, dark thick arrow (his call: must stand out); on a wide

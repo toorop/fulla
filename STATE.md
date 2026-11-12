@@ -6,7 +6,12 @@
 
 ## Next action
 
-- **Resume here: his feedback on the new examples carousel, then A3** (step 6, the site images, card by card in the order of his illustrations
+- **Resume here: A3, waiting for his new draw** (2026-11-12, his call: redo rather than reuse the
+  10 November trial): same kitchen table, the fox mug as reference, a selection 1.5 to 2 times the
+  mug with room for its shadow, Nano Banana 2.1, an English prompt (shown in the caption). He
+  drops `a3-avant.png`, `a3-apres.png`, `a3-ref.png` in `captures/site/` with the caption facts
+  (prompt, draws, cost); Claude makes the reference thumbnail in a corner. Carousel done and
+  approved (step 6, the site images, card by card in the order of his illustrations
   note, vault, Fulla folder; A1 and A2 done). **A2 done (2026-11-12):**
   `site/src/assets/examples/a2-avant.jpg` (checkerboard painted over the white bands, Photoshop's
   white/#ccc grid, 40 px squares at full size) and `a2-apres.jpg`, 1800 px q95; its card is 16:9,

@@ -1101,9 +1101,22 @@ async function endConnect(connected) {
       renderChips();
     await renderProviders();
     showTab("generate");
+    redrawPage("generate");
     return setStatus("OpenRouter is connected. Make a selection, then click Generate.");
   }
   await renderProviders();
+}
+
+// UXP doesn't always redraw what a hidden element leaves behind: after Connect (2026-11-12) the
+// bottom borders of the guide's buttons stayed on the Generate page, until a change of tab. So
+// show the page again a moment later, as a change of tab does.
+function redrawPage(name) {
+  setTimeout(() => {
+    const page = $(`page-${name}`);
+    if (page.hidden) return; // the user has moved on
+    page.hidden = true;
+    setTimeout(() => (page.hidden = false), 0);
+  }, 50);
 }
 
 // The panel's ≡ menu (Photoshop's place for help): docs, bug report, model request, about.

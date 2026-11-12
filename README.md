@@ -14,7 +14,7 @@ Fulla brings generative fill to Photoshop 2026 (27.11 or newer), powered by your
 
 1. **Read.** Fulla reads your selection plus some surrounding context, at full resolution. Photoshop isn't changed.
 2. **Generate.** It sends that crop and a mask to the provider you picked, using your key, plus the whole photo, reduced, when the crop is a small part of it, so the model can judge scale and light. Photoshop stays free to use meanwhile.
-3. **Place.** The result is scaled back exactly onto the crop, placed as a smart object and clipped to your exact selection with a soft edge, all in one undo step. Models often shift the colours of what they return; Fulla compares the result with your photo around the selection and, when needed, adds a **Curves** smart filter that brings the tones back (hide it or adjust it like any filter). If anything fails, the document is left as it was.
+3. **Place.** The result is scaled back exactly onto the crop, placed as a smart object and clipped to your exact selection with a soft edge, all in one undo step. Models often shift the colours of what they return; Fulla compares the result with your photo around the selection and, when needed, adds a **Curves** smart filter that brings the tones back, and a clipped **Fulla: tone fix** layer (Linear Light) for a drift in one part of the picture, so the fill meets your photo all along the selection's edge (hide or adjust either like any filter or layer). If anything fails, the document is left as it was.
 
 ## Using Fulla
 

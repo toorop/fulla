@@ -6,6 +6,7 @@ const { app, core, action, imaging, constants } = require("photoshop");
 const uxp = require("uxp");
 const { to8bit, placeInto, toRGB, toRGBA, resample, downsampleStrips, featherMask } = require("./image");
 const { tagSrgb } = require("./png");
+const { linearLightRows } = require("./tone");
 const refs = require("./references");
 
 const lfs = uxp.storage.localFileSystem;
@@ -348,49 +349,120 @@ async function removeToneFilters(layerId) {
 
 /**
  * Tone matching (tone.js): read the layer's own pixels over the crop, let `match.fit` compare them with
- * the original, and apply the correction as a Curves smart filter. Nothing when the fit says it's not needed.
- * RGB documents get one curve per channel, greyscale ones a single curve; other modes (CMYK, Lab...)
- * get none yet. The correction is cosmetic: if Photoshop refuses it, the result stays without it
- * (the user paid for that image), and the reason goes to the trace.
- * @param {{size: {width, height}, fit: (px: {data, width, height, components}) => object|null}} match
+ * the original, and apply the correction as a Curves smart filter; then let `match.local` measure what
+ * is left next to the selection and add it as a clipped "Fulla: tone fix" layer (addToneFix). Nothing
+ * when not needed. RGB documents get one curve per channel, greyscale ones a single curve; other modes
+ * (CMYK, Lab...) get none yet. The correction is cosmetic: if Photoshop refuses it, the result stays
+ * without it (the user paid for that image), and the reason goes to the trace.
+ * @param {{size: {width, height}, fit: Function, local?: Function}} match
+ * @returns {Promise<{fit: object|null, fixId: number|null}>}
  */
 async function matchTone(docId, layerId, crop, match, trace) {
-  if (!match) return null;
+  const none = { fit: null, fixId: null };
+  if (!match) return none;
   const mode = String(findDoc(docId).mode || "RGB").toLowerCase();
   const kind = mode.includes("gray") ? "gray" : mode.includes("rgb") ? "rgb" : null;
-  if (!kind) return null;
+  if (!kind) return none;
+  let tile;
+  let fit = null;
   try {
     // The comparison is outside the selection, so read the layer without its mask (switched off for
     // the read: with the soft edge baked into the mask, reads went through it, 2026-11-12).
     const maskOn = (on) => bp([{ _obj: "set", _target: [{ _ref: "layer", _id: layerId }], to: { _obj: "layer", userMaskEnabled: on } }]);
     await maskOn(false);
-    let tile;
     try {
       tile = await readScaled(docId, crop, match.size, false, layerId);
     } finally {
       await maskOn(true);
     }
     const report = {};
-    const fit = match.fit(tile, report);
+    fit = match.fit(tile, report);
     if (!fit) {
       if (trace) trace.push({ step: "toneSkipped", mode, reason: report.reason, residuals: report.residuals, channels: report.channels, cells: report.cells });
-      return null;
+    } else {
+      const point = (p) => ({ _obj: "paint", horizontal: p.input, vertical: p.output });
+      const adjustment =
+        kind === "gray"
+          ? [{ _obj: "curvesAdjustment", channel: { _ref: "channel", _enum: "channel", _value: "composite" }, curve: fit.gray.map(point) }]
+          : fit.curves.map((pts, i) => ({ _obj: "curvesAdjustment", channel: { _ref: "channel", _enum: "channel", _value: CURVE_CHANNELS[i] }, curve: pts.map(point) }));
+      await bp([
+        { _obj: "select", _target: [{ _ref: "layer", _id: layerId }], makeVisible: false },
+        { _obj: "select", _target: [{ _ref: "channel", _enum: "channel", _value: COMPOSITE[kind] }] },
+        { _obj: "curves", presetKind: { _enum: "presetKindType", _value: "presetKindCustom" }, adjustment },
+      ]);
+      if (trace) trace.push({ step: "tone", mode });
     }
-    const point = (p) => ({ _obj: "paint", horizontal: p.input, vertical: p.output });
-    const adjustment =
-      kind === "gray"
-        ? [{ _obj: "curvesAdjustment", channel: { _ref: "channel", _enum: "channel", _value: "composite" }, curve: fit.gray.map(point) }]
-        : fit.curves.map((pts, i) => ({ _obj: "curvesAdjustment", channel: { _ref: "channel", _enum: "channel", _value: CURVE_CHANNELS[i] }, curve: pts.map(point) }));
-    await bp([
-      { _obj: "select", _target: [{ _ref: "layer", _id: layerId }], makeVisible: false },
-      { _obj: "select", _target: [{ _ref: "channel", _enum: "channel", _value: COMPOSITE[kind] }] },
-      { _obj: "curves", presetKind: { _enum: "presetKindType", _value: "presetKindCustom" }, adjustment },
-    ]);
-    if (trace) trace.push({ step: "tone", mode });
-    return fit;
   } catch (e) {
     if (trace) trace.push({ step: "toneError", mode, message: e.message || String(e) });
-    return null;
+    if (!tile) return none;
+    fit = null;
+  }
+  let fixId = null;
+  if (match.local) {
+    try {
+      const report = {};
+      const local = match.local(tile, fit, report);
+      if (trace) trace.push({ step: local ? "toneFix" : "toneFixSkipped", ...report.local });
+      if (local) fixId = await addToneFix(findDoc(docId), layerId, crop, local, kind);
+    } catch (e) {
+      if (trace) trace.push({ step: "toneFixError", mode, message: e.message || String(e) });
+    }
+  }
+  return { fit, fixId };
+}
+
+const TONE_FIX = "Fulla: tone fix";
+
+/**
+ * The local tone correction as a pixel layer clipped to the run's layer (so it shows only where the
+ * result does, through its mask), in Linear Light: mid-grey changes nothing, lighter lightens, darker
+ * darkens. Written in strips; the run's layer stays the active one. Returns the new layer's id.
+ */
+async function addToneFix(doc, baseId, crop, local, kind) {
+  await bp([
+    { _obj: "select", _target: [{ _ref: "layer", _id: baseId }], makeVisible: false },
+    { _obj: "make", _target: [{ _ref: "layer" }] },
+  ]);
+  const fix = doc.activeLayers[0];
+  try {
+    // Through the DOM: a batchPlay "set" with the name and the mode set the name only (28.0.1).
+    fix.name = TONE_FIX;
+    fix.blendMode = constants.BlendMode.LINEARLIGHT;
+    const gray = kind === "gray";
+    const max = /16/.test(String(doc.bitsPerChannel)) ? 32768 : 255;
+    const w = crop.right - crop.left;
+    const h = crop.bottom - crop.top;
+    const rows = Math.max(1, Math.floor(MAX_READ_PIXELS / w));
+    for (let y = 0; y < h; y += rows) {
+      const y1 = Math.min(h, y + rows);
+      const data = linearLightRows(local, w, h, y, y1, gray, max);
+      const imageData = await imaging.createImageDataFromBuffer(data, {
+        width: w,
+        height: y1 - y,
+        components: gray ? 1 : 3,
+        chunky: true,
+        colorSpace: gray ? "Grayscale" : "RGB",
+        // The document's own profile: no conversion, mid-grey stays mid-grey.
+        colorProfile: doc.colorProfileName || (gray ? "Gray Gamma 2.2" : SRGB),
+      });
+      try {
+        await imaging.putPixels({ documentID: doc.id, layerID: fix.id, imageData, targetBounds: { left: crop.left, top: crop.top + y } });
+      } finally {
+        imageData.dispose();
+      }
+    }
+    await bp([
+      { _obj: "groupEvent", _target: [TARGET] },
+      { _obj: "select", _target: [{ _ref: "layer", _id: baseId }], makeVisible: false },
+    ]);
+    return fix.id;
+  } catch (e) {
+    try {
+      await bp([{ _obj: "delete", _target: [{ _ref: "layer", _id: fix.id }] }, { _obj: "select", _target: [{ _ref: "layer", _id: baseId }], makeVisible: false }]);
+    } catch (_) {
+      /* keep the original error */
+    }
+    throw e;
   }
 }
 
@@ -450,10 +522,11 @@ async function commit(o) {
     const group = referenceGroup(doc);
     if (group && layer.parent && layer.parent.id === group.id) await layer.move(group, constants.ElementPlacement.PLACEAFTER);
     // Recreate the selection with its soft edge, then turn it into the layer's mask. The soft edge is
-    // computed here (featherMask), not with Photoshop's mask feather, which also fades the canvas edge.
+    // computed here (featherMask), not with Photoshop's mask feather, which also fades the canvas edge;
+    // selected pixels with nothing under them (s.cover) stay fully covered.
     const s = o.selection;
     const edges = { left: s.left <= 0, top: s.top <= 0, right: s.left + s.width >= W, bottom: s.top + s.height >= H };
-    await putSelectionPixels(doc.id, { ...s, data: featherMask(s.data, s.width, s.height, o.feather, edges) });
+    await putSelectionPixels(doc.id, { ...s, data: featherMask(s.data, s.width, s.height, o.feather, edges, s.cover) });
     await bp([
       { _obj: "make", new: { _class: "channel" }, at: { _ref: "channel", _enum: "channel", _value: "mask" }, using: { _enum: "userMaskEnabled", _value: "revealSelection" } },
       // Nothing selected afterwards, as when the mask used up a hard selection: a smart filter added
@@ -461,11 +534,11 @@ async function commit(o) {
       { _obj: "set", _target: [{ _ref: "channel", _property: "selection" }], to: { _enum: "ordinal", _value: "none" } },
     ]);
     // After the mask, as in the self-test's exploration: reads ignore the mask, Curves then lands on the picture.
-    const tone = await matchTone(doc.id, layer.id, o.crop, o.matchTone, o.trace);
+    const { fit: tone, fixId } = await matchTone(doc.id, layer.id, o.crop, o.matchTone, o.trace);
     // Like Adobe's Generative Fill, the selection stays for the next run (making the mask used it up).
     await putSelectionPixels(doc.id, o.selection);
     if (o.trace) o.trace.push({ step: "done", layer: layer.id, bounds: layerBounds(layer), doc: [num(doc.width), num(doc.height)], tone });
-    return { docId: doc.id, layerId: layer.id, crop: o.crop, tone };
+    return { docId: doc.id, layerId: layer.id, crop: o.crop, tone, fixId };
   } finally {
     await removeTemp(file);
   }
@@ -500,7 +573,10 @@ async function showVariation(placed, result) {
         const putBack = await setSelectionAside(placed.docId);
         try {
           await removeToneFilters(placed.layerId);
-          return await matchTone(placed.docId, placed.layerId, placed.crop, placed.matchTone);
+          if (placed.fixId && findLayer(doc.layers, placed.fixId)) await bp([{ _obj: "delete", _target: [{ _ref: "layer", _id: placed.fixId }] }]);
+          const { fit, fixId } = await matchTone(placed.docId, placed.layerId, placed.crop, placed.matchTone);
+          placed.fixId = fixId;
+          return fit;
         } finally {
           await putBack();
         }

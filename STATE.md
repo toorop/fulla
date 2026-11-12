@@ -6,14 +6,15 @@
 
 ## Next action
 
-- **Resume here (next session): step 6, the site images, card by card in the order of his
-  illustrations note** (vault, Fulla folder). A1 done (his pier photo, boat removed, on the home
-  page). **Next: A2, extend a photo** (colour; the Qwen prompt is on the card; he was generating
-  the base picture). For each card he may use his own photo if it serves the card's goal (his
-  call, 2026-11-12): say the goal, check his PNG pair (same size, 3:2 or the card's format),
-  resize to 1800 px JPEG q95 into `site/src/assets/examples/`, wire it in, fill the caption
-  facts (model, prompt, resolution, draw, cost). The dev server: `.claude/launch.json` (local,
-  excluded from git) via the preview tool, http://localhost:4321; he watches it in his browser.
+- **Resume here: A2, extend a photo** (step 6, the site images, card by card in the order of his
+  illustrations note, vault, Fulla folder; A1 done). His generated beach (16:9, hut on the left),
+  extended left then top, one band at a time; he exports `a2-avant.png` (bands transparent) and
+  `a2-apres.png` into `captures/site/`, with model, draws per band and cost for the caption. The
+  extended picture is wider than the home page's 3:2 frame: adapt the frame for it. For each card:
+  say the goal, check his PNG pair (same size), resize to 1800 px JPEG q95 into
+  `site/src/assets/examples/`, wire it in, fill the caption facts (model, prompt, resolution,
+  draw, cost); he may use his own photo if it serves the card's goal. The dev server:
+  `.claude/launch.json` (local, excluded from git) via the preview tool, http://localhost:4321.
   Panel captures: C2 done (`captures/site/`, Windows at 200 %, darkest theme); C3 to C7 later;
   C8/C9 need an English Photoshop (skipped, described in text); C1/C10 with the release `.ccx`.
 - **Waiting on him, when he wants:** face-swap refusal test in Photoshop; GPT Image tests (paid,
@@ -48,11 +49,10 @@
   `geminiRaw` and `openaiRaw`: 35 on 2026-11-12). Warn him before a run (nobody may touch Photoshop). Paid
   tests: Google direct by default, give the cost first. A/B input format: see `selftest.js`
   (`abInput`). Photoshop work happens on his Windows machine only.
-- Later, after the site (unless he moves it up; proposed 2026-11-12, not answered): a local
-  low-frequency brightness correction (the model's fill lighter or darker in part of the
-  selection, a step at its edge: seen on the wood, and on the locomotive test); spotting a reply
-  where the model redrew the whole picture; bigger reference thumbnails; maybe grow the mask a
-  little by itself for an empty prompt (ghost outline after a tight removal).
+- Later, after the site: spotting a reply where the model redrew the whole picture; bigger
+  reference thumbnails; maybe grow the mask a little by itself for an empty prompt (ghost outline
+  after a tight removal); for a top or bottom band, take the 35 % on the band's short side (now the
+  whole width is sent, reduced to 2048 px).
 - Blocked by: —
 
 ## Current step
@@ -78,19 +78,29 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Recently done
 
+- 2026-11-12 — Extends fixed and checked by him on the beach (both bands, "parfait"): no light line
+  along the photo's edge (`emptyUnder`, `image.js`); 35 % context when at least half the selection
+  is empty (`EXTEND_CONTEXT`, `pipeline.js`; with 5 % a one-side band went as a 1:4 strip with a
+  sliver of photo, and the model drew its own scene); local tone correction after the curve
+  (`localTone`, `tone.js`: the rest measured around the selection on a 256-cell grid, carried in
+  as a membrane; `addToneFix`, `photoshop.js`: a clipped "Fulla: tone fix" layer in Linear Light,
+  blend mode set through the DOM since a batchPlay "set" ignored it; replaced per variation);
+  `toneDiag` reports both sides of the edge and saves the two pictures; free self-test 36/36.
 - 2026-11-12 — Release workflow (draft release from a tag, notes from the Changelog page). `.ccx`
   double-click install checked on Windows; docs mention macOS and Photoshop's permission dialog;
   Windows installer kept as a fallback. C2 panel captures. Panel fixes after the first connect.
-- 2026-11-12 — Tone matching: greyscale documents (one composite curve), extended canvases (gain
-  bounds 0.5-2 after a model's planks came back 1.5x too bright, fallback fit on tone
-  distributions, layer read with its mask off), no see-through canvas edge (`featherMask`, result
-  placed 2 px past the canvas edges); `{"toneDiag": true}` explains tone matching on the open
-  document; new scenarios `grayscaleTone`, `extendEdge`, `compositeSent`; free self-test 35/35;
-  checked by him on a real extend. Details shows the Photoshop version.
+- 2026-11-12 — Tone matching in greyscale documents and extended canvases (gain bounds 0.5-2, fit on
+  tone distributions as a fallback); no see-through canvas edge; `{"toneDiag": true}`.
 - 2026-11-12 — Site image A1 (his pier photo, boat removed) on the home page.
 - 2026-11-11 — Website designed and built in `site/` (milestones 1 and 2).
 
 ## Decisions taken
+
+- Tone matching (2026-11-12, his go): the curve for the whole tile, then a local correction as a
+  clipped "Fulla: tone fix" layer: a smart object cannot be retouched, a smart filter's mask can
+  only dose one curve, and the layer keeps variations and stays non-destructive.
+- Extends get 35 % context (2026-11-12): the 5 % margin keeps added objects inside the selection,
+  but starves an extend of photo; an extend has nothing to spill.
 
 - Website design (2026-11-11, his calls): Fulla's own look, beauty first (the audience works on
   images); neutral dark grey background (a tinted one biases photos); monochrome with one blue;
@@ -143,15 +153,5 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 - After the first connect, a 1 px line may stay under Generate until a change of tab:
   `redrawPage()` (`main.js`) should clear it; not checked (his call). Look next time someone
   connects.
-- Gemini returns nearly the same image for the same request (seen 2026-11-10): variations of one
-  run may differ less than expected; not checked.
-- Facts kept: UXP reaches a local server only through `http://localhost` (no port); Photoshop's
-  shrink of a placed result follows its Image Interpolation preference (`layer.scale`); a
-  layer's pixel reads go through its user mask once the mask holds soft values (switch
-  `userMaskEnabled` off to read the whole layer); Photoshop's mask feather also fades the canvas
-  edge; the greyscale composite channel is `gray`.
-- UXP layout lessons: measured sizes update after the handler returns (use `setTimeout`); flex
-  children shrink unless told not to; a self-scrolling div can lose its bottom border; the
-  native text field draws over any menu; a hidden element can leave pixels behind until a repaint.
 - WebP results get no colour profile (JPEG and PNG do since 2026-11-08); none seen so far.
 - GitHub "Forked from" label (optional, Stéphane): leave the fork network or ask Support.

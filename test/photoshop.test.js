@@ -39,7 +39,7 @@ function loadWithFakes({ imagingMissing = false, fail8bit = false, trim = null, 
 
   const photoshop = {
     app,
-    constants: { AnchorPosition: { TOPLEFT: "tl" } },
+    constants: { AnchorPosition: { TOPLEFT: "tl" }, BlendMode: { LINEARLIGHT: "linearLight" } },
     core: {
       async executeAsModal(fn, opts) {
         calls.push(["modal", opts.commandName]);
@@ -77,6 +77,7 @@ function loadWithFakes({ imagingMissing = false, fail8bit = false, trim = null, 
         return { ...o, dispose: () => calls.push(["disposeSel"]) };
       },
       async putSelection(o) { state.putSelection = o; calls.push(["putSelection", o.targetBounds]); },
+      async putPixels(o) { calls.push(["putPixels", o.layerID, o.targetBounds, o.imageData]); },
     },
     action: {
       async batchPlay(descs, opts) {
@@ -94,6 +95,9 @@ function loadWithFakes({ imagingMissing = false, fail8bit = false, trim = null, 
           else if (d._obj === "get") out.push({ selection: state.selection && { left: { _unit: "pixelsUnit", _value: state.selection.left }, top: state.selection.top, right: state.selection.right, bottom: state.selection.bottom } });
           else if (d._obj === "placeEvent") { makeLayer(1536, 1024); out.push({}); }
           else if (d._obj === "make" && d._target && d._target[0]._ref === "layerSection") { makeLayer(0, 0, "group"); out.push({}); }
+          else if (d._obj === "make" && d._target && d._target[0]._ref === "layer") { makeLayer(0, 0, "pixel"); out.push({}); }
+          else if (d._obj === "select" && d._target[0]._ref === "layer" && d._target[0]._id) { state.active = state.layers[d._target[0]._id] || state.active; out.push({}); }
+          else if (d._obj === "delete" && d._target[0]._ref === "layer") { delete state.layers[d._target[0]._id]; out.push({}); }
           else out.push({});
         }
         return out;
@@ -185,7 +189,7 @@ test("commit: one layer, like Adobe's: deselect, place and fit the first result,
   assert.deepEqual(calls[puts[1]][1], { left: 100, top: 50 });
   assert.equal(state.active.id, placed.layerId);
   assert.equal(state.deleted.length, 1, "temp file removed");
-  assert.deepEqual(placed, { docId: 7, layerId: layer.id, crop, tone: null });
+  assert.deepEqual(placed, { docId: 7, layerId: layer.id, crop, tone: null, fixId: null });
 });
 
 test("tone matching: the layer's own pixels are read, the correction lands as a Curves smart filter, and each variation gets its own", async () => {
@@ -234,6 +238,39 @@ test("tone matching: the layer's own pixels are read, the correction lands as a 
   assert.equal(state.filterFX.length, 0);
 });
 
+test("local tone correction: a clipped Linear Light layer above the result, mid-grey where nothing changes; the result stays active; each variation gets its own", async () => {
+  const { ps, calls, state } = loadWithFakes();
+  const crop = { left: 100, top: 50, right: 140, bottom: 70 };
+  const sel = { data: new Uint8Array(800).fill(255), width: 40, height: 20, left: 100, top: 50 };
+  // A 2 x 1 grid: no change on the left, +40 levels on the right.
+  let field = Float32Array.of(0, 0, 0, 40, 40, 40);
+  const seen = [];
+  const matchTone = { size: { width: 20, height: 10 }, fit: () => null, local: (tile, fit, report) => (seen.push([tile.width, fit]), (report.local = { reason: "fitted" }), field && { width: 2, height: 1, field }) };
+  const placed = await ps.commit({ docId: 7, results: [png(10)], crop, name: "x", feather: 2, selection: sel, matchTone });
+  assert.deepEqual(seen[0], [20, null], "measured on the layer read at the size sent, after the curve (none here)");
+  const fix = state.layers[placed.fixId];
+  assert.ok(fix && fix.id !== placed.layerId, "a layer of its own");
+  const ops = calls.filter((c) => c[0] === "bp").map((c) => c[2]);
+  assert.deepEqual([fix.name, fix.blendMode], ["Fulla: tone fix", "linearLight"]);
+  const put = calls.find((c) => c[0] === "putPixels");
+  assert.equal(put[1], placed.fixId);
+  assert.deepEqual(put[2], { left: 100, top: 50 });
+  const buf = calls.find((c) => c[0] === "createImageData" && c[2].components === 3)[3];
+  assert.deepEqual([buf[0], buf[1], buf[2]], [128, 128, 128], "mid-grey on the left: no change");
+  assert.deepEqual(Array.from(buf.slice(39 * 3, 39 * 3 + 3)), [148, 148, 148], "+40 levels on the right: 128 + 40 / 2");
+  assert.ok(ops.findIndex((d) => d._obj === "groupEvent") > ops.findIndex((d) => d._obj === "make" && d._target && d._target[0]._ref === "layer"), "clipped to the result");
+  assert.equal(state.active.id, placed.layerId, "the result stays the active layer");
+  // A variation replaces the layer; when nothing is left to correct, none.
+  placed.matchTone = matchTone;
+  const first = placed.fixId;
+  await ps.showVariation(placed, png(20));
+  assert.ok(!state.layers[first] && state.layers[placed.fixId], "replaced");
+  field = null;
+  const second = placed.fixId;
+  await ps.showVariation(placed, png(20));
+  assert.ok(!state.layers[second] && placed.fixId === null, "removed, none added");
+});
+
 test("tone matching: a greyscale document gets one composite curve; a correction Photoshop refuses leaves the result without it", async () => {
   const crop = { left: 0, top: 0, right: 40, bottom: 20 };
   const sel = { data: new Uint8Array(800).fill(255), width: 40, height: 20, left: 0, top: 0 };
@@ -257,14 +294,19 @@ test("tone matching: a greyscale document gets one composite curve; a correction
   }
 });
 
-test("commit: on the sides where the crop meets the canvas edge, the result reaches 2 px beyond it", async () => {
+test("commit: on the sides where the crop meets the canvas edge, the result reaches 2 px beyond it; selected pixels with nothing under them keep a full mask", async () => {
   // Photoshop smooths the last pixel of a scaled layer: a faint see-through edge in an extended canvas (2026-11-12).
-  const { ps, state } = loadWithFakes();
+  const { ps, state, calls } = loadWithFakes();
   const crop = { left: 1900, top: 900, right: 2000, bottom: 1000 };
   const sel = { data: new Uint8Array(100 * 100).fill(255), width: 100, height: 100, left: 1900, top: 900 };
   const placed = await ps.commit({ docId: 7, results: [png(10)], crop, name: "x", feather: 2, selection: sel });
   assert.deepEqual(state.layers[placed.layerId].b, { left: 1900, top: 900, right: 2002, bottom: 1002 });
   assert.deepEqual(placed.crop, crop);
+  const mask = () => calls.filter((c) => c[0] === "createImageData")[0][3];
+  assert.ok(mask()[0] < 255, "soft edge inside the canvas");
+  calls.length = 0;
+  await ps.commit({ docId: 7, results: [png(10)], crop, name: "x", feather: 2, selection: { ...sel, cover: new Uint8Array(100 * 100).fill(255) } });
+  assert.equal(mask()[0], 255, "nothing under it: fully covered");
 });
 
 test("commit refuses a closed document", async () => {

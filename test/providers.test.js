@@ -323,7 +323,7 @@ test("gemini surfaces blocks, bad keys and partial variation failures", async ()
 
 // ---------------- Pipeline ----------------
 
-function fakePs({ doc = { id: 1, width: 4000, height: 3000, resolution: 300 }, selection = { left: 1000, top: 1000, right: 1400, bottom: 1300 } } = {}) {
+function fakePs({ doc = { id: 1, width: 4000, height: 3000, resolution: 300 }, selection = { left: 1000, top: 1000, right: 1400, bottom: 1300 }, alpha = 200 } = {}) {
   const log = [];
   return {
     log,
@@ -331,7 +331,7 @@ function fakePs({ doc = { id: 1, width: 4000, height: 3000, resolution: 300 }, s
     async getDocument() { return doc; },
     async getSelectionBounds() { return selection; },
     // returns one pixel narrower than asked, to exercise the resample path
-    async readComposite(id, bounds, size) { log.push(["read", bounds, size]); return { data: new Uint8Array((size.width - 1) * size.height * 4).fill(200), width: size.width - 1, height: size.height, components: 4 }; },
+    async readComposite(id, bounds, size) { log.push(["read", bounds, size]); return { data: new Uint8Array((size.width - 1) * size.height * 4).map((_, i) => (i % 4 === 3 ? alpha : 200)), width: size.width - 1, height: size.height, components: 4 }; },
     async readSelection(id, bounds, size) {
       const w = size ? size.width : bounds.right - bounds.left;
       const h = size ? size.height : bounds.bottom - bounds.top;
@@ -428,6 +428,30 @@ test("pipeline errors are user-friendly and leave the document alone", async () 
   const f = fakePs();
   await assert.rejects(runGeneration({ ps: f, provider: failing, apiKey: "k", model: "m" }), /network down/);
   assert.ok(!f.log.some((l) => l[0] === "commit"));
+});
+
+test("pipeline: an extend (the selection mostly over empty canvas) gets a wide margin of photo; other edits a thin one", async () => {
+  // 2026-11-12: with the thin margin, a band along one side went as a strip with a sliver of photo,
+  // and the model drew a scene of its own there.
+  const crop = async (alpha) => (await runGeneration({ ps: fakePs({ alpha }), provider: fakeProvider(1), apiKey: "k", model: "m" })).crop;
+  const thin = await crop(255);
+  const wide = await crop(0);
+  // The selection is 1000..1400 x 1000..1300: 35 % of its longest side is 140 px.
+  assert.ok(thin.left > 960 || thin.top > 960, `thin margin: ${JSON.stringify(thin)}`);
+  assert.ok(wide.left <= 860 && wide.top <= 860 && wide.right >= 1540 && wide.bottom >= 1440, `wide margin: ${JSON.stringify(wide)}`);
+});
+
+test("pipeline: selected pixels with nothing under them in the document go to the commit, to stay fully covered", async () => {
+  const cover = async (alpha) => {
+    const ps = fakePs({ alpha });
+    await runGeneration({ ps, provider: fakeProvider(1), apiKey: "k", model: "m" });
+    const s = ps.log.find((l) => l[0] === "commit")[1].selection;
+    return { s, cover: s.cover };
+  };
+  assert.equal((await cover(255)).cover, null, "an opaque picture: nothing to cover");
+  const { s, cover: c } = await cover(0); // an empty canvas
+  assert.equal(c.length, s.data.length);
+  assert.ok(s.data.every((v, i) => (v > 0) === (c[i] === 255)), "exactly the selected pixels");
 });
 
 test("an empty prompt removes what is selected; a prompt is painted and names the layer", async () => {

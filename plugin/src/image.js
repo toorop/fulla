@@ -52,11 +52,13 @@ function toRGB(src, w, h, comps, bg = 128) {
  * edge: in an extended canvas nothing is under it, so a see-through strip showed, 2026-11-12).
  * Three box blurs of about radius/2 px each. Beyond a side listed in `edges` (it lies on the canvas
  * edge) the mask goes on as it is at that side, so a selection that reaches the canvas edge stays
- * fully selected there; beyond the other sides it is unselected.
+ * fully selected there; beyond the other sides it is unselected. Where `cover` is set (selected, and
+ * nothing in the document under it: emptyUnder) the mask stays fully selected too.
  * @param {Uint8Array} mask  1 byte per pixel
  * @param {{left?: boolean, top?: boolean, right?: boolean, bottom?: boolean}} [edges]
+ * @param {Uint8Array|null} [cover]  1 byte per pixel, same size as mask
  */
-function featherMask(mask, w, h, radius, edges = {}) {
+function featherMask(mask, w, h, radius, edges = {}, cover = null) {
   const r = Math.max(1, Math.round(radius / 2));
   let a = Float32Array.from(mask);
   let b = new Float32Array(w * h);
@@ -75,8 +77,36 @@ function featherMask(mask, w, h, radius, edges = {}) {
     for (let x = 0; x < w; x++) pass(h, (y) => b[y * w + x], (y, v) => (a[y * w + x] = v), edges.top, edges.bottom);
   }
   const out = new Uint8Array(w * h);
-  for (let i = 0; i < out.length; i++) out[i] = Math.round(a[i]);
+  for (let i = 0; i < out.length; i++) out[i] = cover && cover[i] ? 255 : Math.round(a[i]);
   return out;
+}
+
+/**
+ * The selected pixels with nothing under them in the document (an extended canvas): the result must
+ * cover them fully, or the mask's soft edge leaves them see-through (a light line along the photo's
+ * edge when the empty area itself is selected, 2026-11-12). `rgba` is the composite read over the same
+ * area, maybe smaller; a pixel counts as empty below half opacity. Its empty area is grown by one of its
+ * pixels, so a scaled read never leaves an empty full-resolution pixel out. Null when there is none.
+ * @param {Uint8Array} sel  full-resolution selection, W x H, 1 byte per pixel
+ * @param {Uint8Array} rgba composite, aw x ah, `comps` bytes per pixel
+ */
+function emptyUnder(sel, W, H, rgba, aw, ah, comps) {
+  if (comps !== 4) return null;
+  let empty = new Uint8Array(aw * ah);
+  let any = false;
+  for (let i = 0; i < empty.length; i++) if (rgba[i * 4 + 3] < 128) (empty[i] = 255), (any = true);
+  if (!any) return null;
+  empty = dilate(empty, aw, ah, 1);
+  const cover = new Uint8Array(W * H);
+  any = false;
+  for (let y = 0; y < H; y++) {
+    const row = Math.min(ah - 1, Math.floor((y * ah) / H)) * aw;
+    for (let x = 0; x < W; x++) {
+      const i = y * W + x;
+      if (sel[i] && empty[row + Math.min(aw - 1, Math.floor((x * aw) / W))]) (cover[i] = 255), (any = true);
+    }
+  }
+  return any ? cover : null;
 }
 
 /** Grow the selected (non-zero) area by r pixels: separable max filter. Gives the model room to blend. */
@@ -246,4 +276,4 @@ function toRGBA(data, w, h, comps) {
   return out;
 }
 
-module.exports = { resample, toRGB, toRGBA, featherMask, dilate, binarize, alphaEditMask, coverage, maskBounds, to8bit, placeInto, downsampleStrips };
+module.exports = { resample, toRGB, toRGBA, featherMask, emptyUnder, dilate, binarize, alphaEditMask, coverage, maskBounds, to8bit, placeInto, downsampleStrips };

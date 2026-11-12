@@ -14,10 +14,10 @@ With an **empty prompt**, Fulla removes what you select and fills the area from 
 ## Extend a photo
 
 1. Enlarge the canvas in Photoshop (**Image > Canvas Size**).
-2. Select the new, empty area, overlapping the photo a little.
+2. Select the new, empty area. It can stop at the photo's edge or overlap it a little: either way, the empty pixels are fully covered.
 3. Leave the prompt empty and click **Generate**.
 
-You can fill both sides at once or one at a time. To add something in the new area, describe it instead of leaving the prompt empty.
+Extend one side at a time. Fulla sends the model the rectangle around the selection: for one side, a band the model can fill sharply; for two sides at once, nearly the whole picture, so a higher resolution and price for the same sharpness, or less detail. To add something in the new area, describe it instead of leaving the prompt empty.
 
 :::tip
 Select generously, with room around what you remove and its shadow.

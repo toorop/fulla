@@ -20,7 +20,7 @@ const { estimateCost } = require("./cost");
 const settings = require("./settings");
 const { encodePng, imageSize, tagSrgb } = require("./png");
 const { toRGB, resample } = require("./image");
-const { fitTone } = require("./tone");
+const { fitTone, seamDiag } = require("./tone");
 const { inputSize } = require("./geometry");
 
 const lfs = uxp.storage.localFileSystem;
@@ -92,6 +92,27 @@ function echoProvider(casts) {
   };
 }
 
+/** Stand-in model that returns what it was sent with a brightness drift drift(x, y, W, H) added, one per variation (local tone correction). */
+function driftProvider(drifts) {
+  return {
+    name: "Drift",
+    fitSize: openai.fitSize,
+    autoMax: openai.autoMax,
+    async generate(req) {
+      const { width: W, height: H } = req.target;
+      const img = resample(req.image.rgb, req.image.width, req.image.height, 3, W, H);
+      return drifts.slice(0, req.n).map((drift) => {
+        const p = new Uint8Array(img.length);
+        for (let i = 0; i < img.length; i++) {
+          const j = Math.floor(i / 3);
+          p[i] = Math.max(0, Math.min(255, Math.round(img[i] + drift(j % W, Math.floor(j / W), W, H))));
+        }
+        return { bytes: encodePng(p, W, H, 3), mime: "image/png" };
+      });
+    },
+  };
+}
+
 // ---------- assertions ----------
 
 function expect(cond, msg) {
@@ -117,13 +138,13 @@ const made = [];
 let panelHooks = {};
 
 /** Pattern image, left half red, right half blue, written as a PNG and opened like a user would. */
-async function newDoc({ width = 1200, height = 800, resolution = 72, transparent = false, bits16 = false, opaque = null, profile = "sRGB IEC61966-2.1" } = {}) {
+async function newDoc({ width = 1200, height = 800, resolution = 72, transparent = false, bits16 = false, opaque = null, profile = "sRGB IEC61966-2.1", colors = [RED, BLUE] } = {}) {
   const comps = transparent ? 4 : 3;
   const p = new Uint8Array(width * height * comps);
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const o = (y * width + x) * comps;
-      p.set(x < width / 2 ? RED : BLUE, o);
+      p.set(x < width / 2 ? colors[0] : colors[1], o);
       if (comps === 4) p[o + 3] = !opaque || (x >= opaque.left && x < opaque.right && y >= opaque.top && y < opaque.bottom) ? 255 : 0;
     }
   }
@@ -404,6 +425,42 @@ const SCENARIOS = {
     expect(!third && (await curves()) === 0, "no cast, no filter");
     near(await probe(doc, 550, 400), RED, 6, "variation 3 as is");
     return { first: out.placed.tone.channels, second: second.channels, filterMask };
+  },
+
+  // A model that drifts in one part of its picture (2026-11-12, a beach's sky came back 42 levels too
+  // bright along a filled band, fading halfway down): one curve cannot follow it; the clipped
+  // "Fulla: tone fix" layer brings the band back to the photo all along its edge, per variation.
+  async localTone() {
+    const C1 = [150, 110, 90];
+    const C2 = [90, 120, 170];
+    const doc = await newDoc({ colors: [C1, C2] });
+    await select(doc, "rect", { left: 300, top: 0, right: 900, bottom: 200 });
+    const h0 = historyCount(doc);
+    const trace = [];
+    const lighter = (x, y, W, H) => (30 + (30 * x) / W) * Math.max(0, 1 - y / (0.8 * H));
+    const darker = (x, y, W, H) => -40 * Math.max(0, 1 - y / (0.8 * H));
+    const out = await run(driftProvider([lighter, darker]), { prompt: "selftest local tone", n: 2, trace });
+    const steps = () => JSON.stringify(trace.filter((t) => /tone/i.test(t.step)));
+    expect(out.placed.fixId, `no tone fix layer: ${steps()}`);
+    const inspect = async (id) => (await ps.modal("Fulla self-test: inspect", () => ps.bp([{ _obj: "get", _target: [{ _ref: "layer", _id: id }] }])))[0];
+    const d = await inspect(out.placed.fixId);
+    const mode = d.mode && d.mode._value;
+    expect(d.name === "Fulla: tone fix" && mode === "linearLight" && d.group === true, `tone fix layer: name ${d.name}, mode ${mode}, clipped ${d.group}`);
+    expect(doc.activeLayers[0].id === out.placed.layerId, "the result stays the active layer");
+    expect(historyCount(doc) === h0 + 1, `history grew by ${historyCount(doc) - h0}, expected 1`);
+    const atEdge = async (label) => {
+      near(await probe(doc, 450, 190), C1, 8, `${label}: left of the band's edge`);
+      near(await probe(doc, 750, 190), C2, 8, `${label}: right of the band's edge`);
+      near(await probe(doc, 450, 400), C1, 2, `${label}: outside the band untouched`);
+    };
+    await atEdge("lighter");
+    await snapshot(doc, "localTone");
+    const first = out.placed.fixId;
+    await ps.showVariation(out.placed, out.results[1]);
+    const fixes = Array.from(doc.layers).filter((l) => l.name === "Fulla: tone fix").length;
+    expect(out.placed.fixId && out.placed.fixId !== first && fixes === 1, `variation: tone fix ${out.placed.fixId} (was ${first}), ${fixes} in the document`);
+    await atEdge("darker");
+    return { tone: steps() };
   },
 
   async probeCheck() {
@@ -1307,18 +1364,22 @@ const SCENARIOS = {
   },
 
   // An extended canvas filled up to its edge (2026-11-12: Photoshop's mask feather faded the canvas
-  // edge too, and a see-through strip showed there): the edge stays fully covered.
+  // edge too, and a see-through strip showed there): the edge stays fully covered. The empty area is
+  // selected as it is, not grown into the photo (same day: the soft edge left a light line along the
+  // photo's edge): the empty pixels next to the photo are fully covered too. And the model gets a wide
+  // margin of photo (same day: with 5 %, a strip with a sliver of photo, and the model drew its own scene).
   async extendEdge() {
     const doc = await newDoc({ transparent: true, opaque: { left: 0, top: 0, right: 900, bottom: 800 } });
-    await select(doc, "rect", { left: 880, top: 0, right: 1200, bottom: 800 });
+    await select(doc, "rect", { left: 900, top: 0, right: 1200, bottom: 800 });
     const prov = mockProvider();
-    await run(prov, { prompt: "" });
+    const out = await run(prov, { prompt: "" });
+    expect(out.crop.left <= 900 - 0.35 * 800, `margin of photo sent: crop ${JSON.stringify(out.crop)}`);
     await snapshot(doc, "extendEdge");
     const alpha = {};
-    for (const [x, y] of [[1199, 400], [1199, 0], [1199, 799], [1050, 0], [1050, 799]]) alpha[`${x},${y}`] = (await probe(doc, x, y))[3];
-    expect(Object.values(alpha).every((a) => a === 255), `canvas edge not fully covered: alpha ${JSON.stringify(alpha)}`);
+    for (const [x, y] of [[1199, 400], [1199, 0], [1199, 799], [1050, 0], [1050, 799], [900, 400], [901, 400], [903, 400], [900, 0], [900, 799]]) alpha[`${x},${y}`] = (await probe(doc, x, y))[3];
+    expect(Object.values(alpha).every((a) => a === 255), `canvas edge or photo edge not fully covered: alpha ${JSON.stringify(alpha)}`);
     near(await probe(doc, 400, 400), RED, 12, "the photo is untouched");
-    return { alpha };
+    return { alpha, crop: out.crop };
   },
 
   // A greyscale document (2026-11-12: Curves on red, green and blue was refused there, and the paid
@@ -1660,7 +1721,8 @@ async function toneDiag() {
   // The active layer if it is Fulla's, else the topmost Fulla layer; what lies above it is hidden too while reading.
   const top = Array.from(doc.layers || []);
   const active = doc.activeLayers && doc.activeLayers[0];
-  const layer = active && /^Fulla/.test(active.name) ? active : top.find((l) => /^Fulla/.test(l.name));
+  const isRun = (l) => /^Fulla/.test(l.name) && l.name !== "Fulla: tone fix";
+  const layer = active && isRun(active) ? active : top.find(isRun);
   expect(layer, "no Fulla layer in the open document");
   const index = top.findIndex((l) => l.id === layer.id);
   const hide = (index >= 0 ? top.slice(0, index + 1) : [layer]).filter((l) => l.visible);
@@ -1678,7 +1740,7 @@ async function toneDiag() {
     try {
       return await ps.readLayer(doc.id, layer.id, crop, size);
     } finally {
-      await maskOn(true);
+      await maskOn(d.userMaskEnabled !== false); // as it was: the user may have switched it off
     }
   });
   let px;
@@ -1693,7 +1755,15 @@ async function toneDiag() {
   const margin = Math.max(16, Math.round(Math.max(sel.right - sel.left, sel.bottom - sel.top) * 0.05));
   const report = {};
   const fit = fitTone({ orig: toRGB(px.data, px.width, px.height, px.components), origComps: 3, tile: tile.data, tileComps: tile.components, mask, width: size.width, height: size.height, gap: (margin / 2) * (size.width / cw), report });
-  return { layer: layer.name, hidden: hide.map((l) => l.name), mode: String(doc.mode), crop, selection: sel, size, margin, fitted: !!fit, ...report };
+  const orig = toRGB(px.data, px.width, px.height, px.components);
+  const seam = seamDiag({ orig, origComps: 3, tile: tile.data, tileComps: tile.components, mask, width: size.width, height: size.height });
+  // The two pictures compared, to look at: the photo under the layer, and the layer's own pixels.
+  for (const [name, rgb] of [["tonediag-photo", orig], ["tonediag-layer", toRGB(tile.data, size.width, size.height, tile.components)]]) {
+    const png = encodePng(rgb, size.width, size.height, 3);
+    const file = await outFolder.createFile(`${name}.png`, { overwrite: true });
+    await file.write(png.buffer.slice(png.byteOffset, png.byteOffset + png.byteLength), { format: formats.binary });
+  }
+  return { layer: layer.name, hidden: hide.map((l) => l.name), mode: String(doc.mode), crop, selection: sel, size, margin, fitted: !!fit, seam, files: ["tonediag-photo.png", "tonediag-layer.png"], ...report };
 }
 
 async function runAll(opts = {}) {

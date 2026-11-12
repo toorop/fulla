@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { fitTone, curvePoints } = require("../plugin/src/tone");
+const { fitTone, curvePoints, localTone, linearLightRows } = require("../plugin/src/tone");
 
 const W = 400;
 const H = 300;
@@ -127,4 +127,60 @@ test("tone: no filter when the shift is negligible, there is no ring to compare,
   for (const p of [curvePoints({ gain: 1.25, offset: -40 }), curvePoints({ gain: 0.8, offset: 60 })]) {
     assert.ok(p.every((q) => q.input >= 0 && q.input <= 255 && q.output >= 0 && q.output <= 255) && p[1].input > p[0].input, JSON.stringify(p));
   }
+});
+
+// Linear Light as Photoshop computes it in 8 bits.
+const linearLight = (base, v) => Math.max(0, Math.min(255, v >= 128 ? base + 2 * (v - 128) : base + 2 * v - 255));
+
+test("local tone: a drift near the selection that varies along its edge is undone all along it, and the photo far away is left alone", () => {
+  // Seen 2026-11-12: a band filled along the top of a beach came back too bright, +40 levels on one
+  // side and +60 on the other at the band's edge, fading halfway down; the photo far below kept.
+  const band = { left: 0, top: 0, right: W, bottom: 60 };
+  const orig = photo();
+  const drift = (x, y) => (40 + (20 * x) / W) * Math.max(0, 1 - Math.max(0, y - band.bottom) / 100);
+  const tile = new Uint8Array(W * H * 4);
+  for (let i = 0; i < W * H; i++) {
+    const x = i % W;
+    const y = Math.floor(i / W);
+    for (let k = 0; k < 3; k++) tile[i * 4 + k] = Math.min(255, Math.round(orig[i * 3 + k] + drift(x, y)));
+    tile[i * 4 + 3] = 255;
+  }
+  const mask = selMask(band);
+  const fit = fitTone({ orig, tile, mask, width: W, height: H });
+  const report = {};
+  const local = localTone({ orig, tile, mask, width: W, height: H, gap: 4, fit, report });
+  assert.ok(local, JSON.stringify(report));
+  const rows = linearLightRows(local, W, H, 0, H);
+  const curve = (k, v) => (fit ? Math.max(0, Math.min(255, fit.channels[k].gain * v + fit.channels[k].offset)) : v);
+  // Just inside the band, on both sides: back to the photo just outside it.
+  for (const x of [40, 200, 360]) {
+    const i = (band.bottom - 3) * W + x;
+    for (let k = 0; k < 3; k++) {
+      const back = linearLight(curve(k, tile[i * 4 + k]), rows[i * 3 + k]);
+      assert.ok(Math.abs(back - orig[i * 3 + k]) <= 6, `x ${x}, channel ${k}: ${back} for ${orig[i * 3 + k]}`);
+    }
+  }
+});
+
+test("local tone: no layer when nothing is left to correct, nothing can be measured, or what is next to the selection is another picture; empty canvas is not measured", () => {
+  const orig = photo();
+  const same = new Uint8Array(W * H * 4);
+  for (let i = 0; i < W * H; i++) for (let k = 0; k < 4; k++) same[i * 4 + k] = k < 3 ? orig[i * 3 + k] : 255;
+  const why = (o) => {
+    const report = {};
+    assert.ok(localTone({ orig, tile: same, mask: selMask(), width: W, height: H, ...o, report }) === null, JSON.stringify(report.local));
+    return report.local.reason;
+  };
+  assert.equal(why({}), "negligible");
+  assert.equal(why({ mask: new Uint8Array(W * H).fill(255) }), "ring", "Select All");
+  assert.equal(why({ solid: new Uint8Array(W * H) }), "ring", "everything around is empty canvas");
+  assert.equal(why({ tile: new Uint8Array(W * H * 4).fill(255) }), "mismatch", "a white tile is not a drift");
+});
+
+test("local tone: Linear Light values lighten above mid-grey and darken below it, exactly, in 8 and 16 bits", () => {
+  const local = { width: 3, height: 1, field: Float32Array.of(-41, -41, -41, 0, 0, 0, 40, 40, 40) };
+  const rows = linearLightRows(local, 3, 1, 0, 1);
+  assert.deepEqual([0, 3, 6].map((i) => linearLight(100, rows[i]) - 100), [-41, 0, 40]);
+  assert.deepEqual(Array.from(linearLightRows(local, 3, 1, 0, 1, true)), [Array.from(rows)[0], 128, Array.from(rows)[6]], "greyscale: one channel");
+  assert.deepEqual(Array.from(linearLightRows(local, 3, 1, 0, 1, true, 32768)), [16384 - 2634, 16384, 16384 + 2570]);
 });

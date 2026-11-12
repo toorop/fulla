@@ -5,7 +5,7 @@ const zlib = require("node:zlib");
 const { toBase64, fromBase64, utf8Encode, crc32, adler32 } = require("../plugin/src/bytes");
 const { encodePng, deflateRaw, imageSize, tagSrgb } = require("../plugin/src/png");
 const { computeCrop, inputSize } = require("../plugin/src/geometry");
-const { resample, toRGB, featherMask, dilate, alphaEditMask, maskBounds, downsampleStrips } = require("../plugin/src/image");
+const { resample, toRGB, featherMask, emptyUnder, dilate, alphaEditMask, maskBounds, downsampleStrips } = require("../plugin/src/image");
 
 function randomBytes(n, seed = 1) {
   const out = new Uint8Array(n);
@@ -274,6 +274,30 @@ test("the mask's soft edge fades inside the picture but stays fully selected alo
   // Photoshop's way (edges not kept) fades the canvas edge too: the see-through strip.
   const faded = featherMask(mask, w, h, 8);
   assert.ok(at(faded, w - 1, 15) < 200 && at(faded, w - 1, 0) < at(faded, w - 1, 15), "edges not kept fade");
+});
+
+test("an empty area selected as it is (extended canvas) stays fully covered up to the photo's edge; the soft edge stays on the photo", () => {
+  // 60 x 30 document: photo on the left 40 px, empty (transparent) on the right; the empty area is the
+  // selection, not grown into the photo (2026-11-12: a light line along the photo's edge).
+  const w = 60, h = 30;
+  const sel = new Uint8Array(w * h).map((_, i) => (i % w >= 40 ? 255 : 0));
+  const at = (m, x, y) => m[y * w + x];
+  const composite = (cw, ch) => {
+    const px = new Uint8Array(cw * ch * 4);
+    for (let i = 0; i < cw * ch; i++) px[i * 4 + 3] = (i % cw) * w < 40 * cw ? 255 : 0;
+    return px;
+  };
+  for (const [cw, ch] of [[60, 30], [45, 23]]) {
+    const cover = emptyUnder(sel, w, h, composite(cw, ch), cw, ch, 4);
+    const soft = featherMask(sel, w, h, 8, { top: true, right: true, bottom: true }, cover);
+    for (const x of [40, 41, 44, 59]) assert.equal(at(soft, x, 15), 255, `read at ${cw} px: empty pixel x=${x} covered`);
+    assert.ok(at(soft, 38, 15) > 0 && at(soft, 38, 15) < 255 && at(soft, 20, 15) === 0, `read at ${cw} px: the soft edge falls on the photo`);
+  }
+  // Without the cover, the soft edge leaves the first empty pixels see-through.
+  assert.ok(at(featherMask(sel, w, h, 8, { top: true, right: true, bottom: true }), 40, 15) < 200);
+  // Nothing empty, or nothing empty under the selection: nothing to cover.
+  assert.equal(emptyUnder(sel, w, h, new Uint8Array(w * h * 4).fill(255), w, h, 4), null);
+  assert.equal(emptyUnder(sel.map((_, i) => (i % w < 30 ? 255 : 0)), w, h, composite(w, h), w, h, 4), null);
 });
 
 test("dilate grows a single pixel into a square", () => {

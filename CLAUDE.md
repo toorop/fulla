@@ -28,6 +28,9 @@ Photoshop UXP plugin: generative fill with the user's own AI provider (OpenRoute
 - Imaging reads: scaled reads (`targetSize` smaller than source) come back shifted; selection reads that miss the selection fail with "Invalid Source Bounds". Fulla reads full resolution in strips (max 4 MP each) and scales itself.
 - Network to the local machine (28.0.1, 2026-11-08): only `http://localhost` (no port) in `network.domains` works, for any port, IPv4 or IPv6 server; `127.0.0.1` is refused with or without port ("Manifest entry not found"). A fetch to a port where nothing listens hangs: use a timeout.
 - sp-picker locks if its menu is rebuilt while closing: pickers are replaced, never edited (`main.js`).
+- Placed results shrink with Photoshop's Image Interpolation preference (`layer.scale`). A layer's pixel reads go through its user mask once the mask holds soft values (switch `userMaskEnabled` off to read the whole layer). Photoshop's mask feather also fades the canvas edge. The greyscale composite channel is `gray`.
+- A batchPlay `set` with a layer's name and blend mode set the name only (28.0.1): set the mode through the DOM (`layer.blendMode`).
+- UXP layout: measured sizes update after the handler returns (use `setTimeout`); flex children shrink unless told not to; a self-scrolling div can lose its bottom border; the native text field draws over any menu; a hidden element can leave pixels behind until a repaint.
 
 ## Rules
 - Zero runtime dependencies. Plugin code is CommonJS for UXP. Target: the current Photoshop release and the beta only (manifest `minVersion`, 27.11 as of 2026-11-07; with the subscription everyone can update, so no work for older versions). Keep avoiding `btoa`, `TextEncoder`, `FormData`, canvas and ES modules until checked in UXP.

@@ -6,7 +6,12 @@
 
 ## Next action
 
-- **Resume here: A4 (the heron, with and without a reference)** (step 6, the site images, card by card in the order of his illustrations
+- **Resume here: A4 becomes the locomotive** (his archive photo, a man removed in front of a
+  2D2 5400; his call 2026-11-12: author unknown, he accepts the risk). The point is a reference
+  bringing back what was really hidden. Candidate reference: Commons `France Rail 021 Le Mans
+  2.jpg` (2D2 5409, Ben Brooksbank, CC BY-SA 4.0: credit under the example); he checks it shows
+  the same side as his photo, then tests with and without it (about $0.36 for 3 + 3 draws)
+  (step 6, the site images, card by card in the order of his illustrations
   note, vault, Fulla folder; A1 and A2 done). **A2 done (2026-11-12):**
   `site/src/assets/examples/a2-avant.jpg` (checkerboard painted over the white bands, Photoshop's
   white/#ccc grid, 40 px squares at full size) and `a2-apres.jpg`, 1800 px q95; its card is 16:9,

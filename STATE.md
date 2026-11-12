@@ -9,8 +9,11 @@
     captures the refusal text, for the comparison page and home example 5); more tests with GPT
     Image models through Fulla (few so far; paid, give the cost first); is GPT Image in the model
     list of Photoshop (Beta) 28's generative fill.
-  - **macOS:** never tested. The `.ccx` through Creative Cloud should install on a Mac too, but
-    the docs and the site say nothing about macOS until it is tried.
+  - **macOS:** never tested. No release and no site go-live before he has tried the `.ccx` on
+    a Mac (his call, 2026-11-12), so the docs already say "Windows and macOS" for the `.ccx`.
+  - **Windows `.ccx`:** the double-click install was never tried either (only `install.ps1` and
+    UXP Developer Tools). He tests it, then decides whether to drop the Windows installer
+    (`.bat` + zip; Claude's advice: drop it if the `.ccx` works, a `.bat` scares people).
   - **Images:** he generates the base pictures locally and edits them with Fulla; the list
     (names, sizes, prompts) is a note in his vault. Placeholders in `site/` until then.
   - **Umami:** he creates the site in his Umami, then the id goes in `site/src/lib/analytics.mjs`.
@@ -72,7 +75,12 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 ## Recently done
 
 - 2026-11-12 — Release workflow (step 7): `release.yml` and `scripts/release-notes.js`, draft
-  release with notes from the site's Changelog page; old OpenFill tag deleted locally.
+  release with notes from the site's Changelog page; old OpenFill tag deleted locally. The
+  release procedure is in the README ("Release", under "Develop").
+- 2026-11-12 — `.ccx` installed by double-click on Windows (works; Creative Cloud asks for admin
+  rights the first time only); docs say "Windows and macOS" for the `.ccx` and describe
+  Photoshop's permission dialog; C2 panel captures done; two panel bugs after the first connect
+  fixed (frozen progress bar, leftover button borders); free self-test 32/32.
 
 - 2026-11-11 — Website: design (three mockups, B chosen; docs layout; colours), then built in
   `site/`: home page, 18 docs pages, comparison and explainer pages, About, share image,
@@ -136,6 +144,16 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 - Tone matching as a separate Curves smart filter (2026-11-08); no filter when not needed.
 
 ## Open questions / blockers
+
+- Two panel bugs seen 2026-11-12 after the first OpenRouter connect (Photoshop Beta 28, Windows
+  at 200 %), fixed but **not yet checked in Photoshop**: (1) the Generate tab showed a frozen
+  progress bar and "You can keep working." with the "connected" message: `#runProgress` didn't
+  start hidden (fixed in `index.html`, test in `test/panel.test.js`); (2) the bottom borders of
+  the connect guide's buttons stayed on screen: (1) checked fixed; an opacity flick didn't clear
+  (2) (a 1 px line stayed under Generate, gone after a change of tab), so `redrawPage()` in
+  `main.js` now hides and shows the Generate page again 50 ms after the connect, as a change of
+  tab does. Not checked (his call, 2026-11-12: a 1 px line once, not worth another connect);
+  look at it next time someone connects.
 
 - Tile offset (pier removal, shifted up-right while earlier test layers existed): not seen
   again; the 2026-11-10 shifted result was the model redrawing everything, Fulla's placement

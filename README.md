@@ -52,7 +52,7 @@ You pay the provider directly, per image. Each needs a funded account: OpenRoute
 
 ## Install
 
-**With the Creative Cloud app:** download `fulla-<version>.ccx` from [Releases](../../releases) and double-click it.
+**With the Creative Cloud app (Windows and macOS):** download `fulla-<version>.ccx` from [Releases](../../releases) and double-click it.
 
 **Without the Creative Cloud app (Windows):** download `fulla-<version>-windows.zip`, unzip it, close Photoshop and double-click **Install Fulla.bat**. No admin rights needed.
 
@@ -69,7 +69,7 @@ You pay the provider directly, per image. Each needs a funded account: OpenRoute
 
 Start Photoshop and open **Plugins > Fulla**. With no provider yet, the panel opens on its **Providers** tab:
 
-- **Connect with OpenRouter** (recommended): Photoshop asks to open your browser (the window may open behind Photoshop). On openrouter.ai, sign in or create an account; you can set a spending limit and an expiry for the key there. Click **Authorize**, then paste the code it shows into the panel. OpenRouter's page says "terminal": it means the panel. A new account needs credits before its first image; the panel says so and links the page. If, after creating your OpenRouter account, you don't land on the page with the **Authorize** button, go back to the panel and click **Open the page again**: you are signed in by then, so it goes straight there.
+- **Connect with OpenRouter** (recommended): Photoshop asks for permission to open openrouter.ai: click **Allow** (the browser window may open behind Photoshop). On openrouter.ai, sign in or create an account; you can set a spending limit and an expiry for the key there. Click **Authorize**, then paste the code it shows into the panel. OpenRouter's page says "terminal": it means the panel. A new account needs credits before its first image; the panel says so and links the page. If, after creating your OpenRouter account, you don't land on the page with the **Authorize** button, go back to the panel and click **Open the page again**: you are signed in by then, so it goes straight there.
 - **Already have a key?** Add a Google (Gemini API) or OpenAI key. Fulla checks it with a free request before saving it.
 
 Keys stay on your computer, in Photoshop's secure storage, and go only to their provider. **Test** checks a saved key again; **Remove** deletes it.
@@ -84,6 +84,19 @@ npm run package   # builds dist/fulla-<version>.ccx and -windows.zip
 ```
 
 Load `plugin/manifest.json` in Adobe's UXP Developer Tools (turn on **Watch** to reload on every save), or install a dev copy with `installer/install.ps1 -Source plugin`; not both, they share the plugin id. UXP Developer Tools needs Photoshop's developer mode on (**Preferences > Plugins > Enable Developer Mode**), otherwise Load fails with "Failed to load the devtools plugin". To add a provider, write one file in `plugin/src/providers/` with the same shape as `openai.js` and list it in `providers/index.js`.
+
+### Release
+
+1. Set the same `version` in `package.json` and `plugin/manifest.json`.
+2. Add a `## X.Y.Z` section, written for users, at the top of the website's Changelog page (`site/src/content/docs/docs/changelog.md`). It becomes the release notes; links such as `/docs/...` are turned into links to the website.
+3. Commit and push, then push the tag:
+   ```bash
+   git tag vX.Y.Z && git push origin vX.Y.Z
+   ```
+4. `.github/workflows/release.yml` runs the whole CI, checks that the tag matches both versions and that the Changelog section exists, builds the `.ccx` and the Windows zip, adds `SHA256SUMS.txt`, and creates a **draft** release. Nothing is public yet.
+5. On GitHub, read the draft, tick **Set as a pre-release** if wanted, and click **Publish release**.
+
+If a step fails, no release is created. Fix the cause, move the tag (`git tag -d vX.Y.Z && git push origin :refs/tags/vX.Y.Z`, then step 3 again), or re-run the workflow if nothing needed fixing in the repository.
 
 <details>
 <summary>In-Photoshop self-test</summary>
@@ -118,6 +131,7 @@ plugin/
     └── selftest.js      # in-Photoshop self-test, left out of release packages
 installer/               # Install / Uninstall Fulla.bat and their PowerShell scripts
 scripts/package.js       # builds the .ccx and the Windows zip
+scripts/release-notes.js # release.yml: checks the tag, takes the notes from the Changelog page
 test/                    # unit tests (Node's built-in runner)
 docs/spec.md             # spec and test plan
 ```

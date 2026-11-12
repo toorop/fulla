@@ -6,15 +6,20 @@
 
 ## Next action
 
-- **Resume here: A2, extend a photo** (step 6, the site images, card by card in the order of his
-  illustrations note, vault, Fulla folder; A1 done). His generated beach (16:9, hut on the left),
-  extended left then top, one band at a time; he exports `a2-avant.png` (bands transparent) and
-  `a2-apres.png` into `captures/site/`, with model, draws per band and cost for the caption. The
-  extended picture is wider than the home page's 3:2 frame: adapt the frame for it. For each card:
-  say the goal, check his PNG pair (same size), resize to 1800 px JPEG q95 into
-  `site/src/assets/examples/`, wire it in, fill the caption facts (model, prompt, resolution,
-  draw, cost); he may use his own photo if it serves the card's goal. The dev server:
-  `.claude/launch.json` (local, excluded from git) via the preview tool, http://localhost:4321.
+- **Resume here: wire A2 into the home page** (step 6, the site images, card by card in the order of
+  his illustrations note, vault, Fulla folder; A1 done). **Pair received and checked (2026-11-12):**
+  `captures/site/a2-avant.png` and `a2-apres.png` next to his notes, 3840 x 2160 (16:9), same
+  document, the photo identical outside the bands. The empty bands of the "before" are **pure
+  white, not transparent**: left band 355 px wide, top band 268 px high (the white area matches
+  them exactly); paint the checkerboard there yourself. His generated beach (generated photo:
+  say so under the example), Nano Banana 2.1, empty prompt, one band at a time. **Caption facts
+  still to ask him:** draws per band (failures included) and the cost shown. The picture is 16:9,
+  the home page's frame is 3:2: adapt the frame for this example. For each card: resize to
+  1800 px JPEG q95 into `site/src/assets/examples/`, wire it in, fill the caption facts. He is
+  retesting a top band to see the "Fulla: tone fix" layer on a real drift (not seen yet; names
+  for his captures: `captures/2026-11-12 plage - 4 bande du haut avec tone fix.png`, `- 5 ... sans
+  tone fix.png`). The dev server: `.claude/launch.json` (local, excluded from git) via the preview
+  tool, http://localhost:4321.
   Panel captures: C2 done (`captures/site/`, Windows at 200 %, darkest theme); C3 to C7 later;
   C8/C9 need an English Photoshop (skipped, described in text); C1/C10 with the release `.ccx`.
 - **Waiting on him, when he wants:** face-swap refusal test in Photoshop; GPT Image tests (paid,

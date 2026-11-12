@@ -6,10 +6,10 @@
 
 ## Next action
 
-- **Resume here: A5 (face swap) goes in whatever his Photoshop test shows** (his call 2026-11-12,
-  replacing the 2026-11-10 condition). He is testing Photoshop's generative fill on it, and looking
-  for the pair from the 10 November trial (generated people, no real person); the test's result
-  may change the caption (step 6, the site images, card by card in the order of his illustrations
+- **Resume here: A5 (face swap), waiting for his files** (`a5-avant.png`, `a5-apres.png`,
+  `a5-ref.png` in `captures/site/`, generated people, plus caption facts). It goes in anyway (his
+  call 2026-11-12). Photoshop's generative fill does swap the face with a clear prompt (his test,
+  2026-11-12): not an argument against Photoshop, no comparison in the caption (step 6, the site images, card by card in the order of his illustrations
   note, vault, Fulla folder; A1 and A2 done). **A2 done (2026-11-12):**
   `site/src/assets/examples/a2-avant.jpg` (checkerboard painted over the white bands, Photoshop's
   white/#ccc grid, 40 px squares at full size) and `a2-apres.jpg`, 1800 px q95; its card is 16:9,
@@ -31,7 +31,9 @@
 - **Release workflow done (2026-11-12):** a `vX.Y.Z` tag runs the CI, checks the tag, takes the
   notes from the site's Changelog page and creates a **draft** release; procedure in the README
   and `CLAUDE.md`. Never run yet (no tag on GitHub).
-- **Before publishing the site:** check every figure again (Adobe's credits FAQ by hand; the
+- **Before publishing the site:** Photoshop now offers GPT in its generative fill (seen by him
+  2026-11-12): the GPT Image page must say so, as the Nano Banana page does (which model, credits,
+  resolution: to look up); recheck "models Photoshop doesn't offer". Check every figure again (Adobe's credits FAQ by hand; the
   same model on both sides: Adobe lists Nano Banana 2, `gemini-3.1-flash-image`, Fulla's
   default is Nano Banana 2.1), then remove the "Draft" banners (`draft: true` in the pages'
   frontmatter); judge the background (`#1e1e1e`, on trial) with the real photos; never write

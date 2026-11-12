@@ -85,8 +85,9 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 - 2026-11-12 — Home page examples: one at a time (his request: he had not seen the sideways
   scrollbar), an arrow on each side named after the example it leads to (under the photo on a
-  phone), looping both ways; light disc, dark thick arrow (his call: must stand out); frames up
-  to 560 px tall; without JavaScript, still a sideways scroll.
+  phone), looping both ways; light disc, dark thick arrow (his call: must stand out); on a wide
+  screen every frame has one height (up to 560 px, less when 16:9 would not fit), so the arrows
+  never move (his bug report); without JavaScript, still a sideways scroll.
 - 2026-11-12 — Site image A2 (his generated beach, extended left and top) on the home page, in a
   16:9 card; A1 and A2 also on the docs page Remove and extend (now `.mdx`, sliders with captions;
   the Markdown copy keeps the captions, drops the sliders).

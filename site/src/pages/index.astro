@@ -308,15 +308,16 @@ const jsonLd = [
 	.after-cta { margin-top: 36px; }
 
 	/* Examples: one at a time, an arrow on each side named after the example it leads to.
-	   Without JavaScript, a sideways scroll. Frames are --h tall where the width allows. */
+	   Without JavaScript, a sideways scroll. On a wide screen every frame has the same height (--h,
+	   or less when a 16:9 frame would not fit the reel), so the arrows never move. */
 	.carousel { --h: min(62vh, 560px); display: grid; grid-template-columns: 130px minmax(0, 1fr) 130px; gap: 0 24px; align-items: start; }
-	.reel { grid-column: 2; grid-row: 1; display: grid; grid-auto-flow: column; grid-auto-columns: 100%; gap: 48px; overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; }
+	.reel { grid-column: 2; grid-row: 1; display: grid; grid-auto-flow: column; grid-auto-columns: 100%; gap: 48px; overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; container-type: inline-size; }
 	.reel:focus { outline: none; }
 	.is-live .reel { scrollbar-width: none; }
 	.is-live .reel::-webkit-scrollbar { display: none; }
 	.ex { scroll-snap-align: start; margin: 0; display: flex; justify-content: center; }
-	.ex-in { width: min(100%, calc(var(--h) * 3 / 2)); }
-	.wide .ex-in { width: min(100%, calc(var(--h) * 16 / 9)); }
+	.ex-in { --fit: min(var(--h), 100cqw * 9 / 16); width: calc(var(--fit) * 3 / 2); }
+	.wide .ex-in { width: calc(var(--fit) * 16 / 9); }
 	.nav { grid-row: 1; margin-top: calc(var(--fh, var(--h)) / 2 - 28px); display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 4px; background: none; border: 0; border-radius: 8px; color: var(--f-ink-2); font: inherit; font-size: 14px; line-height: 1.3; text-align: center; cursor: pointer; }
 	.nav.prev { grid-column: 1; }
 	.nav.next { grid-column: 3; }
@@ -329,6 +330,7 @@ const jsonLd = [
 	@media (max-width: 899px) {
 		.carousel { grid-template-columns: 1fr 1fr; gap: 20px 12px; }
 		.reel { grid-column: 1 / -1; }
+		.ex-in, .wide .ex-in { width: 100%; }
 		.nav { grid-row: 2; margin-top: 0; flex-direction: row; gap: 12px; text-align: left; }
 		.nav.prev { grid-column: 1; justify-self: start; }
 		.nav.next { grid-column: 2; justify-self: end; flex-direction: row-reverse; text-align: right; }

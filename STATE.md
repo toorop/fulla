@@ -6,8 +6,11 @@
 
 ## Next action
 
-- **Resume here: D2 (resolution, 1K forced against Auto on a real 24 MP photo)** (home page
-  examples A1 to A5 and D1 done 2026-11-12) (step 6, the site images, card by card in the order of his illustrations
+- **Resume here: D2 (resolution), waiting for his second try** (home page examples A1 to A5 and
+  D1 done 2026-11-12). First try on a plain sky and sea did not show the difference (only the far
+  coast); his call: redo on a photo with fine detail, the same large selection for 1K forced and
+  Auto; files `d2.png`, `d2-1k.png`, `d2-4k.png` in `captures/site/`; Claude makes 100 % crops
+  for the Resolution page (step 6, the site images, card by card in the order of his illustrations
   note, vault, Fulla folder; A1 and A2 done). **A2 done (2026-11-12):**
   `site/src/assets/examples/a2-avant.jpg` (checkerboard painted over the white bands, Photoshop's
   white/#ccc grid, 40 px squares at full size) and `a2-apres.jpg`, 1800 px q95; its card is 16:9,

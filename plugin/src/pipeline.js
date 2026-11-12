@@ -176,7 +176,7 @@ async function runGeneration(o) {
   const matchTone = {
     size: job.inp,
     // Half the margin is left to the model's blend; the rest is the ring compared.
-    fit: (tile) => fitTone({ orig: job.rgb, origComps: 3, tile: tile.data, tileComps: tile.components, mask: job.mask, width: job.inp.width, height: job.inp.height, gap: (job.geo.margin / 2) * (job.inp.width / (crop.right - crop.left)) }),
+    fit: (tile, report) => fitTone({ orig: job.rgb, origComps: 3, tile: tile.data, tileComps: tile.components, mask: job.mask, width: job.inp.width, height: job.inp.height, gap: (job.geo.margin / 2) * (job.inp.width / (crop.right - crop.left)), report }),
   };
   const placed = await ps.modal(name, () => ps.commit({ docId: doc.id, results, crop, name, feather, selection: job.selection, matchTone, trace: o.trace }), { historyDocId: doc.id });
   placed.matchTone = matchTone; // each variation shown later gets its own correction

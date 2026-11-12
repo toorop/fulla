@@ -20,6 +20,8 @@ const { estimateCost } = require("./cost");
 const settings = require("./settings");
 const { encodePng, imageSize, tagSrgb } = require("./png");
 const { toRGB, resample } = require("./image");
+const { fitTone } = require("./tone");
+const { inputSize } = require("./geometry");
 
 const lfs = uxp.storage.localFileSystem;
 const formats = uxp.storage.formats;
@@ -1106,6 +1108,7 @@ const SCENARIOS = {
     const report = $("detailsText").value;
     const key = await settings.getKey(current);
     expect(/HTTP status: 400/.test(report) && /selftest refusal/.test(report) && /^Fulla /.test(report), `details: ${report}`);
+    expect(!/Photoshop \?/.test(report), `details: no Photoshop version in ${report.split("\n")[0]}`);
     expect(!key || !report.includes(key), "the details contain the API key");
     $("detailsToggle").dispatchEvent(new Event("click"));
     await tick();
@@ -1269,6 +1272,73 @@ const SCENARIOS = {
     expect(outside[3] === 0, `outside the selection stays transparent (alpha ${outside[3]})`);
     near(await probe(doc, 500, 400), RED, 12, "content island untouched");
     return { crop: out.crop };
+  },
+
+  // What is sent is the picture as shown, whatever layer is active: a visible layer above counts, a
+  // hidden one doesn't (Stéphane's question, 2026-11-12, after a strip came back 1.5 times too bright).
+  async compositeSent() {
+    const doc = await newDoc();
+    const bottom = doc.activeLayers[0];
+    const fill = (rgb) => ({ _obj: "fill", using: { _enum: "fillContents", _value: "color" }, color: { _obj: "RGBColor", red: rgb[0], grain: rgb[1], blue: rgb[2] }, opacity: { _unit: "percentUnit", _value: 100 }, mode: { _enum: "blendMode", _value: "normal" } });
+    const square = (r, rgb, visible) =>
+      ps.modal("Fulla self-test: layer", async () => {
+        await ps.bp([{ _obj: "make", _target: [{ _ref: "layer" }] }]);
+        await selectRect(r);
+        await ps.bp([fill(rgb), { _obj: "set", _target: [SELECTION], to: { _enum: "ordinal", _value: "none" } }]);
+        doc.activeLayers[0].visible = visible;
+      });
+    await square({ left: 450, top: 250, right: 550, bottom: 350 }, GREEN_SOLID, true);
+    await square({ left: 650, top: 250, right: 750, bottom: 350 }, YELLOW_SOLID, false);
+    await ps.modal("Fulla self-test: activate", () => ps.bp([{ _obj: "select", _target: [{ _ref: "layer", _id: bottom.id }], makeVisible: false }]));
+    await select(doc, "rect", { left: 400, top: 200, right: 800, bottom: 400 });
+    const prov = mockProvider();
+    const out = await run(prov, { prompt: "selftest composite" });
+    const req = prov.requests[0];
+    const at = (x, y) => {
+      const ix = Math.floor(((x - out.crop.left) * req.image.width) / (out.crop.right - out.crop.left));
+      const iy = Math.floor(((y - out.crop.top) * req.image.height) / (out.crop.bottom - out.crop.top));
+      const o = (iy * req.image.width + ix) * 3;
+      return [req.image.rgb[o], req.image.rgb[o + 1], req.image.rgb[o + 2]];
+    };
+    near(at(500, 300), GREEN_SOLID, 12, "a visible layer above the active one is sent");
+    near(at(700, 300), BLUE, 12, "a hidden layer is not sent");
+    near(at(420, 300), RED, 12, "the picture under them is sent");
+    return { crop: out.crop };
+  },
+
+  // An extended canvas filled up to its edge (2026-11-12: Photoshop's mask feather faded the canvas
+  // edge too, and a see-through strip showed there): the edge stays fully covered.
+  async extendEdge() {
+    const doc = await newDoc({ transparent: true, opaque: { left: 0, top: 0, right: 900, bottom: 800 } });
+    await select(doc, "rect", { left: 880, top: 0, right: 1200, bottom: 800 });
+    const prov = mockProvider();
+    await run(prov, { prompt: "" });
+    await snapshot(doc, "extendEdge");
+    const alpha = {};
+    for (const [x, y] of [[1199, 400], [1199, 0], [1199, 799], [1050, 0], [1050, 799]]) alpha[`${x},${y}`] = (await probe(doc, x, y))[3];
+    expect(Object.values(alpha).every((a) => a === 255), `canvas edge not fully covered: alpha ${JSON.stringify(alpha)}`);
+    near(await probe(doc, 400, 400), RED, 12, "the photo is untouched");
+    return { alpha };
+  },
+
+  // A greyscale document (2026-11-12: Curves on red, green and blue was refused there, and the paid
+  // result thrown away): one composite curve brings a brightness shift back.
+  async grayscaleTone() {
+    const doc = await newDoc();
+    await ps.modal("Fulla self-test: greyscale", () => ps.bp([{ _obj: "convertMode", to: { _class: "grayscaleMode" } }]));
+    expect(/gray/i.test(String(doc.mode)), `document mode is ${doc.mode}, expected greyscale`);
+    await select(doc, "rect", { left: 450, top: 250, right: 750, bottom: 550 });
+    const before = await probe(doc, 550, 400);
+    const trace = [];
+    const out = await run(echoProvider([[40, 40, 40]]), { prompt: "selftest greyscale tone", n: 1, trace });
+    const step = trace.find((t) => t.step === "tone" || t.step === "toneError" || t.step === "toneSkipped");
+    expect(step && step.step === "tone", `tone matching: ${JSON.stringify(step || "not run")}`);
+    const [d] = await ps.modal("Fulla self-test: inspect", () => ps.bp([{ _obj: "get", _target: [{ _ref: "layer", _id: out.placed.layerId }] }]));
+    const curves = ((d.smartObject && d.smartObject.filterFX) || []).filter((f) => f.filter && f.filter._obj === "curves").length;
+    expect(curves === 1, `${curves} Curves smart filters, expected 1`);
+    near(await probe(doc, 550, 400), before, 6, "brightness shift undone");
+    await snapshot(doc, "grayscaleTone");
+    return { mode: String(doc.mode) };
   },
 
   async highRes300ppi() {
@@ -1577,16 +1647,67 @@ async function abInput(o) {
   return report;
 }
 
+/**
+ * Dev-only, free ({"toneDiag": true}): why tone matching corrected or not the last Fulla run in the
+ * open document. The Fulla layer must be the active layer, and the run's selection still active
+ * (Fulla leaves it). Replays the comparison over the layer's area (the crop): the photo under the
+ * layer, the layer's own pixels and the selection, at the size sent, and returns fitTone's report.
+ * The layer is hidden for a moment, then shown again.
+ */
+async function toneDiag() {
+  const doc = app.activeDocument;
+  expect(doc, "no open document");
+  // The active layer if it is Fulla's, else the topmost Fulla layer; what lies above it is hidden too while reading.
+  const top = Array.from(doc.layers || []);
+  const active = doc.activeLayers && doc.activeLayers[0];
+  const layer = active && /^Fulla/.test(active.name) ? active : top.find((l) => /^Fulla/.test(l.name));
+  expect(layer, "no Fulla layer in the open document");
+  const index = top.findIndex((l) => l.id === layer.id);
+  const hide = (index >= 0 ? top.slice(0, index + 1) : [layer]).filter((l) => l.visible);
+  const sel = await ps.getSelectionBounds(doc.id);
+  expect(sel, "no selection: select the run's area again");
+  const [d] = await ps.modal("Fulla self-test: inspect", () => ps.bp([{ _obj: "get", _target: [{ _ref: "layer", _id: layer.id }] }]));
+  const v = (x) => (x && typeof x === "object" && "_value" in x ? x._value : x);
+  const b = d.boundsNoMask || d.bounds;
+  const crop = { left: v(b.left), top: v(b.top), right: v(b.right), bottom: v(b.bottom) };
+  const cw = crop.right - crop.left;
+  const size = inputSize({ width: cw, height: crop.bottom - crop.top });
+  const maskOn = (on) => ps.bp([{ _obj: "set", _target: [{ _ref: "layer", _id: layer.id }], to: { _obj: "layer", userMaskEnabled: on } }]);
+  const tile = await ps.modal("Fulla self-test: read", async () => {
+    await maskOn(false); // the ring is outside the selection: read the layer as tone matching does
+    try {
+      return await ps.readLayer(doc.id, layer.id, crop, size);
+    } finally {
+      await maskOn(true);
+    }
+  });
+  let px;
+  try {
+    await ps.modal("Fulla self-test: hide", async () => hide.forEach((l) => (l.visible = false)));
+    px = await ps.modal("Fulla self-test: read", () => ps.readComposite(doc.id, crop, size));
+  } finally {
+    await ps.modal("Fulla self-test: show", async () => hide.forEach((l) => (l.visible = true)));
+  }
+  const s = await ps.modal("Fulla self-test: read", () => ps.readSelection(doc.id, crop, size));
+  const mask = s.width === size.width && s.height === size.height ? s.data : resample(s.data, s.width, s.height, 1, size.width, size.height);
+  const margin = Math.max(16, Math.round(Math.max(sel.right - sel.left, sel.bottom - sel.top) * 0.05));
+  const report = {};
+  const fit = fitTone({ orig: toRGB(px.data, px.width, px.height, px.components), origComps: 3, tile: tile.data, tileComps: tile.components, mask, width: size.width, height: size.height, gap: (margin / 2) * (size.width / cw), report });
+  return { layer: layer.name, hidden: hide.map((l) => l.name), mode: String(doc.mode), crop, selection: sel, size, margin, fitted: !!fit, ...report };
+}
+
 async function runAll(opts = {}) {
   const startedAt = new Date().toISOString();
   const original = app.activeDocument;
   const results = [];
-  const names = opts.live || opts.abInput ? [] : opts.only && opts.only.length ? opts.only : Object.keys(SCENARIOS);
+  const names = opts.live || opts.abInput || opts.toneDiag ? [] : opts.only && opts.only.length ? opts.only : Object.keys(SCENARIOS);
   const all = opts.live
     ? [[`live-${opts.live}`, () => live(opts.live, opts.model)]]
     : opts.abInput
       ? [["abInput", () => abInput(opts.abInput)]]
-      : names.map((n) => [n, SCENARIOS[n]]);
+      : opts.toneDiag
+        ? [["toneDiag", toneDiag]]
+        : names.map((n) => [n, SCENARIOS[n]]);
   for (const [name, fn] of all) {
     const t0 = Date.now();
     try {

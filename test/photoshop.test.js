@@ -73,7 +73,7 @@ function loadWithFakes({ imagingMissing = false, fail8bit = false, trim = null, 
         return { sourceBounds: o.sourceBounds, imageData: { width, height, components: 1, getData: async () => new Uint8Array(width * height).fill(255), dispose: () => {} } };
       },
       async createImageDataFromBuffer(buf, o) {
-        calls.push(["createImageData", buf.length, o]);
+        calls.push(["createImageData", buf.length, o, buf]);
         return { ...o, dispose: () => calls.push(["disposeSel"]) };
       },
       async putSelection(o) { state.putSelection = o; calls.push(["putSelection", o.targetBounds]); },
@@ -165,7 +165,7 @@ test("commit: one layer, like Adobe's: deselect, place and fit the first result,
   assert.deepEqual(layer.b, crop, "fitted exactly to the crop");
   assert.ok(calls.filter((c) => c[0] === "scale").every((c) => c[2] === "tl"), "scaled from the top-left");
   assert.equal(layer.name, "Fulla: test");
-  assert.equal(layer.layerMaskFeather, 4);
+  assert.equal(layer.layerMaskFeather, 0, "the soft edge is in the mask itself, not Photoshop's feather");
   assert.deepEqual(state.putSelection.targetBounds, { left: 100, top: 50 });
   const created = calls.find((c) => c[0] === "createImageData");
   assert.equal(created[1], 768 * 512);
@@ -178,6 +178,10 @@ test("commit: one layer, like Adobe's: deselect, place and fit the first result,
   const puts = calls.map((c, i) => (c[0] === "putSelection" ? i : -1)).filter((i) => i >= 0);
   assert.equal(puts.length, 2);
   assert.ok(puts[1] > maskIdx, "selected again after the mask");
+  // The mask gets a soft edge; the selection put back for the next run is the exact one.
+  const bufs = calls.filter((c) => c[0] === "createImageData").map((c) => c[3]);
+  assert.ok(bufs[0][0] < 255 && bufs[0][256 * 768 + 384] === 255, "soft edge at the crop's border, solid inside");
+  assert.equal(bufs[1][0], 255, "exact selection restored");
   assert.deepEqual(calls[puts[1]][1], { left: 100, top: 50 });
   assert.equal(state.active.id, placed.layerId);
   assert.equal(state.deleted.length, 1, "temp file removed");
@@ -193,7 +197,11 @@ test("tone matching: the layer's own pixels are read, the correction lands as a 
   const matchTone = { size: { width: 20, height: 10 }, fit: (tile) => (seen.push(tile), next && { curves: next }) };
   const placed = await ps.commit({ docId: 7, results: [png(10), png(20)], crop, name: "x", feather: 2, selection: sel, matchTone });
   assert.deepEqual([seen[0].width, seen[0].height, seen[0].components], [20, 10, 4], "the fit gets the layer at the size sent");
-  assert.ok(calls.some((c) => c[0] === "getPixels" && c[4] === placed.layerId), "read the run's layer, not the composite");
+  const read = calls.findIndex((c) => c[0] === "getPixels" && c[4] === placed.layerId);
+  assert.ok(read >= 0, "read the run's layer, not the composite");
+  // ...without its mask: the ring compared lies outside the selection.
+  const maskSet = calls.map((c, i) => [i, c]).filter(([, c]) => c[0] === "bp" && c[1] === "set" && c[2].to && "userMaskEnabled" in c[2].to);
+  assert.deepEqual(maskSet.map(([i, c]) => [i < read, c[2].to.userMaskEnabled]), [[true, false], [false, true]], "mask off for the read, then on again");
   const ops = calls.filter((c) => c[0] === "bp").map((c) => c[2]);
   const ci = ops.findIndex((d) => d._obj === "curves");
   assert.ok(ci > ops.findIndex((d) => d._obj === "make" && d.using), "after the mask");
@@ -224,6 +232,39 @@ test("tone matching: the layer's own pixels are read, the correction lands as a 
   next = null;
   await ps.showVariation(placed, png(20));
   assert.equal(state.filterFX.length, 0);
+});
+
+test("tone matching: a greyscale document gets one composite curve; a correction Photoshop refuses leaves the result without it", async () => {
+  const crop = { left: 0, top: 0, right: 40, bottom: 20 };
+  const sel = { data: new Uint8Array(800).fill(255), width: 40, height: 20, left: 0, top: 0 };
+  const gray = [{ input: 0, output: 20 }, { input: 255, output: 250 }];
+  const matchTone = { size: { width: 20, height: 10 }, fit: () => ({ curves: [gray, gray, gray], gray }) };
+  {
+    const { ps, calls, doc } = loadWithFakes();
+    doc.mode = "grayscaleMode";
+    await ps.commit({ docId: 7, results: [png(10)], crop, name: "x", feather: 2, selection: sel, matchTone });
+    const c = calls.find((x) => x[0] === "bp" && x[1] === "curves")[2];
+    assert.deepEqual(c.adjustment.map((a) => [a.channel._value, a.curve.map((p) => p.vertical)]), [["composite", [20, 250]]]);
+  }
+  {
+    // Seen 2026-11-12: "Photoshop refused curves" threw away a paid result.
+    const { ps, state } = loadWithFakes({ refuse: "curves" });
+    const trace = [];
+    const placed = await ps.commit({ docId: 7, results: [png(10)], crop, name: "x", feather: 2, selection: sel, matchTone, trace });
+    assert.equal(placed.tone, null);
+    assert.equal(state.active.id, placed.layerId, "the result is kept");
+    assert.ok(trace.some((t) => t.step === "toneError" && /curves/.test(t.message)), "the reason is in the trace");
+  }
+});
+
+test("commit: on the sides where the crop meets the canvas edge, the result reaches 2 px beyond it", async () => {
+  // Photoshop smooths the last pixel of a scaled layer: a faint see-through edge in an extended canvas (2026-11-12).
+  const { ps, state } = loadWithFakes();
+  const crop = { left: 1900, top: 900, right: 2000, bottom: 1000 };
+  const sel = { data: new Uint8Array(100 * 100).fill(255), width: 100, height: 100, left: 1900, top: 900 };
+  const placed = await ps.commit({ docId: 7, results: [png(10)], crop, name: "x", feather: 2, selection: sel });
+  assert.deepEqual(state.layers[placed.layerId].b, { left: 1900, top: 900, right: 2002, bottom: 1002 });
+  assert.deepEqual(placed.crop, crop);
 });
 
 test("commit refuses a closed document", async () => {

@@ -5,7 +5,7 @@ const zlib = require("node:zlib");
 const { toBase64, fromBase64, utf8Encode, crc32, adler32 } = require("../plugin/src/bytes");
 const { encodePng, deflateRaw, imageSize, tagSrgb } = require("../plugin/src/png");
 const { computeCrop, inputSize } = require("../plugin/src/geometry");
-const { resample, toRGB, dilate, alphaEditMask, maskBounds, downsampleStrips } = require("../plugin/src/image");
+const { resample, toRGB, featherMask, dilate, alphaEditMask, maskBounds, downsampleStrips } = require("../plugin/src/image");
 
 function randomBytes(n, seed = 1) {
   const out = new Uint8Array(n);
@@ -259,6 +259,21 @@ test("resample keeps flat colours and exact sizes", () => {
 test("toRGB composites alpha over grey", () => {
   const rgba = Uint8Array.of(255, 0, 0, 255, 255, 0, 0, 0);
   assert.deepEqual(toRGB(rgba, 2, 1, 4), Uint8Array.of(255, 0, 0, 128, 128, 128));
+});
+
+test("the mask's soft edge fades inside the picture but stays fully selected along the canvas edge it touches", () => {
+  // Right half selected, top to bottom: an extended canvas filled on the right.
+  const w = 60, h = 30;
+  const mask = new Uint8Array(w * h).map((_, i) => (i % w >= 30 ? 255 : 0));
+  const at = (m, x, y) => m[y * w + x];
+  const kept = featherMask(mask, w, h, 8, { top: true, right: true, bottom: true });
+  for (const y of [0, 15, h - 1]) assert.equal(at(kept, w - 1, y), 255, `canvas edge, row ${y}`);
+  assert.equal(at(kept, 0, 15), 0, "far from the selection");
+  const inner = [24, 27, 30, 33, 36].map((x) => at(kept, x, 15));
+  assert.ok(inner.every((v, i) => i === 0 || v > inner[i - 1]) && inner[0] > 0 && inner[4] < 255, `soft inner edge ${inner}`);
+  // Photoshop's way (edges not kept) fades the canvas edge too: the see-through strip.
+  const faded = featherMask(mask, w, h, 8);
+  assert.ok(at(faded, w - 1, 15) < 200 && at(faded, w - 1, 0) < at(faded, w - 1, 15), "edges not kept fade");
 });
 
 test("dilate grows a single pixel into a square", () => {

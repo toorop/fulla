@@ -85,13 +85,44 @@ test("tone: a colour cast on a black and white photo comes back neutral", () => 
   }
 });
 
+test("tone: a texture the model redrew a little off around the selection still gets its colour cast undone", () => {
+  // Planks: bands 8 px high; the model's are half a band off, and redder (seen 2026-11-12, extending a canvas).
+  const planks = (shift) => {
+    const p = new Uint8Array(W * H * 3);
+    for (let i = 0; i < W * H; i++) {
+      const dark = Math.floor((Math.floor(i / W) + shift) / 8) % 2;
+      [170, 120, 90].forEach((v, k) => (p[i * 3 + k] = v - dark * 60));
+    }
+    return p;
+  };
+  const orig = planks(0);
+  const tile = tileFrom(planks(4), (v, k) => v + [25, 8, 0][k]);
+  const report = {};
+  const fit = fitTone({ orig, tile, mask: selMask(), width: W, height: H, report });
+  assert.equal(report.method, "tones", JSON.stringify(report));
+  for (const [v, k] of [[170, 0], [110, 0], [120, 1], [60, 1]]) assert.ok(Math.abs(applyCurve(fit.curves[k], v + [25, 8, 0][k]) - v) <= 3, `channel ${k}: ${v}`);
+});
+
+test("tone: a greyscale document gets one curve that undoes a brightness shift", () => {
+  const orig = photo(true);
+  const tile = tileFrom(orig, (v) => v * 0.9 + 20);
+  const fit = fitTone({ orig, tile, mask: selMask(), width: W, height: H });
+  for (const v of [60, 120, 180]) assert.ok(Math.abs(applyCurve(fit.gray, v * 0.9 + 20) - v) <= 2, `grey ${v} came back as ${applyCurve(fit.gray, v * 0.9 + 20)}`);
+});
+
 test("tone: no filter when the shift is negligible, there is no ring to compare, or the ring is another picture; never a wild correction", () => {
   const orig = photo();
   const other = tileFrom(orig, (v, k) => [255, 0, 128][k]);
-  assert.equal(fitTone({ orig, tile: other, mask: selMask(), width: W, height: H }), null, "a tile that is not the same picture around the selection gets no correction");
-  assert.equal(fitTone({ orig, tile: tileFrom(orig, (v) => v + 1), mask: selMask(), width: W, height: H }), null, "1 level is not worth a filter");
-  assert.equal(fitTone({ orig, tile: tileFrom(orig, (v) => v + 20), mask: new Uint8Array(W * H).fill(255), width: W, height: H }), null, "Select All leaves no ring");
-  assert.equal(fitTone({ orig, tile: tileFrom(orig, (v) => v * 0.5), mask: selMask(), width: W, height: H }), null, "beyond the gain bounds: none rather than a wrong one");
+  // Each abstention says why (the self-test's toneDiag reports it).
+  const why = (tile, mask = selMask()) => {
+    const report = {};
+    assert.equal(fitTone({ orig, tile, mask, width: W, height: H, report }), null);
+    return report.reason;
+  };
+  assert.equal(why(other), "mismatch", "a tile that is not the same picture around the selection gets no correction");
+  assert.equal(why(tileFrom(orig, (v) => v + 1)), "negligible", "1 level is not worth a filter");
+  assert.equal(why(tileFrom(orig, (v) => v + 20), new Uint8Array(W * H).fill(255)), "ring", "Select All leaves no ring");
+  assert.equal(fitTone({ orig, tile: tileFrom(orig, (v) => v * 0.3), mask: selMask(), width: W, height: H }), null, "beyond the gain bounds: none rather than a wrong one");
   // Points stay inside 0..255 and in order, whatever the line.
   for (const p of [curvePoints({ gain: 1.25, offset: -40 }), curvePoints({ gain: 0.8, offset: 60 })]) {
     assert.ok(p.every((q) => q.input >= 0 && q.input <= 255 && q.output >= 0 && q.output <= 255) && p[1].input > p[0].input, JSON.stringify(p));

@@ -81,8 +81,10 @@ function foldDetails() {
 function versions() {
   const v = { plugin: "", host: "" };
   try {
-    v.plugin = require("uxp").versions.plugin || "";
-    v.host = require("photoshop").app.version || "";
+    const uxp = require("uxp");
+    v.plugin = uxp.versions.plugin || "";
+    // app.version came back empty in Photoshop (Beta) 28.0.1 (a report said "Photoshop ?", 2026-11-12).
+    v.host = (uxp.host && uxp.host.version) || require("photoshop").app.version || "";
   } catch (_) {
     /* the report then says "dev" / "?" */
   }

@@ -4,7 +4,7 @@
 
 const { app, core, action, imaging, constants } = require("photoshop");
 const uxp = require("uxp");
-const { to8bit, placeInto, toRGB, toRGBA, resample, downsampleStrips } = require("./image");
+const { to8bit, placeInto, toRGB, toRGBA, resample, downsampleStrips, featherMask } = require("./image");
 const { tagSrgb } = require("./png");
 const refs = require("./references");
 
@@ -331,6 +331,9 @@ function findLayer(layers, id) {
 
 // Curves channels in descriptor terms (Photoshop names green "grain" in colours, not in channels).
 const CURVE_CHANNELS = ["red", "green", "blue"];
+// The composite channel to select before Curves, by document mode: after the mask is made it is
+// the target channel, and Curves must land on the picture ("gray": self-test grayscaleTone, 2026-11-12).
+const COMPOSITE = { rgb: "RGB", gray: "gray" };
 
 /** Remove the Curves smart filters Fulla put on the layer (they were fitted to the previous content). */
 async function removeToneFilters(layerId) {
@@ -346,25 +349,49 @@ async function removeToneFilters(layerId) {
 /**
  * Tone matching (tone.js): read the layer's own pixels over the crop, let `match.fit` compare them with
  * the original, and apply the correction as a Curves smart filter. Nothing when the fit says it's not needed.
+ * RGB documents get one curve per channel, greyscale ones a single curve; other modes (CMYK, Lab...)
+ * get none yet. The correction is cosmetic: if Photoshop refuses it, the result stays without it
+ * (the user paid for that image), and the reason goes to the trace.
  * @param {{size: {width, height}, fit: (px: {data, width, height, components}) => object|null}} match
  */
-async function matchTone(docId, layerId, crop, match) {
+async function matchTone(docId, layerId, crop, match, trace) {
   if (!match) return null;
-  const tile = await readScaled(docId, crop, match.size, false, layerId);
-  const fit = match.fit(tile);
-  if (!fit) return null;
-  const point = (p) => ({ _obj: "paint", horizontal: p.input, vertical: p.output });
-  await bp([
-    { _obj: "select", _target: [{ _ref: "layer", _id: layerId }], makeVisible: false },
-    // The new mask is the target channel; Curves needs the picture's own channels.
-    { _obj: "select", _target: [{ _ref: "channel", _enum: "channel", _value: "RGB" }] },
-    {
-      _obj: "curves",
-      presetKind: { _enum: "presetKindType", _value: "presetKindCustom" },
-      adjustment: fit.curves.map((pts, i) => ({ _obj: "curvesAdjustment", channel: { _ref: "channel", _enum: "channel", _value: CURVE_CHANNELS[i] }, curve: pts.map(point) })),
-    },
-  ]);
-  return fit;
+  const mode = String(findDoc(docId).mode || "RGB").toLowerCase();
+  const kind = mode.includes("gray") ? "gray" : mode.includes("rgb") ? "rgb" : null;
+  if (!kind) return null;
+  try {
+    // The comparison is outside the selection, so read the layer without its mask (switched off for
+    // the read: with the soft edge baked into the mask, reads went through it, 2026-11-12).
+    const maskOn = (on) => bp([{ _obj: "set", _target: [{ _ref: "layer", _id: layerId }], to: { _obj: "layer", userMaskEnabled: on } }]);
+    await maskOn(false);
+    let tile;
+    try {
+      tile = await readScaled(docId, crop, match.size, false, layerId);
+    } finally {
+      await maskOn(true);
+    }
+    const report = {};
+    const fit = match.fit(tile, report);
+    if (!fit) {
+      if (trace) trace.push({ step: "toneSkipped", mode, reason: report.reason, residuals: report.residuals, channels: report.channels, cells: report.cells });
+      return null;
+    }
+    const point = (p) => ({ _obj: "paint", horizontal: p.input, vertical: p.output });
+    const adjustment =
+      kind === "gray"
+        ? [{ _obj: "curvesAdjustment", channel: { _ref: "channel", _enum: "channel", _value: "composite" }, curve: fit.gray.map(point) }]
+        : fit.curves.map((pts, i) => ({ _obj: "curvesAdjustment", channel: { _ref: "channel", _enum: "channel", _value: CURVE_CHANNELS[i] }, curve: pts.map(point) }));
+    await bp([
+      { _obj: "select", _target: [{ _ref: "layer", _id: layerId }], makeVisible: false },
+      { _obj: "select", _target: [{ _ref: "channel", _enum: "channel", _value: COMPOSITE[kind] }] },
+      { _obj: "curves", presetKind: { _enum: "presetKindType", _value: "presetKindCustom" }, adjustment },
+    ]);
+    if (trace) trace.push({ step: "tone", mode });
+    return fit;
+  } catch (e) {
+    if (trace) trace.push({ step: "toneError", mode, message: e.message || String(e) });
+    return null;
+  }
 }
 
 // An alpha channel that holds the user's selection while Fulla works without one.
@@ -398,7 +425,7 @@ async function setSelectionAside(docId) {
  * @param {Array<{bytes, mime}>} o.results
  * @param {{left,top,right,bottom}} o.crop   where the result goes (document px)
  * @param {string} o.name                    layer name
- * @param {number} o.feather                 mask feather in px
+ * @param {number} o.feather                 width of the mask's soft edge, in px
  * @param {object} o.selection               {data, width, height, left, top}: the selection read before generating
  * @returns {Promise<{docId, layerId, crop}>}
  */
@@ -411,21 +438,30 @@ async function commit(o) {
 
   const file = await resultFile(o.results[0]);
   try {
-    const layer = await placeFitted(doc, file, o.crop, o.trace);
+    // Where the crop lies on the canvas edge, the result reaches 2 px beyond it: Photoshop smooths the
+    // last pixel of a scaled layer, which showed as a faint see-through edge in an extended canvas.
+    const W = num(doc.width);
+    const H = num(doc.height);
+    const c = o.crop;
+    const over = { left: c.left <= 0 ? c.left - 2 : c.left, top: c.top <= 0 ? c.top - 2 : c.top, right: c.right >= W ? c.right + 2 : c.right, bottom: c.bottom >= H ? c.bottom + 2 : c.bottom };
+    const layer = await placeFitted(doc, file, over, o.trace);
     layer.name = o.name;
     // Placed above the active layer: when that is a reference, out of the hidden group, just below it.
     const group = referenceGroup(doc);
     if (group && layer.parent && layer.parent.id === group.id) await layer.move(group, constants.ElementPlacement.PLACEAFTER);
-    // Recreate the exact selection, then turn it into the layer's mask.
-    await putSelectionPixels(doc.id, o.selection);
-    await bp([{ _obj: "make", new: { _class: "channel" }, at: { _ref: "channel", _enum: "channel", _value: "mask" }, using: { _enum: "userMaskEnabled", _value: "revealSelection" } }]);
-    try {
-      layer.layerMaskFeather = o.feather;
-    } catch (_) {
-      /* feather is cosmetic; the mask itself is correct */
-    }
+    // Recreate the selection with its soft edge, then turn it into the layer's mask. The soft edge is
+    // computed here (featherMask), not with Photoshop's mask feather, which also fades the canvas edge.
+    const s = o.selection;
+    const edges = { left: s.left <= 0, top: s.top <= 0, right: s.left + s.width >= W, bottom: s.top + s.height >= H };
+    await putSelectionPixels(doc.id, { ...s, data: featherMask(s.data, s.width, s.height, o.feather, edges) });
+    await bp([
+      { _obj: "make", new: { _class: "channel" }, at: { _ref: "channel", _enum: "channel", _value: "mask" }, using: { _enum: "userMaskEnabled", _value: "revealSelection" } },
+      // Nothing selected afterwards, as when the mask used up a hard selection: a smart filter added
+      // while a selection is active takes it as its own mask.
+      { _obj: "set", _target: [{ _ref: "channel", _property: "selection" }], to: { _enum: "ordinal", _value: "none" } },
+    ]);
     // After the mask, as in the self-test's exploration: reads ignore the mask, Curves then lands on the picture.
-    const tone = await matchTone(doc.id, layer.id, o.crop, o.matchTone);
+    const tone = await matchTone(doc.id, layer.id, o.crop, o.matchTone, o.trace);
     // Like Adobe's Generative Fill, the selection stays for the next run (making the mask used it up).
     await putSelectionPixels(doc.id, o.selection);
     if (o.trace) o.trace.push({ step: "done", layer: layer.id, bounds: layerBounds(layer), doc: [num(doc.width), num(doc.height)], tone });

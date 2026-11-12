@@ -6,7 +6,7 @@
 const GRID = 128; // long side of the comparison grid: coarse enough to ignore grain and small shifts
 const RING_GAP = 0.04; // keep at most this far (fraction of the grid) from the selection: the edit and its blend
 const MIN_CELLS = 40; // fewer ring cells than this (e.g. Select All): nothing to compare, no correction
-const GAIN = [0.8, 1.25]; // a ring that misleads must not wreck the picture
+const GAIN = [0.5, 2]; // a ring that misleads must not wreck the picture; the residual checks below catch it first (a model returned planks 1.5 times too bright, 2026-11-12)
 const MAX_OFFSET = 60;
 const NEGLIGIBLE = 3; // levels out of 255: below this everywhere, no filter (it would only distract)
 const MISMATCH = 10; // levels: if the corrected ring still differs this much (median), the tile is not
@@ -89,6 +89,24 @@ function robustFit(xs, ys) {
   return fitLine(xs.filter((_, i) => keep[i]), ys.filter((_, i) => keep[i]));
 }
 
+/**
+ * The same line fitted on the two distributions instead of cell by cell: the 10th to 90th
+ * percentiles of the tile against the original's. Blind to where things are, so a texture the
+ * model redrew a little off (planks, bricks) still gives the right tones, where the cell-by-cell
+ * fit flattens (seen 2026-11-12: gain stuck at its floor, then "not the same picture").
+ * @returns {{gain, offset, residual}}  residual: the worst percentile left apart after the fit
+ */
+function quantileFit(xs, ys) {
+  const qs = (v) => {
+    const s = Float64Array.from(v).sort();
+    return Array.from({ length: 17 }, (_, i) => s[Math.min(s.length - 1, Math.floor(((i + 2) / 20) * s.length))]);
+  };
+  const qx = qs(xs);
+  const qy = qs(ys);
+  const f = fitLine(qx, qy);
+  return { ...f, residual: Math.max(...qx.map((x, i) => Math.abs(f.gain * x + f.offset - qy[i]))), qx, qy };
+}
+
 /** Two Curves points for y = gain * x + offset, clipped to 0..255 (Curves is flat beyond its end points). */
 function curvePoints({ gain, offset }) {
   let x0 = 0;
@@ -112,11 +130,13 @@ function curvePoints({ gain, offset }) {
  * @param {Uint8Array} p.tile   the placed result over the same area, same size (tileComps per pixel)
  * @param {Uint8Array} p.mask   selection, 1 byte per pixel, same size
  * @param {number} [p.gap]      distance kept from the selection, in pixels of this size (the model's blend);
+ * @param {object} [p.report]   filled with why: reason "ring" (too few cells to compare), "mismatch",
+ *   "negligible" or "fitted", and the numbers behind it (for diagnosis)
  *   at most RING_GAP of the grid, so a thin margin around the selection still leaves a ring
- * @returns {null | {channels: Array<{gain, offset}>, curves: Array<Array<{input, output}>>, cells: number}}
- *   channels and curves in R, G, B order
+ * @returns {null | {channels: Array<{gain, offset}>, curves: Array<Array<{input, output}>>, gray: Array<{input, output}>, cells: number}}
+ *   channels and curves in R, G, B order; gray, the one curve for a greyscale document
  */
-function fitTone({ orig, origComps = 3, tile, tileComps = 4, mask, width, height, gap: gapPx }) {
+function fitTone({ orig, origComps = 3, tile, tileComps = 4, mask, width, height, gap: gapPx, report = {} }) {
   const k = GRID / Math.max(width, height);
   const gw = Math.max(1, Math.min(width, Math.round(width * k)));
   const gh = Math.max(1, Math.min(height, Math.round(height * k)));
@@ -145,21 +165,36 @@ function fitTone({ orig, origComps = 3, tile, tileComps = 4, mask, width, height
       if (!near && (tileComps < 4 || t[i * tileComps + 3] > 250)) ring.push(i);
     }
   }
-  if (ring.length < MIN_CELLS) return null;
+  report.cells = ring.length;
+  report.grid = [gw, gh];
+  if (ring.length < MIN_CELLS) return (report.reason = "ring"), null;
 
   const channels = [0, 1, 2].map((c) => robustFit(ring.map((i) => t[i * tileComps + c]), ring.map((i) => o[i * origComps + c])));
-  const mismatch = channels.some((f, c) => {
+  // Median residual of each channel after its fit: large when the ring is not the same picture.
+  const residuals = channels.map((f, c) => {
     const res = ring.map((i) => Math.abs(f.gain * t[i * tileComps + c] + f.offset - o[i * origComps + c])).sort((a, b) => a - b);
-    return res[Math.floor(res.length / 2)] > MISMATCH;
+    return res[Math.floor(res.length / 2)];
   });
-  if (mismatch) return null;
+  Object.assign(report, { channels, residuals, method: "cells" });
+  if (residuals.some((r) => r > MISMATCH)) {
+    // Not the same picture cell by cell: perhaps the same tones, redrawn a little off.
+    const byTones = [0, 1, 2].map((c) => quantileFit(ring.map((i) => t[i * tileComps + c]), ring.map((i) => o[i * origComps + c])));
+    report.quantileResiduals = byTones.map((f) => f.residual);
+    report.quantileFits = byTones;
+    if (byTones.some((f) => f.residual > MISMATCH)) return (report.reason = "mismatch"), null;
+    channels.splice(0, 3, ...byTones.map(({ gain, offset }) => ({ gain, offset })));
+    Object.assign(report, { channels, method: "tones" });
+  }
   // Negligible: over the tones the ring actually has, no channel moves by NEGLIGIBLE levels or more.
   const moved = channels.some((f, c) => {
     const xs = ring.map((i) => t[i * tileComps + c]);
     return [Math.min(...xs), Math.max(...xs)].some((x) => Math.abs(f.gain * x + f.offset - x) >= NEGLIGIBLE);
   });
-  if (!moved) return null;
-  return { channels, curves: channels.map(curvePoints), cells: ring.length };
+  if (!moved) return (report.reason = "negligible"), null;
+  report.reason = "fitted";
+  // A greyscale document has one channel: its curve is the mean of the three (they agree there).
+  const mean = (k) => channels.reduce((s, f) => s + f[k], 0) / channels.length;
+  return { channels, curves: channels.map(curvePoints), gray: curvePoints({ gain: mean("gain"), offset: mean("offset") }), cells: ring.length };
 }
 
 module.exports = { fitTone, curvePoints };

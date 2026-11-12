@@ -47,6 +47,38 @@ function toRGB(src, w, h, comps, bg = 128) {
   return out;
 }
 
+/**
+ * Soft edge for the layer mask (instead of Photoshop's mask feather, which also fades the canvas
+ * edge: in an extended canvas nothing is under it, so a see-through strip showed, 2026-11-12).
+ * Three box blurs of about radius/2 px each. Beyond a side listed in `edges` (it lies on the canvas
+ * edge) the mask goes on as it is at that side, so a selection that reaches the canvas edge stays
+ * fully selected there; beyond the other sides it is unselected.
+ * @param {Uint8Array} mask  1 byte per pixel
+ * @param {{left?: boolean, top?: boolean, right?: boolean, bottom?: boolean}} [edges]
+ */
+function featherMask(mask, w, h, radius, edges = {}) {
+  const r = Math.max(1, Math.round(radius / 2));
+  let a = Float32Array.from(mask);
+  let b = new Float32Array(w * h);
+  // One box pass along a line of n values read with get(i) and written with set(i, v).
+  const pass = (n, get, set, keepStart, keepEnd) => {
+    const at = (i) => (i < 0 ? (keepStart ? get(0) : 0) : i >= n ? (keepEnd ? get(n - 1) : 0) : get(i));
+    let sum = 0;
+    for (let i = -r; i <= r; i++) sum += at(i);
+    for (let i = 0; i < n; i++) {
+      set(i, sum / (2 * r + 1));
+      sum += at(i + r + 1) - at(i - r);
+    }
+  };
+  for (let k = 0; k < 3; k++) {
+    for (let y = 0; y < h; y++) pass(w, (x) => a[y * w + x], (x, v) => (b[y * w + x] = v), edges.left, edges.right);
+    for (let x = 0; x < w; x++) pass(h, (y) => b[y * w + x], (y, v) => (a[y * w + x] = v), edges.top, edges.bottom);
+  }
+  const out = new Uint8Array(w * h);
+  for (let i = 0; i < out.length; i++) out[i] = Math.round(a[i]);
+  return out;
+}
+
 /** Grow the selected (non-zero) area by r pixels: separable max filter. Gives the model room to blend. */
 function dilate(mask, w, h, r) {
   if (r <= 0) return mask;
@@ -214,4 +246,4 @@ function toRGBA(data, w, h, comps) {
   return out;
 }
 
-module.exports = { resample, toRGB, toRGBA, dilate, binarize, alphaEditMask, coverage, maskBounds, to8bit, placeInto, downsampleStrips };
+module.exports = { resample, toRGB, toRGBA, featherMask, dilate, binarize, alphaEditMask, coverage, maskBounds, to8bit, placeInto, downsampleStrips };

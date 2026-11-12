@@ -1,28 +1,29 @@
 # Fulla — State
 
-<!-- Hand-off, not a log. Keep it under ~150 lines and keep `## Next action
+<!-- Hand-off, not a log. Keep it under ~150 lines and keep `## Next action` first, so a new
+     session can resume from the first ~60 lines alone. Update after every significant action,
+     never only at the end of a task. No private paths: the repo is public. -->
 
-- **Resume here: step 6, the website.** Milestones 1 and 2 of the build are done and approved
-  (2026-11-11), committed and pushed. What is left needs Stéphane first; nothing to code until
-  he gives material or says go:
-  - **His tests in Photoshop:** does the built-in generative fill refuse a face swap (if so, he
-    captures the refusal text, for the comparison page and home example 5); more tests with GPT
-    Image models through Fulla (few so far; paid, give the cost first); is GPT Image in the model
-    list of Photoshop (Beta) 28's generative fill.
-  - **macOS:** never tested. No release and no site go-live before he has tried the `.ccx` on
-    a Mac (his call, 2026-11-12), so the docs already say "Windows and macOS" for the `.ccx`.
-  - **Windows installer kept as a fallback** (his call, 2026-11-12): the `.ccx` is the main way
-    (works on Windows; Creative Cloud asks for admin rights the first time); the `.bat` + zip is
-    for computers without admin rights or Creative Cloud. Never mention pirated copies.
-  - **Images:** he generates the base pictures locally and edits them with Fulla; the list
-    (names, sizes, prompts) is a note in his vault. Placeholders in `site/` until then.
-  - **Umami:** he creates the site in his Umami, then the id goes in `site/src/lib/analytics.mjs`.
-- **Release workflow done (2026-11-12; committed, push at the end of the session):** `release.yml` (a `vX.Y.Z` tag
-  → the whole CI via `workflow_call` → `scripts/release-notes.js` checks the tag against both
-  versions and takes the `## X.Y.Z` section of the site's Changelog page → `npm run package` →
-  `SHA256SUMS.txt` → **draft** release; he ticks pre-release if he wants and publishes by
-  hand). Tested locally (unit tests, package, checksums); the workflow itself first runs at his
-  first tag. GitHub has no tag or release yet; the old OpenFill tag was deleted.
+## Next action
+
+- **Resume here (next session): step 6, the site images, card by card in the order of his
+  illustrations note** (vault, Fulla folder). A1 done (his pier photo, boat removed, on the home
+  page). **Next: A2, extend a photo** (colour; the Qwen prompt is on the card; he was generating
+  the base picture). For each card he may use his own photo if it serves the card's goal (his
+  call, 2026-11-12): say the goal, check his PNG pair (same size, 3:2 or the card's format),
+  resize to 1800 px JPEG q95 into `site/src/assets/examples/`, wire it in, fill the caption
+  facts (model, prompt, resolution, draw, cost). The dev server: `.claude/launch.json` (local,
+  excluded from git) via the preview tool, http://localhost:4321; he watches it in his browser.
+  Panel captures: C2 done (`captures/site/`, Windows at 200 %, darkest theme); C3 to C7 later;
+  C8/C9 need an English Photoshop (skipped, described in text); C1/C10 with the release `.ccx`.
+- **Waiting on him, when he wants:** face-swap refusal test in Photoshop; GPT Image tests (paid,
+  cost first); the `.ccx` on a Mac (**no release and no site go-live before it**, his call
+  2026-11-12; the docs already say "Windows and macOS"); Umami site id
+  (`site/src/lib/analytics.mjs`). Windows installer kept as a fallback for computers without
+  admin rights or Creative Cloud; never mention pirated copies.
+- **Release workflow done (2026-11-12):** a `vX.Y.Z` tag runs the CI, checks the tag, takes the
+  notes from the site's Changelog page and creates a **draft** release; procedure in the README
+  and `CLAUDE.md`. Never run yet (no tag on GitHub).
 - **Before publishing the site:** check every figure again (Adobe's credits FAQ by hand; the
   same model on both sides: Adobe lists Nano Banana 2, `gemini-3.1-flash-image`, Fulla's
   default is Nano Banana 2.1), then remove the "Draft" banners (`draft: true` in the pages'
@@ -47,14 +48,17 @@
   `geminiRaw` and `openaiRaw`: 35 on 2026-11-12). Warn him before a run (nobody may touch Photoshop). Paid
   tests: Google direct by default, give the cost first. A/B input format: see `selftest.js`
   (`abInput`). Photoshop work happens on his Windows machine only.
-- Later, after the site: the luminance seam under an added object; spotting a reply where the
-  model redrew the whole picture; bigger reference thumbnails.
+- Later, after the site (unless he moves it up; proposed 2026-11-12, not answered): a local
+  low-frequency brightness correction (the model's fill lighter or darker in part of the
+  selection, a step at its edge: seen on the wood, and on the locomotive test); spotting a reply
+  where the model redrew the whole picture; bigger reference thumbnails; maybe grow the mask a
+  little by itself for an empty prompt (ghost outline after a tight removal).
 - Blocked by: —
 
 ## Current step
 
-Step 6, website: discussion done (tech, content, SEO, GEO, design); build milestones 1 and 2
-done 2026-11-11; waiting for his images, tests and checks before go-live. Step 5 on hold. Step 1 left to test
+Step 6, website: build milestones 1 and 2 done 2026-11-11; real images going in card by card
+(A1 done 2026-11-12); then his tests and checks before go-live. Step 5 on hold. Step 1 left to test
 some day, not blocking: sign-up with a fresh OpenRouter account; a real OpenAI key.
 
 ## Roadmap (order agreed 2026-11-07, revised that evening; details and checkboxes in Stéphane's notes)
@@ -74,44 +78,17 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Recently done
 
-- 2026-11-12 — Release workflow (step 7): `release.yml` and `scripts/release-notes.js`, draft
-  release with notes from the site's Changelog page; old OpenFill tag deleted locally. The
-  release procedure is in the README ("Release", under "Develop").
-- 2026-11-12 — `.ccx` installed by double-click on Windows (works; Creative Cloud asks for admin
-  rights the first time only); docs say "Windows and macOS" for the `.ccx` and describe
-  Photoshop's permission dialog; C2 panel captures done; two panel bugs after the first connect
-  fixed (frozen progress bar, leftover button borders); free self-test 32/32.
-- 2026-11-12 — Greyscale documents: tone matching asked Curves for red/green/blue, Photoshop
-  refused and the paid result was rolled back. Now one composite curve (`fit.gray`) on the
-  `gray` channel; CMYK/Lab get no correction; a refused correction keeps the result (trace
-  `toneError`). Details showed "Photoshop ?": version from `uxp.host.version`. New scenario
-  `grayscaleTone`; free self-test 33/33.
-- 2026-11-12 — Site image A1 is his own pier photo, boat removed (Nano Banana 2.1, Google, 2K,
-  empty prompt, first try, $0.06): in `site/src/assets/examples/` (JPEG q95, 1800 px), hero
-  selection measured from the pair. He goes through his illustrations note in order next (A2...).
-  Dev server: `.claude/launch.json` (local only, excluded from git), http://localhost:4321.
-- 2026-11-12 — Extend (his YouTube thumbnails): (1) see-through strip at the canvas edge: the
-  mask's soft edge is now computed by `featherMask` (canvas edges kept) and the result placed
-  2 px past the canvas edges it touches (Photoshop smooths a scaled layer's last pixel); the
-  layer is read with its mask off for tone matching (reads now go through the baked mask);
-  (2) no colour correction: `{"toneDiag": true}` (new, free) showed the model's planks 1.5x too
-  bright, beyond the gain bounds; bounds now 0.5-2, plus a fit on tone distributions when the
-  cell-by-cell one fails; skips go to the trace (`toneSkipped`). New scenarios `extendEdge`,
-  `compositeSent` (what is sent is the visible picture, any active layer, hidden layers out):
-  free self-test 35/35. Checked by him on his extend: colours right. Planks redrawn off: the model.
-
-- 2026-11-11 — Website: design (three mockups, B chosen; docs layout; colours), then built in
-  `site/`: home page, 18 docs pages, comparison and explainer pages, About, share image,
-  Markdown pages and `llms.txt`; README warns the plugin is a work in progress. CI skips
-  `site/**`.
-- 2026-11-10 (evening) — Step 6 discussed: tech and hosting, content (site map, whole home
-  page), SEO and GEO; research on Adobe credits, uses, comparative advertising, GPT and
-  ChatGPT-plan access. Decisions in his notes.
-- 2026-11-10 — Grainy hand result: the grain was in that one reply (a one-off; 0 in 9 A/B draws,
-  0.53 $); Auto now asks about twice the area, 1K up to a ~512 px area (`0a9e77e`). A shifted
-  hand result: the model redrew the whole picture (Fulla's placement checked exact).
-- 2026-11-10 — Reference images: paid tests (1.58 $); no minimum area side (`350a857`);
-  `refs: false` A/B arms (`3ac1608`).
+- 2026-11-12 — Release workflow (draft release from a tag, notes from the Changelog page). `.ccx`
+  double-click install checked on Windows; docs mention macOS and Photoshop's permission dialog;
+  Windows installer kept as a fallback. C2 panel captures. Panel fixes after the first connect.
+- 2026-11-12 — Tone matching: greyscale documents (one composite curve), extended canvases (gain
+  bounds 0.5-2 after a model's planks came back 1.5x too bright, fallback fit on tone
+  distributions, layer read with its mask off), no see-through canvas edge (`featherMask`, result
+  placed 2 px past the canvas edges); `{"toneDiag": true}` explains tone matching on the open
+  document; new scenarios `grayscaleTone`, `extendEdge`, `compositeSent`; free self-test 35/35;
+  checked by him on a real extend. Details shows the Photoshop version.
+- 2026-11-12 — Site image A1 (his pier photo, boat removed) on the home page.
+- 2026-11-11 — Website designed and built in `site/` (milestones 1 and 2).
 
 ## Decisions taken
 
@@ -163,26 +140,18 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Open questions / blockers
 
-
-- Two panel bugs seen 2026-11-12 after the first OpenRouter connect (Photoshop Beta 28, Windows
-  at 200 %), fixed but **not yet checked in Photoshop**: (1) the Generate tab showed a frozen
-  progress bar and "You can keep working." with the "connected" message: `#runProgress` didn't
-  start hidden (fixed in `index.html`, test in `test/panel.test.js`); (2) the bottom borders of
-  the connect guide's buttons stayed on screen: (1) checked fixed; an opacity flick didn't clear
-  (2) (a 1 px line stayed under Generate, gone after a change of tab), so `redrawPage()` in
-  `main.js` now hides and shows the Generate page again 50 ms after the connect, as a change of
-  tab does. Not checked (his call, 2026-11-12: a 1 px line once, not worth another connect);
-  look at it next time someone connects.
-
-- Tile offset (pier removal, shifted up-right while earlier test layers existed): not seen
-  again; the 2026-11-10 shifted result was the model redrawing everything, Fulla's placement
-  exact. To compare a reply with what was sent: match the margin outside the selection.
+- After the first connect, a 1 px line may stay under Generate until a change of tab:
+  `redrawPage()` (`main.js`) should clear it; not checked (his call). Look next time someone
+  connects.
 - Gemini returns nearly the same image for the same request (seen 2026-11-10): variations of one
   run may differ less than expected; not checked.
 - Facts kept: UXP reaches a local server only through `http://localhost` (no port); Photoshop's
-  shrink of a placed result follows its Image Interpolation preference (`layer.scale`).
+  shrink of a placed result follows its Image Interpolation preference (`layer.scale`); a
+  layer's pixel reads go through its user mask once the mask holds soft values (switch
+  `userMaskEnabled` off to read the whole layer); Photoshop's mask feather also fades the canvas
+  edge; the greyscale composite channel is `gray`.
 - UXP layout lessons: measured sizes update after the handler returns (use `setTimeout`); flex
   children shrink unless told not to; a self-scrolling div can lose its bottom border; the
-  native text field draws over any menu.
+  native text field draws over any menu; a hidden element can leave pixels behind until a repaint.
 - WebP results get no colour profile (JPEG and PNG do since 2026-11-08); none seen so far.
 - GitHub "Forked from" label (optional, Stéphane): leave the fork network or ask Support.

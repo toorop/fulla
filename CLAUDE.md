@@ -11,6 +11,7 @@ Photoshop UXP plugin: generative fill with the user's own AI provider (OpenRoute
 ## Commands
 - `npm test`: all unit tests (Node built-in runner, no dependencies).
 - `npm run package`: builds `dist/fulla-<version>.ccx` and `fulla-<version>-windows.zip` (self-test left out). Keep `version` equal in `package.json` and `plugin/manifest.json`.
+- Release: set `version` in both files, add a `## X.Y.Z` section to the site's Changelog page (`site/src/content/docs/docs/changelog.md`), commit, push a `vX.Y.Z` tag. `.github/workflows/release.yml` runs the CI, checks the tag (`scripts/release-notes.js`), builds, and creates a **draft** release with the files, `SHA256SUMS.txt` and that section as notes; Stéphane publishes it by hand.
 - `node scripts/icons.js`: regenerates panel icons.
 - Website (`site/`, Astro + Starlight, own `package.json`): `cd site && npm run dev` serves it at http://localhost:4321, `npm run build` builds `site/dist`. Home and marketing pages in `site/src/pages`, docs in `site/src/content/docs/docs/`; every docs page also exists as Markdown (`/docs/<page>.md`), with `llms.txt` and `llms-full.txt`.
 

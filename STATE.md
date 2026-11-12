@@ -14,8 +14,12 @@
   - **Images:** he generates the base pictures locally and edits them with Fulla; the list
     (names, sizes, prompts) is a note in his vault. Placeholders in `site/` until then.
   - **Umami:** he creates the site in his Umami, then the id goes in `site/src/lib/analytics.mjs`.
-- **Next to discuss with him:** a release workflow on GitHub (tag → build the `.ccx` and the
-  Windows zip → GitHub release), part of step 7. Not decided yet.
+- **Release workflow done (2026-11-12; committed, push at the end of the session):** `release.yml` (a `vX.Y.Z` tag
+  → the whole CI via `workflow_call` → `scripts/release-notes.js` checks the tag against both
+  versions and takes the `## X.Y.Z` section of the site's Changelog page → `npm run package` →
+  `SHA256SUMS.txt` → **draft** release; he ticks pre-release if he wants and publishes by
+  hand). Tested locally (unit tests, package, checksums); the workflow itself first runs at his
+  first tag. GitHub has no tag or release yet; the old OpenFill tag was deleted.
 - **Before publishing the site:** check every figure again (Adobe's credits FAQ by hand; the
   same model on both sides: Adobe lists Nano Banana 2, `gemini-3.1-flash-image`, Fulla's
   default is Nano Banana 2.1), then remove the "Draft" banners (`draft: true` in the pages'
@@ -66,6 +70,9 @@ Outside the steps: measure direct providers against OpenRouter (he finds direct 
 Each step and sub-step is discussed and validated by Stéphane, and starts only when he says so.
 
 ## Recently done
+
+- 2026-11-12 — Release workflow (step 7): `release.yml` and `scripts/release-notes.js`, draft
+  release with notes from the site's Changelog page; old OpenFill tag deleted locally.
 
 - 2026-11-11 — Website: design (three mockups, B chosen; docs layout; colours), then built in
   `site/`: home page, 18 docs pages, comparison and explainer pages, About, share image,

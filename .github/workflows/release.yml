@@ -1,0 +1,39 @@
+name: release
+
+# Pushing a vX.Y.Z tag builds the release files and creates a draft GitHub release; the
+# maintainer reads it, ticks "pre-release" if wanted, and publishes it by hand. The release
+# notes are the version's "## X.Y.Z" section of the website's Changelog page.
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    needs: checks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+      - name: Check the tag against the versions, take the notes from the Changelog
+        run: node scripts/release-notes.js "$GITHUB_REF_NAME" "$RUNNER_TEMP/notes.md"
+      - name: Build the .ccx and the Windows zip
+        run: npm run package
+      - name: Checksums
+        working-directory: dist
+        run: sha256sum fulla-* > SHA256SUMS.txt && cat SHA256SUMS.txt
+      - name: Create the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* --draft --verify-tag \
+            --title "Fulla ${GITHUB_REF_NAME#v}" --notes-file "$RUNNER_TEMP/notes.md"

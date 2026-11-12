@@ -6,7 +6,8 @@
 
 ## Next action
 
-- **Resume here: A3** (step 6, the site images, card by card in the order of his illustrations
+- **Resume here: he wants to rework how the examples are presented on the site (home page reel and
+  docs) before A3** (step 6, the site images, card by card in the order of his illustrations
   note, vault, Fulla folder; A1 and A2 done). **A2 done (2026-11-12):**
   `site/src/assets/examples/a2-avant.jpg` (checkerboard painted over the white bands, Photoshop's
   white/#ccc grid, 40 px squares at full size) and `a2-apres.jpg`, 1800 px q95; its card is 16:9,
@@ -84,7 +85,8 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 ## Recently done
 
 - 2026-11-12 — Site image A2 (his generated beach, extended left and top) on the home page, in a
-  16:9 card.
+  16:9 card; A1 and A2 also on the docs page Remove and extend (now `.mdx`, sliders with captions;
+  the Markdown copy keeps the captions, drops the sliders).
 - 2026-11-12 — The tone fix layer was refused in a document with no colour profile (Photoshop
   reports "None": "Unknown color profile"); sRGB then. `localTone` scenario now also runs in an
   untagged document; `toneDiag` reports the local decision, bit depth and profile. His "parfait"

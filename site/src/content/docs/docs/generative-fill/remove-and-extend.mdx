@@ -3,6 +3,12 @@ title: Remove and extend
 description: Remove what you select with an empty prompt, or enlarge the canvas and let Fulla fill the new area from the photo.
 ---
 
+import Compare from '../../../../components/Compare.astro';
+import removeBefore from '../../../../assets/examples/a1-avant.jpg';
+import removeAfter from '../../../../assets/examples/a1-apres.jpg';
+import extendBefore from '../../../../assets/examples/a2-avant.jpg';
+import extendAfter from '../../../../assets/examples/a2-apres.jpg';
+
 With an **empty prompt**, Fulla removes what you select and fills the area from what surrounds it. The same works for an empty area after you enlarge the canvas.
 
 ## Remove something
@@ -11,6 +17,10 @@ With an **empty prompt**, Fulla removes what you select and fills the area from 
 2. Leave the prompt empty.
 3. Click **Generate**.
 
+<Compare before={removeBefore} after={removeAfter} beforeAlt="Before: a motorboat moored along the pier" afterAlt="After: the boat removed" start={45} sizes="(min-width: 1000px) 720px, 100vw" />
+
+A motorboat removed from a pier photo. Prompt left empty. First try, Nano Banana 2.1, 2K, $0.06.
+
 ## Extend a photo
 
 1. Enlarge the canvas in Photoshop (**Image > Canvas Size**).
@@ -18,6 +28,10 @@ With an **empty prompt**, Fulla removes what you select and fills the area from 
 3. Leave the prompt empty and click **Generate**.
 
 Extend one side at a time. Fulla sends the model the rectangle around the selection: for one side, a band the model can fill sharply; for two sides at once, nearly the whole picture, so a higher resolution and price for the same sharpness, or less detail. To add something in the new area, describe it instead of leaving the prompt empty.
+
+<Compare before={extendBefore} after={extendAfter} beforeAlt="Before: a beach at sunset on a canvas made wider and taller, the new bands empty" afterAlt="After: the sky, the dunes and the beach continued into both bands" start={30} sizes="(min-width: 1000px) 720px, 100vw" />
+
+A beach photo extended to the left, then at the top, one band at a time. Prompt left empty. First try for each band, Nano Banana 2.1, 4K, $0.12 each. Sample photo generated for this demo.
 
 :::tip
 Select generously, with room around what you remove and its shadow.

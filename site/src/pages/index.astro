@@ -172,7 +172,7 @@ const jsonLd = [
 			<h2 class="head">Real results, straight from the panel</h2>
 			<p class="sub">Drag across a photo to compare.</p>
 			<div class="carousel" data-carousel>
-				<button class="nav prev" type="button" hidden><span class="arrow" aria-hidden="true">&larr;</span><span class="nav-label"></span></button>
+				<button class="nav prev" type="button" hidden><span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"></path></svg></span><span class="nav-label"></span></button>
 				<div class="reel" tabindex="-1">
 					<figure class="ex">
 						<div class="ex-in">
@@ -209,7 +209,7 @@ const jsonLd = [
 						</div>
 					</figure>
 				</div>
-				<button class="nav next" type="button" hidden><span class="arrow" aria-hidden="true">&rarr;</span><span class="nav-label"></span></button>
+				<button class="nav next" type="button" hidden><span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span><span class="nav-label"></span></button>
 			</div>
 		</div>
 	</section>
@@ -317,14 +317,15 @@ const jsonLd = [
 	.ex { scroll-snap-align: start; margin: 0; display: flex; justify-content: center; }
 	.ex-in { width: min(100%, calc(var(--h) * 3 / 2)); }
 	.wide .ex-in { width: min(100%, calc(var(--h) * 16 / 9)); }
-	.nav { grid-row: 1; margin-top: calc(var(--fh, var(--h)) / 2 - 28px); display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 4px; background: none; border: 0; border-radius: 8px; color: var(--f-muted); font: inherit; font-size: 14px; line-height: 1.3; text-align: center; cursor: pointer; }
+	.nav { grid-row: 1; margin-top: calc(var(--fh, var(--h)) / 2 - 28px); display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 4px; background: none; border: 0; border-radius: 8px; color: var(--f-ink-2); font: inherit; font-size: 14px; line-height: 1.3; text-align: center; cursor: pointer; }
 	.nav.prev { grid-column: 1; }
 	.nav.next { grid-column: 3; }
 	.nav[hidden] { display: none; }
-	.nav.off { visibility: hidden; }
-	.nav:hover { color: var(--f-ink-2); }
-	.arrow { display: grid; place-items: center; width: 56px; height: 56px; flex: none; border-radius: 50%; border: 1px solid var(--f-line); background: #262626; color: var(--f-ink); font-size: 22px; transition: border-color 0.15s, background-color 0.15s; }
-	.nav:hover .arrow { border-color: var(--f-muted); background: #2e2e2e; }
+	.nav:hover { color: var(--f-ink); }
+	/* Light disc, dark arrow: the controls must stand out from the page. */
+	.arrow { display: grid; place-items: center; width: 56px; height: 56px; flex: none; border-radius: 50%; background: var(--f-ink); color: #1c1c1c; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45); transition: background-color 0.15s, transform 0.15s; }
+	.arrow svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+	.nav:hover .arrow { background: #fff; transform: scale(1.06); }
 	@media (max-width: 899px) {
 		.carousel { grid-template-columns: 1fr 1fr; gap: 20px 12px; }
 		.reel { grid-column: 1 / -1; }
@@ -332,6 +333,7 @@ const jsonLd = [
 		.nav.prev { grid-column: 1; justify-self: start; }
 		.nav.next { grid-column: 2; justify-self: end; flex-direction: row-reverse; text-align: right; }
 		.arrow { width: 44px; height: 44px; }
+		.arrow svg { width: 22px; height: 22px; }
 	}
 	.frame { border-radius: 12px; overflow: hidden; aspect-ratio: 3 / 2; background: var(--f-board); position: relative; box-shadow: 0 0 0 1px #101010; }
 	.wide .frame { aspect-ratio: 16 / 9; }
@@ -354,8 +356,8 @@ const jsonLd = [
 </style>
 
 <script>
-	// Examples: the arrows move one example at a time and name the one they lead to. Swiping and
-	// the keyboard still scroll the reel; the arrows follow whatever example is in view.
+	// Examples: the arrows move one example at a time, looping, and name the one they lead to.
+	// Swiping and the keyboard still scroll the reel; the arrows follow the example in view.
 	document.querySelectorAll<HTMLElement>('[data-carousel]').forEach((car) => {
 		const reel = car.querySelector<HTMLElement>('.reel')!;
 		const slides = [...reel.children] as HTMLElement[];
@@ -366,12 +368,10 @@ const jsonLd = [
 		let cur = -1;
 		const left = (i: number) => slides[i].offsetLeft - slides[0].offsetLeft;
 		const go = (i: number) => reel.scrollTo({ left: left(i), behavior: smooth ? 'smooth' : 'auto' });
+		const wrap = (k: number) => (k + slides.length) % slides.length;
 		const label = (b: HTMLButtonElement, k: number, word: string) => {
-			const ok = k >= 0 && k < slides.length;
-			b.classList.toggle('off', !ok);
-			b.disabled = !ok;
-			b.querySelector('.nav-label')!.textContent = ok ? titles[k] : '';
-			b.setAttribute('aria-label', ok ? `${word} example: ${titles[k]}` : `No ${word.toLowerCase()} example`);
+			b.querySelector('.nav-label')!.textContent = titles[k];
+			b.setAttribute('aria-label', `${word} example: ${titles[k]}`);
 		};
 		const update = () => {
 			let i = 0;
@@ -380,8 +380,8 @@ const jsonLd = [
 			if (i === cur) return;
 			cur = i;
 			slides.forEach((s, k) => (s.inert = k !== i));
-			label(prev, i - 1, 'Previous');
-			label(next, i + 1, 'Next');
+			label(prev, wrap(i - 1), 'Previous');
+			label(next, wrap(i + 1), 'Next');
 		};
 		car.setAttribute('role', 'region');
 		car.setAttribute('aria-roledescription', 'carousel');
@@ -391,8 +391,8 @@ const jsonLd = [
 			s.setAttribute('aria-roledescription', 'slide');
 			s.setAttribute('aria-label', `${k + 1} of ${slides.length}: ${titles[k]}`);
 		});
-		prev.addEventListener('click', () => go(cur - 1));
-		next.addEventListener('click', () => go(cur + 1));
+		prev.addEventListener('click', () => go(wrap(cur - 1)));
+		next.addEventListener('click', () => go(wrap(cur + 1)));
 		let t = 0;
 		reel.addEventListener('scroll', () => { clearTimeout(t); t = window.setTimeout(update, 80); });
 		addEventListener('resize', update);

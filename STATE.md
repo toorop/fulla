@@ -6,10 +6,9 @@
 
 ## Next action
 
-- **Resume here: A5 (face swap), waiting for his files** (`a5-avant.png`, `a5-apres.png`,
-  `a5-ref.png` in `captures/site/`, generated people, plus caption facts). It goes in anyway (his
-  call 2026-11-12). Photoshop's generative fill does swap the face with a clear prompt (his test,
-  2026-11-12): not an argument against Photoshop, no comparison in the caption (step 6, the site images, card by card in the order of his illustrations
+- **Resume here: the docs images, D1 first** (home page examples A1 to A5 all done 2026-11-12).
+  D1 planned a boat added to his pier photo, but A1 already shows that pier: ask him whether to
+  keep it or pick another scene (step 6, the site images, card by card in the order of his illustrations
   note, vault, Fulla folder; A1 and A2 done). **A2 done (2026-11-12):**
   `site/src/assets/examples/a2-avant.jpg` (checkerboard painted over the white bands, Photoshop's
   white/#ccc grid, 40 px squares at full size) and `a2-apres.jpg`, 1800 px q95; its card is 16:9,
@@ -88,6 +87,11 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Recently done
 
+- 2026-11-12 — Site image A5: face swap on his generated café terrace (no real person), 16:9,
+  Result / Reference buttons (the reference cropped to its portrait); the prompt that worked in
+  Photoshop too, translated; first try, 2K, $0.06; no comparison with Photoshop in the caption
+  (Photoshop swaps the face too with a clear prompt). Hidden slider images now load and decode
+  as soon as the slider is in view (the first switch went blank for a moment).
 - 2026-11-12 — Site image A4: his archive photo of the 2D2 5402 (author unknown, his call to
   use it), the man removed with another shot of the same series as reference; square card;
   `Compare.astro` takes `variants` (other "after" images) and `reference`, switched by buttons on

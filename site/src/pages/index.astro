@@ -16,7 +16,9 @@ import trainBefore from '../assets/examples/a4-avant.jpg';
 import trainWithRef from '../assets/examples/a4-avec-ref.jpg';
 import trainWithoutRef from '../assets/examples/a4-sans-ref.jpg';
 import trainRef from '../assets/examples/a4-ref.jpg';
-import face from '../assets/placeholders/face.png';
+import faceBefore from '../assets/examples/a5-avant.jpg';
+import faceAfter from '../assets/examples/a5-apres.jpg';
+import faceRef from '../assets/examples/a5-ref.jpg';
 
 const title = 'Fulla: free generative fill plugin for Photoshop';
 const description =
@@ -212,10 +214,12 @@ const jsonLd = [
 							<figcaption><h3>Bring back what was really there</h3><p>“Remove the person and use reference image 1 to rebuild what is behind him.” With another shot from the same series as the reference, the model redraws the real wheels; without it, it invents plausible machinery. Switch between them on the photo. First try with the reference, Nano Banana 2.1, 2K, $0.06. <a href="/docs/generative-fill/reference-images/">How to use references</a></p></figcaption>
 						</div>
 					</figure>
-					<figure class="ex">
+					<figure class="ex wide">
 						<div class="ex-in">
-							<div class="frame"><Picture src={face} alt="Placeholder for the face example" widths={[640, 1000]} sizes="(min-width: 1100px) 900px, 95vw" formats={['avif', 'webp']} /></div>
-							<figcaption><h3>Swap a face</h3><p>Sample photo generated for this demo.</p></figcaption>
+							<div class="frame">
+								<Compare before={faceBefore} after={faceAfter} beforeAlt="Before: four friends laughing at a café terrace in warm evening light" afterAlt="After: the woman second from the left has the face of the reference portrait, freckles and mole included, with her own hair, pose and the terrace light" afterLabel="Result" reference={{ image: faceRef, alt: 'Reference image: a portrait of a woman with freckles, auburn hair tied back, in grey window light' }} start={30} sizes="(min-width: 1100px) 900px, 95vw" />
+							</div>
+							<figcaption><h3>Swap a face</h3><p>“Replace the face of the woman sitting at the table with the face of the woman in the reference image. Keep her hair, her pose, the angle of her head and the light of the terrace. Do not paste the reference image: only her face should change.” Freckles and mole from the reference, light from the terrace. First try, Nano Banana 2.1, 2K, $0.06. Sample photos generated for this demo: no real person. <a href="/docs/generative-fill/reference-images/">How to use references</a></p></figcaption>
 						</div>
 					</figure>
 				</div>

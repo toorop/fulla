@@ -110,6 +110,16 @@ const widths = [640, 1000, 1400, 1800].filter((w) => w <= after.width);
 				}),
 			);
 			switcher.hidden = false;
+			// Hidden images are neither loaded nor decoded until shown, so the frame went blank for
+			// a moment on the first switch: load and decode them once the slider comes into view.
+			new IntersectionObserver((entries, io) => {
+				if (!entries.some((e) => e.isIntersecting)) return;
+				el.querySelectorAll<HTMLImageElement>('.c-alt img, .c-ref img').forEach((img) => {
+					img.loading = 'eager';
+					img.decode().catch(() => {});
+				});
+				io.disconnect();
+			}).observe(el);
 		}
 	});
 </script>

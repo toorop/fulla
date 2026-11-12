@@ -1,6 +1,6 @@
 # Fulla
 
-Fulla brings generative fill to Photoshop 2026 (27.11 or newer), powered by your own account with an AI provider (OpenRouter, OpenAI or Google). It is a UXP plugin that talks to the provider directly: no server, no subscription, and it works without the Creative Cloud app. MIT licensed.
+Fulla brings generative fill to Photoshop 2026 (27.11 or newer), powered by your own account with an AI provider (OpenRouter, OpenAI or Google). It is a UXP plugin that talks to the provider directly: no server, no subscription. MIT licensed.
 
 [Releases](../../releases) · [![CI](https://github.com/toorop/fulla/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/toorop/fulla/actions/workflows/ci.yml)
 
@@ -52,9 +52,9 @@ You pay the provider directly, per image. Each needs a funded account: OpenRoute
 
 ## Install
 
-**With the Creative Cloud app (Windows and macOS):** download `fulla-<version>.ccx` from [Releases](../../releases) and double-click it.
+**With the Creative Cloud app (Windows and macOS):** download `fulla-<version>.ccx` from [Releases](../../releases) and double-click it. Creative Cloud warns that the plugin comes from a third-party developer; the first time, Windows may ask for administrator rights.
 
-**Without the Creative Cloud app (Windows):** download `fulla-<version>-windows.zip`, unzip it, close Photoshop and double-click **Install Fulla.bat**. No admin rights needed.
+**Without the Creative Cloud app or administrator rights (Windows):** download `fulla-<version>-windows.zip`, unzip it, close Photoshop and double-click **Install Fulla.bat**. No admin rights needed.
 
 <details>
 <summary>What the Windows installer changes</summary>

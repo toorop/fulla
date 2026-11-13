@@ -21,8 +21,12 @@
 - **`v0.1.0` is public (published by him 2026-11-13);** the site's Download path works end to
   end. **Resume here:** one site point left from the review, (6) the site says "Windows and
   macOS" (Install, FAQ, Changelog, home JSON-LD) before the friend's Mac test: keep, or add
-  "macOS: being tested". Later: a 10-15 s panel video on the home page and YouTube; Search
-  Console and Bing (now that the release is out).
+  "macOS: being tested". Later: a full SEO audit (his call, 2026-11-13); a 10-15 s panel video
+  on the home page and YouTube. Search Console (Domain property `fulla.dppst.com`, DNS TXT,
+  sitemap submitted) and Bing Webmaster Tools: done 2026-11-13.
+  GitHub's social preview image: his click (Settings > General, `site/public/og.jpg`). The site
+  lacks the README's "Limits" (4K cap, mask as a guide, Cancel may still bill, WebP profile):
+  worth a docs section some day.
 - **Cloudflare tooling (his request: set up the most, for all his projects).** Windows: global
   `wrangler`, logged in by OAuth (its scopes: Workers, routes, zone read; **no DNS**), and
   Cloudflare's full-API MCP server `https://mcp.cloudflare.com/mcp` in his user-level Claude
@@ -98,7 +102,9 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
   pages out of draft; Umami events on buttons and outbound links; hero image loaded at once,
   `public/_headers` (a year of cache for `/_astro/*`, basic security headers), no Markdown button
   on the 404 page, shorter home description; descriptive `<title>`/`og:title` on 17 docs pages
-  (`head` frontmatter; headings and sidebar unchanged). `v0.1.0` released (his click).
+  (`head` frontmatter; headings and sidebar unchanged). `v0.1.0` released (his click). Search
+  Console and Bing set up (his clicks). GitHub page: description, homepage, 18 topics (`gh repo
+  edit`); README rewritten for users first (badges, image, links to the site; dev part kept).
 - 2026-11-13 — Cloudflare set up on Windows (global wrangler by OAuth, full-API MCP in his user
   config); `fulla.dppst.com` declared as the Worker's custom domain; Umami id set; first deploy
   blocked by Cloudflare's HTTP 500.

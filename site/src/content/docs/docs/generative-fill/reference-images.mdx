@@ -3,6 +3,9 @@ title: Reference images
 description: Show the model what you mean with a reference image, the real face, object or pattern, and name it in your prompt as ref 1, ref 2.
 ---
 
+import { Image } from 'astro:assets';
+import refs from '../../../../assets/examples/c7-references.png';
+
 A reference image shows the model what you mean: the real face from another shot, the product to place, the pattern that was really there. Fulla sends it along with your selection, and you name it in your prompt.
 
 ## When does a reference help?
@@ -20,6 +23,8 @@ For a background that only needs to look plausible, a reference isn't needed.
 1. Click the **image button** right of the model button, under the prompt.
 2. Click **Choose images** and pick one or more files. Each one gets a number: 1, 2, 3…
 3. Name them in your prompt, then click **Generate**.
+
+<Image src={refs} alt="The Fulla panel with the Reference images popup open: two thumbnails numbered 1 and 2, a white enamel mug and a skull, each with a remove cross; the text Refer to them as ref 1, ref 2… in your prompt, Nano Banana 2.1 takes up to 8; and a Choose images button" width={322} />
 
 ## How do I name a reference in my prompt?
 

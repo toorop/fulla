@@ -3,6 +3,9 @@ title: Resolution
 description: How Fulla picks the size of the generated image, up to 4K, so the result is as sharp as your photo.
 ---
 
+import { Image } from 'astro:assets';
+import settings from '../../../../assets/examples/c5-reglages.png';
+
 With **Auto**, the default, Fulla asks the model for an image about twice the size of your selection, so the result looks as sharp as your photo and is never stretched.
 
 ## How Auto chooses
@@ -14,5 +17,7 @@ With **Auto**, the default, Fulla asks the model for an image about twice the si
 ## Choose a size yourself
 
 Open the **settings button** next to the model button and pick a **Resolution**. A size you choose is always used. A setting the model doesn't offer isn't shown.
+
+<Image src={settings} alt="The Fulla panel with the settings popup open under the settings button: Resolution with Auto selected, 1K, 2K and 4K, and the text Auto uses 1K for a small selection, 2K, or more for a large one, up to 4K; then Variations with 1 selected, 2, 3 and 4, and Each variation is billed" width={322} />
 
 A larger image costs a little more: see [What it costs](/docs/generative-fill/cost/).

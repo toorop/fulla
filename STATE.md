@@ -22,8 +22,12 @@
     prompt (translated to English when he wrote French), draws, model, resolution, cost; say
     "Sample photo generated for this demo" for generated pictures. Exports from his Adobe RGB
     photos need the sRGB conversion (D4's first ones came out faded).
-  - Panel captures last, when the panel no longer changes (decision of 2026-11-08): C3 to C5, C7,
-    C10, C11; C1 with the release `.ccx`; C2 done; C8/C9 need an English Photoshop (text instead).
+  - Panel captures (C2, C6 done; `c3-generate`, `c3-en-cours`, `c4-modeles` (Your first fill), `c5-reglages` (Resolution), `c7-references` (Reference images) done 2026-11-13; the first
+    stands for c3-termine): he pastes them in the chat at 100 % (322 px wide), one by one, Claude
+    shows the whole panel, never cropped (his call 2026-11-13; c3-en-cours is still cropped to
+    hide the cursor, to redo without it). Claude
+    asks for each. Left: C10, C11; C1 installer with the release. No
+    English Photoshop (his call 2026-11-13): c1-ccx, C8 and C9 stay text.
   - Dev server: `.claude/launch.json` (local, excluded from git) via the preview tool,
     http://localhost:4321; restart it after renaming a docs page (`.md` to `.mdx`).
 - **Waiting on him, when he wants:** GPT Image tests (paid, cost first); the `.ccx` on a Mac
@@ -83,6 +87,8 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Recently done
 
+- 2026-11-13 — Fixed and verified: reference file picker opened on the JPEG filter on Windows;
+  `"*"` put first in `REF_TYPES` (`main.js`) opens it on all files, a non-image still fails cleanly.
 - 2026-11-13 — D5 on Getting good results (narrow against generous selection, both measured
   by diff: x 376-755 y 385-862, and x 34-1012 y 176-898, of 1672 x 941); docs Markdown export
   keeps the text of multi-line MDX components (test added).

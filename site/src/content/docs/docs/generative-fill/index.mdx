@@ -3,7 +3,11 @@ title: Your first fill
 description: Select an area, describe what you want and click Generate. The result lands on a new layer, masked by your selection.
 ---
 
+import { Image } from 'astro:assets';
 import Compare from '../../../../components/Compare.astro';
+import panel from '../../../../assets/examples/c3-generate.png';
+import running from '../../../../assets/examples/c3-en-cours.png';
+import models from '../../../../assets/examples/c4-modeles.png';
 import pierBefore from '../../../../assets/examples/a1-apres.jpg';
 import pierAfter from '../../../../assets/examples/d1-apres.jpg';
 
@@ -21,15 +25,23 @@ A boat added beside a pier with `a small boat tied to the pier`. First try, Nano
 
 A card under the box shows the run, with a moving bar and the seconds. Photoshop stays free to use meanwhile, and the button turns into **Cancel**.
 
+<Image src={running} alt="The Fulla panel during a run: the prompt greyed out, the Cancel button in place of Generate, and a card that says Google, Generating with Nano Banana 2.1, 1 s, with a moving bar and You can keep working" width={322} />
+
 ## What you get
 
 Each run makes **one new layer**, named after your prompt and masked by your selection, with a soft edge. Your photo itself is never changed, and the whole fill is one undo step. If anything fails, the document is left as it was.
 
-The card shows the model, the size, the time, and the cost of the run and of the session. Click **Done** once you are happy: the card and the prompt are cleared, and the layer stays.
+The card shows the model, the size, the time, and the cost of the run and of the session.
+
+<Image src={panel} alt="The Fulla panel, Generate tab: the prompt “Put the mug from the reference image on the table.”, the Nano Banana model button, one reference image, the settings button and Generate; under them the finished card: Nano Banana 2.1, 2K, 22 s, about $0.062, 6,946 tokens, session about $0.249" width={322} />
+
+Click **Done** once you are happy: the card and the prompt are cleared, and the layer stays.
 
 ## Choose a model
 
 The button under the box shows the provider and the model. It opens a searchable list of the models of every provider you connected. **Nano Banana 2.1** is the recommended one. See [Models](/docs/models/).
+
+<Image src={models} alt="The Fulla panel with the model list open under the model button: a Search models field, then OpenRouter with Nano Banana 2.1 marked Recommended, Nano Banana Pro, Qwen Image 3, Qwen Image 2.1 Pro, GPT Image 2.6 Sunburst and GPT Image 2.5 Sunburst, then Google with Nano Banana 2.1 ticked, Nano Banana Pro and Nano Banana 2 Lite marked Fast" width={322} />
 
 ## Next
 

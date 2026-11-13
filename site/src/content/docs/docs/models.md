@@ -1,6 +1,12 @@
 ---
 title: Models
 description: The models Fulla offers with each provider, and which one to choose. Nano Banana 2.1 is the recommended one.
+# Tab and share title, richer than the page heading for search results.
+head:
+  - tag: title
+    content: "Nano Banana, GPT Image and Qwen models in Fulla"
+  - tag: meta
+    attrs: { property: og:title, content: "Nano Banana, GPT Image and Qwen models in Fulla" }
 ---
 
 A model is what makes the image. The same model can come from more than one provider. **Nano Banana 2.1** is the recommended one and the default.

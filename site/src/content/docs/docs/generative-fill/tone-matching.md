@@ -1,6 +1,12 @@
 ---
 title: Tone matching
 description: Fulla compares the result with your photo around the selection, then evens out the tones with a Curves filter and, where the drift is local, a correction layer.
+# Tab and share title, richer than the page heading for search results.
+head:
+  - tag: title
+    content: "Tone matching for generative fill results | Fulla"
+  - tag: meta
+    attrs: { property: og:title, content: "Tone matching for generative fill results | Fulla" }
 ---
 
 Models often shift the colours of what they return, over the whole picture or in one part of it only: a sky a little too bright along the edge of an extended canvas, for example. Fulla compares the result with your photo around the selection and, when needed, corrects it in two steps:

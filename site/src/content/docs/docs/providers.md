@@ -1,6 +1,12 @@
 ---
 title: Providers
 description: The AI services Fulla works with, OpenRouter, Google and OpenAI, and what each one needs before the first image.
+# Tab and share title, richer than the page heading for search results.
+head:
+  - tag: title
+    content: "Providers: OpenRouter, Google or OpenAI keys | Fulla"
+  - tag: meta
+    attrs: { property: og:title, content: "Providers: OpenRouter, Google or OpenAI keys | Fulla" }
 ---
 
 A provider is the AI service Fulla sends your request to, and the one that bills you. Fulla works with three. You can connect several and switch from the model button.

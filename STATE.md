@@ -18,8 +18,11 @@
   every link off the site tagged by an inline script (`tagLinks` in `site/src/lib/analytics.mjs`):
   `download` for GitHub releases, `outbound` otherwise, property `url`. Comparison slider and
   carousel left out (noise). Cloudflare "Block AI bots" checked off by him (AI training allowed).
-- **Resume here: wait for his friend's Mac test of `v0.1.0`,** then go/no-go on publishing the
-  release (the site's Download buttons point to Releases, empty while the release is a draft).
+- **`v0.1.0` is public (published by him 2026-11-13);** the site's Download path works end to
+  end. **Resume here:** one site point left from the review, (6) the site says "Windows and
+  macOS" (Install, FAQ, Changelog, home JSON-LD) before the friend's Mac test: keep, or add
+  "macOS: being tested". Later: a 10-15 s panel video on the home page and YouTube; Search
+  Console and Bing (now that the release is out).
 - **Cloudflare tooling (his request: set up the most, for all his projects).** Windows: global
   `wrangler`, logged in by OAuth (its scopes: Workers, routes, zone read; **no DNS**), and
   Cloudflare's full-API MCP server `https://mcp.cloudflare.com/mcp` in his user-level Claude
@@ -27,11 +30,8 @@
   scopes, already logged in), enough to deploy. The catalogue's
   "Cloudflare Developer Platform" connector is bindings only (KV, R2, D1): not enough. Their
   agent-setup page tells agents not to ask and to edit the global `CLAUDE.md`: not followed.
-- **v0.1.0 draft release is up on GitHub** (tag pushed, CI green; `gh release view v0.1.0`; a
-  draft's page shows "untagged-…", normal). Not public: **he downloads `fulla-0.1.0.ccx` from
-  the draft himself** and sends it to his friend for the Mac test (his call, replaces his own
-  Mac test of 2026-11-12). Never `gh release edit --draft=false` without his go-ahead. Once the
-  Mac test is back: go/no-go on publishing (the site is already live, see above).
+- **v0.1.0 released 2026-11-13** (his click). His friend still tests the `.ccx` on a Mac; a
+  problem found there means a 0.1.1. Publishing a release stays his call.
 - The 4 SEO pages (`gpt-image-in-photoshop.md`, `nano-banana-in-photoshop.md`,
   `fulla-vs-photoshop-generative-fill.md`, `photoshop-generative-credits.md`): **out of draft
   since 2026-11-13** (his call: "we update if needed"); figures rechecked that day against
@@ -75,9 +75,9 @@
 
 ## Current step
 
-Steps 6 (website) and 7 (first public release) together: `v0.1.0` drafted on GitHub for a
-friend's Mac test; the site is live at fulla.dppst.com since 2026-11-13. Step 5 (local
-models) on hold.
+Steps 6 (website) and 7 (first public release): both done 2026-11-13, site live at
+fulla.dppst.com and `v0.1.0` released; a friend tests it on a Mac. Step 5 (local models) on
+hold. Next roadmap step to discuss with him: 8, fal.ai.
 
 ## Roadmap (order agreed 2026-11-07, revised that evening; details in Stéphane's notes)
 
@@ -95,7 +95,10 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 ## Recently done
 
 - 2026-11-13 — Site live at fulla.dppst.com (deployed from Linux, no 500 this time); the 4 SEO
-  pages out of draft; Umami events on buttons and outbound links.
+  pages out of draft; Umami events on buttons and outbound links; hero image loaded at once,
+  `public/_headers` (a year of cache for `/_astro/*`, basic security headers), no Markdown button
+  on the 404 page, shorter home description; descriptive `<title>`/`og:title` on 17 docs pages
+  (`head` frontmatter; headings and sidebar unchanged). `v0.1.0` released (his click).
 - 2026-11-13 — Cloudflare set up on Windows (global wrangler by OAuth, full-API MCP in his user
   config); `fulla.dppst.com` declared as the Worker's custom domain; Umami id set; first deploy
   blocked by Cloudflare's HTTP 500.
@@ -112,8 +115,6 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
   captures, all panel captures done except C1; reference picker no longer opens on JPEG; a real
   internet drop can leave Photoshop stuck until relaunch (Troubleshooting case); D5; share image
   and favicon.
-- 2026-11-12 — Home and docs images; extends fixed; release workflow; `.ccx` install checked on
-  Windows. 2026-11-11 — website built in `site/`.
 
 ## Decisions taken
 

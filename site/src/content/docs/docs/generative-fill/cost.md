@@ -1,6 +1,12 @@
 ---
 title: What it costs
 description: Fulla is free; you pay the AI service per image, from about 5 cents, and the panel shows the cost of every run.
+# Tab and share title, richer than the page heading for search results.
+head:
+  - tag: title
+    content: "What generative fill costs with Fulla, image by image"
+  - tag: meta
+    attrs: { property: og:title, content: "What generative fill costs with Fulla, image by image" }
 ---
 
 Fulla itself is free. You pay the AI service you connected, **per image**: no subscription, no monthly credits that expire.

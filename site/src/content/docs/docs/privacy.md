@@ -1,6 +1,12 @@
 ---
 title: Privacy and security
 description: Where your photos and keys go with Fulla. No Fulla server; keys stay in Photoshop's secure storage; OpenRouter connection with OAuth and PKCE.
+# Tab and share title, richer than the page heading for search results.
+head:
+  - tag: title
+    content: "Privacy and security of the Fulla plugin for Photoshop"
+  - tag: meta
+    attrs: { property: og:title, content: "Privacy and security of the Fulla plugin for Photoshop" }
 ---
 
 Fulla hosts nothing. Your photo goes from Photoshop straight to the AI service you chose, and nowhere else.

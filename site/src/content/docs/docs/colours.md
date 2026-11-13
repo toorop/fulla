@@ -1,6 +1,12 @@
 ---
 title: Colours
 description: Make generated results match your document's colour profile, Adobe RGB, ProPhoto or Display P3, by keeping embedded profiles in Photoshop.
+# Tab and share title, richer than the page heading for search results.
+head:
+  - tag: title
+    content: "Colour profiles and generative fill in Photoshop | Fulla"
+  - tag: meta
+    attrs: { property: og:title, content: "Colour profiles and generative fill in Photoshop | Fulla" }
 ---
 
 AI services work in sRGB. Fulla sends them your pixels converted to sRGB and embeds an sRGB profile in what comes back, so Photoshop converts the result into your document's profile (Adobe RGB, ProPhoto, Display P3…) and the colours match the surroundings.

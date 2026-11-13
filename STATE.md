@@ -16,9 +16,20 @@
   sends it to his friend; nothing public yet (don't `gh release edit --draft=false` without his
   go-ahead). Changelog's `## 0.1.0` section written and committed (models, auto resolution,
   references, tone matching, cost shown, install Windows/macOS). Once the Mac test is back:
-  decide go/no-go on publishing the release and connecting `fulla.dppst.com` on Cloudflare
-  (Workers Builds project not yet connected there; DNS doesn't resolve yet — his side to set up,
-  Claude can walk him through it).
+  decide go/no-go on publishing the release.
+- **Site go-live, blocked on Cloudflare (2026-11-13):** he asked for the full setup, for all his
+  Cloudflare use. Done: `wrangler` installed globally and logged in (OAuth, his single account;
+  zone `dppst.com` active there), Cloudflare's full-API MCP server (`mcp.cloudflare.com/mcp`)
+  added to his user-level Claude Code config (OAuth to sign in from a new session), custom
+  domain `fulla.dppst.com` declared in `site/wrangler.jsonc` (Cloudflare makes the DNS record and
+  certificate), Umami website id set. **Blocked:** every Worker upload on his account fails with
+  HTTP 500 / code 10013 "unknown error" — our site, a one-page assets-only test and a code-only
+  test alike (tests deleted, account left with its 8 original Workers; `fulla-site` not created).
+  Not the compatibility date, not a half-created Worker, not our build. Cloudflare's status page
+  showed no matching incident. Next: retry `cd site && npm run build && wrangler deploy`; if it
+  still fails, he looks at the dashboard (account notice?) or opens a ticket with Cloudflare.
+  After it works: connect the GitHub repo for Workers Builds in the dashboard (GitHub App, his
+  click), or keep deploying with `wrangler deploy`.
 - The 4 comparison pages (`gpt-image-in-photoshop.md`, `nano-banana-in-photoshop.md`,
   `fulla-vs-photoshop-generative-fill.md`, `photoshop-generative-credits.md`, still
   `draft: true`): figures rechecked 2026-11-13 against Adobe's partner-models page (updated

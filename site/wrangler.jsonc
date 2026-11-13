@@ -2,6 +2,8 @@
 {
 	"name": "fulla-site",
 	"compatibility_date": "2026-11-11",
+	// Cloudflare creates the DNS record and the certificate for a custom domain itself.
+	"routes": [{ "pattern": "fulla.dppst.com", "custom_domain": true }],
 	"assets": {
 		"directory": "./dist",
 		// Unknown URLs get the site's 404 page with a real 404 status.

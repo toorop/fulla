@@ -22,7 +22,7 @@ import faceRef from '../assets/examples/a5-ref.jpg';
 
 const title = 'Fulla: free generative fill plugin for Photoshop';
 const description =
-	'Fulla is a free Photoshop plugin for generative fill. Select, describe, Generate, as in Photoshop. Pay the AI service per image, from about 5 cents: no subscription, no credits.';
+	'Free Photoshop plugin for generative fill: select, describe, Generate. Pay the AI service per image, from about 5 cents. No subscription, no credits.';
 
 // Where the boat is in the hero photo (A1), in percent: the marching ants go there.
 // Measured from the before/after pair (2026-11-12): the area that changed.
@@ -78,6 +78,7 @@ const jsonLd = [
 					afterAlt="After: the same pier, the boat removed"
 					start={100}
 					sizes="(min-width: 1280px) 820px, 100vw"
+					priority
 				/>
 				<div class="ants" id="ants" style={`left:${selection.left}%;top:${selection.top}%;width:${selection.width}%;height:${selection.height}%`} aria-hidden="true">
 					<svg preserveAspectRatio="none" viewBox="0 0 100 100"><rect class="w" width="100" height="100"></rect><rect class="k" width="100" height="100"></rect></svg>

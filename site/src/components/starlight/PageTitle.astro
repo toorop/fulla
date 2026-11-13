@@ -1,16 +1,19 @@
 ---
-// The page title, with "Copy page as Markdown" beside it.
+// The page title, with "Copy page as Markdown" beside it (not on the 404 page: it has no Markdown copy).
 import { markdownUrl } from '../../lib/markdown';
 
 const { entry, id } = Astro.locals.starlightRoute;
+const hasMarkdown = id !== '404';
 ---
 
 <div class="title-row">
 	<h1 id="_top">{entry.data.title}</h1>
-	<button class="f-copy" type="button" data-umami-event="copy-markdown" data-md={markdownUrl(id)}>
-		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h8"></path></svg>
-		<span>Copy page as Markdown</span>
-	</button>
+	{hasMarkdown && (
+		<button class="f-copy" type="button" data-umami-event="copy-markdown" data-md={markdownUrl(id)}>
+			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h8"></path></svg>
+			<span>Copy page as Markdown</span>
+		</button>
+	)}
 </div>
 
 <style>

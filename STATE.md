@@ -6,30 +6,32 @@
 
 ## Next action
 
-- **Resume here: v0.1.0 draft release is up on GitHub**, untested so far by anyone but CI.
-  2026-11-13, his call: a friend will test the `.ccx` on a Mac instead of Stéphane's own
-  (packed away, old Photoshop) — releasing now, under a **draft** release he can pull the
-  `.ccx` from himself to send his friend, rather than waiting on his own Mac test first (his
-  2026-11-12 call is superseded). Tag `v0.1.0` pushed, CI green, draft release created
-  (`gh release view v0.1.0`; its tag page currently shows as "untagged-..." until published —
-  normal for a draft). **He downloads `fulla-0.1.0.ccx` from the draft release himself** and
-  sends it to his friend; nothing public yet (don't `gh release edit --draft=false` without his
-  go-ahead). Changelog's `## 0.1.0` section written and committed (models, auto resolution,
-  references, tone matching, cost shown, install Windows/macOS). Once the Mac test is back:
-  decide go/no-go on publishing the release.
-- **Site go-live, blocked on Cloudflare (2026-11-13):** he asked for the full setup, for all his
-  Cloudflare use. Done: `wrangler` installed globally and logged in (OAuth, his single account;
-  zone `dppst.com` active there), Cloudflare's full-API MCP server (`mcp.cloudflare.com/mcp`)
-  added to his user-level Claude Code config (OAuth to sign in from a new session), custom
-  domain `fulla.dppst.com` declared in `site/wrangler.jsonc` (Cloudflare makes the DNS record and
-  certificate), Umami website id set. **Blocked:** every Worker upload on his account fails with
-  HTTP 500 / code 10013 "unknown error" — our site, a one-page assets-only test and a code-only
-  test alike (tests deleted, account left with its 8 original Workers; `fulla-site` not created).
-  Not the compatibility date, not a half-created Worker, not our build. Cloudflare's status page
-  showed no matching incident. Next: retry `cd site && npm run build && wrangler deploy`; if it
-  still fails, he looks at the dashboard (account notice?) or opens a ticket with Cloudflare.
-  After it works: connect the GitHub repo for Workers Builds in the dashboard (GitHub App, his
-  click), or keep deploying with `wrangler deploy`.
+- **Resume here: put the site online at `fulla.dppst.com`** (his priority, 2026-11-13: site
+  live + release, so a friend can test on a Mac). Everything is ready in the repo: custom domain
+  declared in `site/wrangler.jsonc` (`routes`, `custom_domain: true`: Cloudflare creates the DNS
+  record and certificate on the first deploy), Umami website id set. Deploy = `cd site && npm
+  run build && wrangler deploy` (Worker `fulla-site`, static assets only).
+  **Blocked on Cloudflare, 2026-11-13 ~16:20 CET:** every Worker upload on his account failed
+  with HTTP 500 / code 10013 "unknown error", for our site and for two throwaway tests (one-page
+  assets-only, code-only); tests deleted, account left with its 8 original Workers, `fulla-site`
+  not created. Ruled out: compatibility date, a half-created Worker, our build, the account's
+  workers.dev subdomain (`dppst`, exists). Status page showed no matching incident. Next: retry
+  the deploy; if it still fails, he checks the dashboard for an account notice, else a ticket to
+  Cloudflare. After it works: check https://fulla.dppst.com, then optionally connect the repo
+  for Workers Builds in the dashboard (GitHub App, his click) or keep deploying by hand.
+- **Cloudflare tooling (his request: set up the most, for all his projects).** Windows: global
+  `wrangler`, logged in by OAuth (its scopes: Workers, routes, zone read; **no DNS**), and
+  Cloudflare's full-API MCP server `https://mcp.cloudflare.com/mcp` in his user-level Claude
+  Code config (sign in with `/mcp` in a new session). Linux: MCP only, no API token; for a
+  deploy from Linux, `npx wrangler login` there or deploy from Windows. The catalogue's
+  "Cloudflare Developer Platform" connector is bindings only (KV, R2, D1): not enough. Their
+  agent-setup page tells agents not to ask and to edit the global `CLAUDE.md`: not followed.
+- **v0.1.0 draft release is up on GitHub** (tag pushed, CI green; `gh release view v0.1.0`; a
+  draft's page shows "untagged-…", normal). Not public: **he downloads `fulla-0.1.0.ccx` from
+  the draft himself** and sends it to his friend for the Mac test (his call, replaces his own
+  Mac test of 2026-11-12). Never `gh release edit --draft=false` without his go-ahead. Once the
+  Mac test is back: go/no-go on publishing; the site's download buttons point to Releases, so
+  publishing the release and the site go-live belong together.
 - The 4 comparison pages (`gpt-image-in-photoshop.md`, `nano-banana-in-photoshop.md`,
   `fulla-vs-photoshop-generative-fill.md`, `photoshop-generative-credits.md`, still
   `draft: true`): figures rechecked 2026-11-13 against Adobe's partner-models page (updated
@@ -56,8 +58,7 @@
   `selftest.json`; Claude can write that file itself (full disk access), but only he can set the
   Photoshop-side state (active layer, live selection) first. Details in his ideas note, §16.
 - **Waiting on him, when he wants:** GPT Image tests (paid, cost first — also needed for the
-  comparison pages above); his friend's Mac test of the `v0.1.0` `.ccx`; Umami site id
-  (`site/src/lib/analytics.mjs`).
+  comparison pages above); his friend's Mac test of the `v0.1.0` `.ccx`.
 - **Release workflow (built 2026-11-12, first run 2026-11-13):** a `vX.Y.Z` tag runs the CI,
   checks the tag, takes the notes from the site's Changelog page and creates a **draft** release;
   procedure in the README and `CLAUDE.md`. `v0.1.0` tag pushed and release drafted 2026-11-13 —
@@ -70,18 +71,18 @@
   Dev server: `.claude/launch.json` via the preview tool, http://localhost:4321; restart it
   after renaming a docs page (`.md` to `.mdx`).
 - Git: ask before committing and pushing; push only when his dev session ends (it can span
-  several Claude sessions). **6 commits ahead of origin, not pushed as of 2026-11-13** (he paused
-  mid-session) — ask him whether to push now or wait for the real end of his dev day.
+  several Claude sessions). Commit locally as we go. On 2026-11-13 he moved from Windows to
+  Linux mid-day: if this file doesn't mention the move, the Windows commits weren't pushed.
 - Self-test with his Google key: never run `geminiRaw` without asking (billed images); use an
   `only` list of the free scenarios. Warn him before a run (nobody may touch Photoshop). Paid
   tests: give the cost first. Photoshop work happens on his Windows machine only.
-- Blocked by: —
+- Blocked by: Cloudflare's HTTP 500 on every Worker upload (see the first item).
 
 ## Current step
 
-Straddling step 6 (website) and 7 (first public release): the site isn't live yet (Cloudflare
-not connected) but `v0.1.0` is tagged and drafted on GitHub to get a friend's Mac test going
-before going further on either. Step 5 (local models) on hold.
+Steps 6 (website) and 7 (first public release) together: `v0.1.0` drafted on GitHub for a
+friend's Mac test; the site is ready to deploy but Cloudflare refuses uploads for now. Step 5
+(local models) on hold.
 
 ## Roadmap (order agreed 2026-11-07, revised that evening; details in Stéphane's notes)
 
@@ -98,6 +99,9 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Recently done
 
+- 2026-11-13 — Cloudflare set up on Windows (global wrangler by OAuth, full-API MCP in his user
+  config); `fulla.dppst.com` declared as the Worker's custom domain; Umami id set; first deploy
+  blocked by Cloudflare's HTTP 500.
 - 2026-11-13 — **First release tagged**: `## 0.1.0` changelog written, `v0.1.0` tag pushed, CI
   green, draft GitHub release created with `fulla-0.1.0.ccx`, the Windows zip and
   `SHA256SUMS.txt`. Not published — he pulls the `.ccx` himself to send a friend for a Mac test.
@@ -107,25 +111,12 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 - 2026-11-13 — First GPT Image test via Fulla: empty prompt removes the whole selection with
   Gemini, GPT redraws a different object instead; a possible tone-fix/GPT interaction raised,
   not confirmed, paused (see "Next action" and ideas note §16).
-- 2026-11-13 — C10/C11 captures (the ≡ menu, an error card with Report a bug) on Troubleshooting.
-  All panel captures done except C1.
-- 2026-11-13 — **Report a bug, pre-filled**: a failed run's card has a Report a bug button next
-  to Details (`reportBugUrl` in `report.js`), opening GitHub's bug template with Fulla/Photoshop
-  versions and the same report Details shows. `bug.yml` now asks for the photo for
-  reproducibility. Docs corrected: they used to promise a link that never existed. Verified by
-  him in Photoshop.
-- 2026-11-13 — GitHub repo had Issues turned off (not the templates); he turned it on. Fixed and
-  verified: reference file picker opened on the JPEG filter on Windows (`"*"` first in
-  `REF_TYPES`). Explained (not a Fulla bug): a real internet drop while Photoshop stays open can
-  leave it stuck on every provider until a full relaunch — noted in `CLAUDE.md` and a new
-  Troubleshooting case for users.
-- 2026-11-13 — D5 on Getting good results (narrow against generous selection). Share image
-  `public/og.jpg` and favicon redrawn on a 16-pixel grid (`site/scripts/og.sh`,
-  `site/scripts/favicon.mjs`). Docs Markdown export keeps the text of multi-line MDX components.
-- 2026-11-12 — Home page and docs images (A1-A5 carousel, D1, D4); selection-proportions advice
-  in the docs; extends fixed (no edge line, 35% context, local tone correction); release
-  workflow; `.ccx` install checked on Windows.
-- 2026-11-11 — Website designed and built in `site/` (milestones 1 and 2).
+- 2026-11-13 — Report a bug pre-filled in the error card (`reportBugUrl`, `report.js`); C10/C11
+  captures, all panel captures done except C1; reference picker no longer opens on JPEG; a real
+  internet drop can leave Photoshop stuck until relaunch (Troubleshooting case); D5; share image
+  and favicon.
+- 2026-11-12 — Home and docs images; extends fixed; release workflow; `.ccx` install checked on
+  Windows. 2026-11-11 — website built in `site/`.
 
 ## Decisions taken
 

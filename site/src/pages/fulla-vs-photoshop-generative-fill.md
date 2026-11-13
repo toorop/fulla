@@ -21,9 +21,9 @@ Prices are for the same model on both sides, Nano Banana 2, unless the row says 
 | --- | --- | --- |
 | Price of the plugin | Included in Photoshop | Free (MIT licence) |
 | Who makes the images | Adobe (Firefly, and partner models) | The AI service you connect: OpenRouter, Google or OpenAI |
-| One fill, Nano Banana 2, 1K to 2K | 20 credits, about $0.10 at the smallest top-up | about $0.05, billed per image |
+| One fill, Nano Banana 2, 1K to 2K | 20 credits, about $0.10 at the smallest monthly add-on | about $0.05, billed per image |
 | One fill, Nano Banana 2, 4K | 30 credits, about $0.15 | about $0.12 |
-| Paid up front | A monthly plan; credits left at the end of the month are lost | Nothing; a few dollars of credit, used image by image |
+| Paid up front | A monthly plan; more credits mean a monthly add-on; credits left at the end of the month are lost | Nothing; a few dollars of credit, used image by image |
 | How you see the cost | A credit estimate, if tooltips are on | In dollars, after every image |
 | Models | Firefly, Nano Banana, FLUX | Nano Banana 2.1 and Pro, Qwen Image, GPT Image, and more |
 | Output size | Firefly Image 5: 2K | Up to 4K, with models that offer it |

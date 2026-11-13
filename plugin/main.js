@@ -516,7 +516,10 @@ function toggleSettings() {
 // document, Ctrl+Z or a layer deleted by hand all show by themselves. The button right of the model
 // shows how many; it opens a popup like Adobe's "Reference image" one, in the floating spot.
 
-const REF_TYPES = ["jpg", "jpeg", "png", "webp", "tif", "tiff", "psd", "psb", "heic", "avif", "gif", "bmp"];
+// "*" first: on Windows, UXP's file picker opens on the first type's own filter rather than "All
+// files", so with jpg first it always opened on JPEG (seen 2026-11-13). A file of another kind
+// still fails cleanly: addRefFiles reports "Couldn't add <name>" from Photoshop refusing it.
+const REF_TYPES = ["*", "jpg", "jpeg", "png", "webp", "tif", "tiff", "psd", "psb", "heic", "avif", "gif", "bmp"];
 const REF_THUMB = 160; // px, long side of a thumbnail read from the document
 let refsState = { docId: null, list: [], key: "" };
 let refsMessage = { text: "", kind: "" }; // the popup's last message (an add that failed...)

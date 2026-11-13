@@ -4,7 +4,6 @@ title: Nano Banana in Photoshop
 metaTitle: 'Nano Banana in Photoshop: two ways to use it for generative fill'
 description: Two ways to use Google's Nano Banana models in Photoshop, with Adobe's generative fill or with the free Fulla plugin, and how to set Fulla up.
 updated: 2026-11-10
-draft: true
 ---
 
 Nano Banana is the name of Google's Gemini image models. There are two ways to use them for generative fill in Photoshop: through Adobe's own generative fill, paid in credits, or through Fulla, a free plugin, paid per image to the AI service you connect.

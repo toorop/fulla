@@ -4,7 +4,6 @@ title: Photoshop generative credits, explained
 metaTitle: 'Photoshop generative credits explained: cost per fill, per plan'
 description: How many generative credits a Photoshop generative fill uses, per model and size, how many each plan includes, and what a credit costs in dollars.
 updated: 2026-11-13
-draft: true
 ---
 
 Photoshop's generative fill is paid in generative credits. A fill uses 1 to 40 credits depending on the model and the size, plans include a monthly allowance that doesn't carry over, and extra credits are sold as monthly add-ons. At the smallest add-on, a credit is worth about half a cent, so a Nano Banana 2 fill costs about $0.10.

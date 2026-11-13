@@ -4,7 +4,6 @@ title: GPT Image in Photoshop
 metaTitle: 'GPT Image in Photoshop: generative fill with OpenAI models'
 description: Use OpenAI's GPT Image models for generative fill in Photoshop with the free Fulla plugin, through OpenRouter or with your own OpenAI key.
 updated: 2026-11-13
-draft: true
 ---
 
 GPT Image is OpenAI's family of image models. With Fulla, a free Photoshop plugin, you can use them for generative fill: select an area, describe what you want, and click Generate. You pay per image, through OpenRouter or with your own OpenAI key.

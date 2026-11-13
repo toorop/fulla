@@ -4,7 +4,6 @@ title: Fulla vs Photoshop's generative fill
 metaTitle: 'Fulla vs Photoshop generative fill: price, models, resolution'
 description: How Fulla compares with Photoshop's own generative fill, point by point, with the same model on both sides, dated prices and sources.
 updated: 2026-11-10
-draft: true
 ---
 
 Fulla is a free Photoshop plugin that works like Photoshop's own generative fill: select, describe, click Generate. The difference is who makes the images and how you pay for them. With Photoshop's generative fill, Adobe makes them and you pay in generative credits from your plan. With Fulla, an AI service you choose makes them, and you pay that service per image.

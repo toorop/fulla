@@ -3,7 +3,7 @@ layout: ../layouts/Article.astro
 title: Photoshop generative credits, explained
 metaTitle: 'Photoshop generative credits explained: cost per fill, per plan'
 description: How many generative credits a Photoshop generative fill uses, per model and size, how many each plan includes, and what a credit costs in dollars.
-updated: 2026-11-10
+updated: 2026-11-13
 draft: true
 ---
 
@@ -16,7 +16,7 @@ Photoshop's generative fill is paid in generative credits. A fill uses 1 to 40 c
 | Firefly Fill & Expand | 1 |
 | Firefly Image 5 | 10 |
 | FLUX.1 Kontext [pro] | 10 |
-| FLUX.2 pro | 20 |
+| FLUX.2 | 20 |
 | Nano Banana 2, 1K or 2K | 20 |
 | Nano Banana 2, 4K | 30 |
 | Nano Banana Pro | 40 |

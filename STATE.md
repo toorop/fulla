@@ -6,15 +6,18 @@
 
 ## Next action
 
-- **Resume here: the GPT Image page**, before go-live. Four comparison pages are still
-  `draft: true` (dated 2026-11-10): `gpt-image-in-photoshop.md`, `nano-banana-in-photoshop.md`,
-  `fulla-vs-photoshop-generative-fill.md`, `photoshop-generative-credits.md`. Photoshop now
-  offers GPT natively in its own generative fill (seen by him 2026-11-12): the GPT Image page
-  must say so, as the Nano Banana page does — look up which model, credits, resolution. Recheck
-  every figure by hand (Adobe's credits FAQ), confirm the same model is named identically on both
-  sides (Adobe: Nano Banana 2 / `gemini-3.1-flash-image`; Fulla's default: Nano Banana 2.1). Once
-  checked: remove the Draft banners, judge the `#1e1e1e` background against the real photos now
-  in place, never write "the only one".
+- **Resume here: the 4 comparison pages**, before go-live (`gpt-image-in-photoshop.md`,
+  `nano-banana-in-photoshop.md`, `fulla-vs-photoshop-generative-fill.md`,
+  `photoshop-generative-credits.md`, all still `draft: true`). 2026-11-13: checked again in the
+  beta — **GPT Image is still not in Photoshop's own Generative Fill** (only Generate Image and
+  Prompt to edit); Adobe's partner-models page (updated 10/11) confirms it, listing only Nano
+  Banana 2/Pro and FLUX for Generative Fill. Added one line to `gpt-image-in-photoshop.md` saying
+  so (a Fulla differentiator) — no "Photoshop now offers GPT" claim needed, that read of the
+  12/11 sighting was wrong. Every other figure in `photoshop-generative-credits.md` rechecked by
+  hand against that same Adobe page and matches, except the name "FLUX.2 pro" → **FLUX.2**
+  (fixed). Nano Banana and Fulla-vs-Photoshop pages already accurate, untouched. Left for him:
+  **judge the `#1e1e1e` background against the real photos now in place** (design call, open
+  http://localhost:4321), then remove the Draft banners; never write "the only one".
 - Panel captures: **done** except **C1** (installer), with the release. No English Photoshop
   (his call 2026-11-13): `c1-ccx`, C8, C9 stay text. `c3-en-cours.png` is still cropped to hide
   the cursor, to redo without it if he feels like it (not urgent).
@@ -72,6 +75,9 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Recently done
 
+- 2026-11-13 — Rechecked the 4 comparison-page drafts: confirmed (beta + Adobe's partner-models
+  page) GPT Image is still not in Photoshop's own Generative Fill; fixed "FLUX.2 pro" → "FLUX.2"
+  in `photoshop-generative-credits.md`; added a line to `gpt-image-in-photoshop.md`.
 - 2026-11-13 — First GPT Image test via Fulla: empty prompt removes the whole selection with
   Gemini, GPT redraws a different object instead; a possible tone-fix/GPT interaction raised,
   not confirmed, paused (see "Next action" and ideas note §16).

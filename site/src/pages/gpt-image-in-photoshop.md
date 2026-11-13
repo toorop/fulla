@@ -3,7 +3,7 @@ layout: ../layouts/Article.astro
 title: GPT Image in Photoshop
 metaTitle: 'GPT Image in Photoshop: generative fill with OpenAI models'
 description: Use OpenAI's GPT Image models for generative fill in Photoshop with the free Fulla plugin, through OpenRouter or with your own OpenAI key.
-updated: 2026-11-10
+updated: 2026-11-13
 draft: true
 ---
 
@@ -17,6 +17,8 @@ GPT Image is OpenAI's family of image models. With Fulla, a free Photoshop plugi
 | GPT Image 2.5 Sunburst | Yes | Yes (default) |
 | GPT Image 2.5 Flare | No | Yes |
 | GPT Image 2 | No | Yes |
+
+Photoshop's own generative fill doesn't offer GPT Image: Adobe's partner models for Generative Fill are Nano Banana 2, Nano Banana Pro and the FLUX models (GPT Image appears elsewhere in Photoshop, in Generate Image and Prompt to edit). With Fulla, GPT Image works for generative fill too.
 
 OpenAI models make images up to 2K. Fulla's recommended model stays Nano Banana 2.1, which in our tests kept faces closer to the original; GPT Image is there when you prefer its look.
 

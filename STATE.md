@@ -6,12 +6,14 @@
 
 ## Next action
 
-- **Resume here: D5** (step 6, the site images, card by card in the order of his illustrations
-  note, vault, Fulla folder). D5 = tight against large selection with the mug (shadow cut by a
-  tight selection): if he kept a draw with the shadow cut, only two exports and two captures of
-  the marching ants are needed. Then D6 (colour policy Off against Preserve Embedded Profiles, an
-  Adobe RGB document, about $0.12; optional, could stay text). Recommended next, by Claude alone:
-  the social share image (1200 x 630, from A1) and the favicon.
+- **Resume here: D5, waiting on his export** (step 6, the site images, card by card in the order
+  of his illustrations note, vault, Fulla folder). D5 = tight against large selection with the
+  mug on the Getting good results page. The large one is A3 (already here); asked of him on
+  2026-11-13: only `d5-serree.png` (a draw with the shadow cut, same document and size as A3,
+  1672 x 941, sRGB) and its caption facts. No marching-ants captures: Claude finds both
+  selections by diffing against `a3-avant` (as for A1) and draws the ants. Then D6 (colour
+  policy Off against Preserve Embedded Profiles, an Adobe RGB document, about $0.12; optional,
+  could stay text).
   - Done 2026-11-12: home page A1 to A5 (carousel), docs D1 (Your first fill), D4 (Variations),
     A1 and A2 on Remove and extend. Skipped: D2 (no photo with fine detail; the Resolution page
     keeps its text). D3 (tone matching) waits for a draw that really drifts, exported with and
@@ -83,6 +85,9 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Recently done
 
+- 2026-11-13 — Share image `public/og.jpg` (headline + A1 split through the boat, 110 KB;
+  `site/scripts/og.sh`) and favicon redrawn on a 16-pixel grid, plus `favicon.ico` and
+  `apple-touch-icon.png` (`site/scripts/favicon.mjs`).
 - 2026-11-12 — Docs images D1 (Your first fill: a boat added to A1's empty pier) and D4
   (Variations: four sea kayaks of one run, panel capture C6); A1 and A2 on Remove and extend.
 - 2026-11-12 — Home page images A1 to A5 (pier, beach extend, mug, locomotive, face swap), each

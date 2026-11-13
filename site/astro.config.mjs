@@ -20,9 +20,12 @@ export default defineConfig({
 			editLink: { baseUrl: 'https://github.com/toorop/fulla/edit/main/site/' },
 			lastUpdated: true,
 			head: [
-				{ tag: 'meta', attrs: { property: 'og:image', content: 'https://fulla.dppst.com/og.png' } },
+				{ tag: 'meta', attrs: { property: 'og:image', content: 'https://fulla.dppst.com/og.jpg' } },
 				{ tag: 'meta', attrs: { property: 'og:image:width', content: '1200' } },
 				{ tag: 'meta', attrs: { property: 'og:image:height', content: '630' } },
+				{ tag: 'meta', attrs: { property: 'og:image:alt', content: 'Fulla: generative fill in Photoshop. Pay only for the images you make. A photo of a pier, before and after a boat is removed.' } },
+				{ tag: 'link', attrs: { rel: 'icon', href: '/favicon.ico', sizes: '32x32' } },
+				{ tag: 'link', attrs: { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' } },
 				{ tag: 'meta', attrs: { name: 'twitter:card', content: 'summary_large_image' } },
 				...(umami ? [{ tag: 'script', attrs: umami }] : []),
 			],

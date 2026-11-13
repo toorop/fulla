@@ -22,13 +22,12 @@
     prompt (translated to English when he wrote French), draws, model, resolution, cost; say
     "Sample photo generated for this demo" for generated pictures. Exports from his Adobe RGB
     photos need the sRGB conversion (D4's first ones came out faded).
-  - Panel captures (C2, C6, `c3-generate`/`c3-en-cours`/`c4-modeles` on Your first fill,
-    `c5-reglages` on Resolution, `c7-references` on Reference images, `c10-menu` on Troubleshooting
-    all done; C3 stands for c3-termine too). He pastes them in the chat at 100 % (322 px wide), one
-    by one, Claude asks for each, whole panel, never cropped (his call 2026-11-13; c3-en-cours is
-    still cropped to hide the cursor, to redo without it). Left: C11 (an error card, now with the
-    Report a bug button); C1 installer with the release. No
-    English Photoshop (his call 2026-11-13): c1-ccx, C8 and C9 stay text.
+  - **Panel captures done** (C2, C6, `c3-generate`/`c3-en-cours`/`c4-modeles` on Your first fill,
+    `c5-reglages` on Resolution, `c7-references` on Reference images, `c10-menu`/`c11-erreur` on
+    Troubleshooting; C3 stands for c3-termine too). He pastes them in the chat at 100 % (322 px
+    wide), one by one, Claude asks for each, whole panel, never cropped (his call 2026-11-13;
+    c3-en-cours is still cropped to hide the cursor, to redo without it). Left: **C1** (installer),
+    with the release. No English Photoshop (his call 2026-11-13): c1-ccx, C8 and C9 stay text.
   - Dev server: `.claude/launch.json` (local, excluded from git) via the preview tool,
     http://localhost:4321; restart it after renaming a docs page (`.md` to `.mdx`).
 - **Waiting on him, when he wants:** GPT Image tests (paid, cost first); the `.ccx` on a Mac
@@ -88,6 +87,8 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Recently done
 
+- 2026-11-13 — C11 (`c11-erreur.png`, the network-error card with Details and Report a bug) on
+  Troubleshooting, right after the intro line. All panel captures done except C1 (with the release).
 - 2026-11-13 — **Report a bug, pre-filled** (his idea, while discussing C11): a failed run's card
   now has a **Report a bug** button next to Details (`reportBugUrl` in `report.js`), opening
   GitHub's bug template with Fulla/Photoshop versions and the same report as Details already

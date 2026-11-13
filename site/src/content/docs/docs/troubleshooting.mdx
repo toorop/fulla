@@ -5,8 +5,13 @@ description: Fixes for the common problems with Fulla, from a first image that w
 import { Image } from 'astro:assets';
 import AskAssistant from '../../../components/AskAssistant.astro';
 import menu from '../../../assets/examples/c10-menu.png';
+import errorCard from '../../../assets/examples/c11-erreur.png';
 
-When a provider blocks a run, Fulla names the reason in the card. The common cases:
+When a provider blocks a run, Fulla names the reason in the card.
+
+<Image src={errorCard} alt="The Fulla panel after a failed run: in red, Can't reach generativelanguage.googleapis.com. Check your internet connection., with Details and Report a bug buttons underneath" width={322} />
+
+The common cases:
 
 ## OpenRouter says I have no credits
 

@@ -15,9 +15,9 @@ const q = encodeURIComponent(prompt);
 	<p>Copy this into ChatGPT, Claude or any assistant. It reads the whole Fulla guide and helps you step by step.</p>
 	<p class="prompt">{prompt}</p>
 	<div class="row">
-		<button type="button" class="solid" data-prompt={prompt}>Copy prompt</button>
-		<a href={`https://chatgpt.com/?q=${q}`} rel="noopener">Open in ChatGPT</a>
-		<a href={`https://claude.ai/new?q=${q}`} rel="noopener">Open in Claude</a>
+		<button type="button" class="solid" data-umami-event="ask-assistant" data-umami-event-via="copy" data-prompt={prompt}>Copy prompt</button>
+		<a href={`https://chatgpt.com/?q=${q}`} rel="noopener" data-umami-event="ask-assistant" data-umami-event-via="chatgpt">Open in ChatGPT</a>
+		<a href={`https://claude.ai/new?q=${q}`} rel="noopener" data-umami-event="ask-assistant" data-umami-event-via="claude">Open in Claude</a>
 	</div>
 </section>
 

@@ -6,42 +6,37 @@
 
 ## Next action
 
-- **Resume here: put the site online at `fulla.dppst.com`** (his priority, 2026-11-13: site
-  live + release, so a friend can test on a Mac). Everything is ready in the repo: custom domain
-  declared in `site/wrangler.jsonc` (`routes`, `custom_domain: true`: Cloudflare creates the DNS
-  record and certificate on the first deploy), Umami website id set. Deploy = `cd site && npm
-  run build && wrangler deploy` (Worker `fulla-site`, static assets only).
-  **Blocked on Cloudflare, 2026-11-13 ~16:20 CET:** every Worker upload on his account failed
-  with HTTP 500 / code 10013 "unknown error", for our site and for two throwaway tests (one-page
-  assets-only, code-only); tests deleted, account left with its 8 original Workers, `fulla-site`
-  not created. Ruled out: compatibility date, a half-created Worker, our build, the account's
-  workers.dev subdomain (`dppst`, exists). Status page showed no matching incident. Next: retry
-  the deploy; if it still fails, he checks the dashboard for an account notice, else a ticket to
-  Cloudflare. After it works: check https://fulla.dppst.com, then optionally connect the repo
-  for Workers Builds in the dashboard (GitHub App, his click) or keep deploying by hand.
+- **Site live at https://fulla.dppst.com since 2026-11-13** (deployed from Linux with the
+  global `wrangler`, already logged in there: `cd site && npm run build && wrangler deploy`,
+  Worker `fulla-site`). The HTTP 500 / 10013 seen from Windows that afternoon did not come back.
+  Checked live: pages 200, unknown URL 404, `.md` pages, `llms.txt`, sitemap, Umami id in the
+  page, `robots.txt` served as ours (no Cloudflare AI-bot rules), GPTBot gets 200. Each change
+  is deployed by hand for now; optional next: connect the repo for Workers Builds in the
+  dashboard (GitHub App, his click). Still to do at go-live: Search Console, Bing.
+- **Umami events (2026-11-13):** `install-cta` (property `from`: header, hero, prices, closing,
+  article, docs-header), `copy-markdown`, `ask-assistant` (`via`: copy, chatgpt, claude), and
+  every link off the site tagged by an inline script (`tagLinks` in `site/src/lib/analytics.mjs`):
+  `download` for GitHub releases, `outbound` otherwise, property `url`. Comparison slider and
+  carousel left out (noise). Cloudflare "Block AI bots" checked off by him (AI training allowed).
+- **Resume here: wait for his friend's Mac test of `v0.1.0`,** then go/no-go on publishing the
+  release (the site's Download buttons point to Releases, empty while the release is a draft).
 - **Cloudflare tooling (his request: set up the most, for all his projects).** Windows: global
   `wrangler`, logged in by OAuth (its scopes: Workers, routes, zone read; **no DNS**), and
   Cloudflare's full-API MCP server `https://mcp.cloudflare.com/mcp` in his user-level Claude
-  Code config (sign in with `/mcp` in a new session). Linux: MCP only, no API token; for a
-  deploy from Linux, `npx wrangler login` there or deploy from Windows. The catalogue's
+  Code config (sign in with `/mcp` in a new session). Linux: global `wrangler` (OAuth, same
+  scopes, already logged in), enough to deploy. The catalogue's
   "Cloudflare Developer Platform" connector is bindings only (KV, R2, D1): not enough. Their
   agent-setup page tells agents not to ask and to edit the global `CLAUDE.md`: not followed.
 - **v0.1.0 draft release is up on GitHub** (tag pushed, CI green; `gh release view v0.1.0`; a
   draft's page shows "untagged-…", normal). Not public: **he downloads `fulla-0.1.0.ccx` from
   the draft himself** and sends it to his friend for the Mac test (his call, replaces his own
   Mac test of 2026-11-12). Never `gh release edit --draft=false` without his go-ahead. Once the
-  Mac test is back: go/no-go on publishing; the site's download buttons point to Releases, so
-  publishing the release and the site go-live belong together.
-- The 4 comparison pages (`gpt-image-in-photoshop.md`, `nano-banana-in-photoshop.md`,
-  `fulla-vs-photoshop-generative-fill.md`, `photoshop-generative-credits.md`, still
-  `draft: true`): figures rechecked 2026-11-13 against Adobe's partner-models page (updated
-  10/11) — confirmed again in the beta that **GPT Image is still not in Photoshop's own
-  Generative Fill** (only Generate Image and Prompt to edit, Nano Banana 2/Pro and FLUX are the
-  only Generative Fill partners); said so on the GPT Image page instead of the old "Photoshop
-  now offers GPT" read (wrong). Fixed a stale name, "FLUX.2 pro" → **FLUX.2**, in
-  `photoshop-generative-credits.md`; Nano Banana and Fulla-vs-Photoshop pages already accurate.
-  He's fine with the `#1e1e1e` background as is. Left: remove the Draft banners when he's ready;
-  never write "the only one".
+  Mac test is back: go/no-go on publishing (the site is already live, see above).
+- The 4 SEO pages (`gpt-image-in-photoshop.md`, `nano-banana-in-photoshop.md`,
+  `fulla-vs-photoshop-generative-fill.md`, `photoshop-generative-credits.md`): **out of draft
+  since 2026-11-13** (his call: "we update if needed"); figures rechecked that day against
+  Adobe's partner-models page (GPT Image still not in Photoshop's own Generative Fill). Never
+  write "the only one".
 - Panel captures: **done** except **C1** (installer), with the release. No English Photoshop
   (his call 2026-11-13): `c1-ccx`, C8, C9 stay text. `c3-en-cours.png` is still cropped to hide
   the cursor, to redo without it if he feels like it (not urgent).
@@ -76,13 +71,13 @@
 - Self-test with his Google key: never run `geminiRaw` without asking (billed images); use an
   `only` list of the free scenarios. Warn him before a run (nobody may touch Photoshop). Paid
   tests: give the cost first. Photoshop work happens on his Windows machine only.
-- Blocked by: Cloudflare's HTTP 500 on every Worker upload (see the first item).
+- Blocked by: — (waiting on the friend's Mac test).
 
 ## Current step
 
 Steps 6 (website) and 7 (first public release) together: `v0.1.0` drafted on GitHub for a
-friend's Mac test; the site is ready to deploy but Cloudflare refuses uploads for now. Step 5
-(local models) on hold.
+friend's Mac test; the site is live at fulla.dppst.com since 2026-11-13. Step 5 (local
+models) on hold.
 
 ## Roadmap (order agreed 2026-11-07, revised that evening; details in Stéphane's notes)
 
@@ -99,6 +94,8 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Recently done
 
+- 2026-11-13 — Site live at fulla.dppst.com (deployed from Linux, no 500 this time); the 4 SEO
+  pages out of draft; Umami events on buttons and outbound links.
 - 2026-11-13 — Cloudflare set up on Windows (global wrangler by OAuth, full-API MCP in his user
   config); `fulla.dppst.com` declared as the Worker's custom domain; Umami id set; first deploy
   blocked by Cloudflare's HTTP 500.

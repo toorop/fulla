@@ -5,9 +5,10 @@ import '../styles/tokens.css';
 import '../styles/site.css';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
-import { umamiAttrs } from '../lib/analytics.mjs';
+import { umamiAttrs, tagLinksScript } from '../lib/analytics.mjs';
 
 const umami = umamiAttrs();
+const linksScript = tagLinksScript();
 
 interface Props {
 	title: string;
@@ -43,6 +44,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
 		<meta property="og:image:alt" content="Fulla: generative fill in Photoshop. Pay only for the images you make. A photo of a pier, before and after a boat is removed." />
 		<meta name="twitter:card" content="summary_large_image" />
 		{umami && <script is:inline {...umami}></script>}
+		{linksScript && <script is:inline set:html={linksScript} />}
 		{jsonLd.map((data) => <script type="application/ld+json" set:html={JSON.stringify(data)} />)}
 	</head>
 	<body>

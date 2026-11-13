@@ -1,9 +1,10 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
-import { umamiAttrs } from './src/lib/analytics.mjs';
+import { umamiAttrs, tagLinksScript } from './src/lib/analytics.mjs';
 
 const umami = umamiAttrs();
+const linksScript = tagLinksScript();
 
 // Home page and marketing pages are plain Astro pages (src/pages); the docs under /docs/ are
 // Starlight. URLs are final once released: lowercase, hyphens, trailing slash everywhere.
@@ -28,6 +29,7 @@ export default defineConfig({
 				{ tag: 'link', attrs: { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' } },
 				{ tag: 'meta', attrs: { name: 'twitter:card', content: 'summary_large_image' } },
 				...(umami ? [{ tag: 'script', attrs: umami }] : []),
+				...(linksScript ? [{ tag: 'script', content: linksScript }] : []),
 			],
 			customCss: ['@fontsource-variable/hanken-grotesk', './src/styles/tokens.css', './src/styles/docs.css'],
 			components: {

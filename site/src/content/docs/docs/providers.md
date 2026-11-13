@@ -17,4 +17,4 @@ Create a key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
 
 Create a key at [platform.openai.com/api-keys](https://platform.openai.com/api-keys). Your account needs credits, and OpenAI image models may also need your **organization verified**.
 
-When one of these blocks a run, Fulla names it and links the page that fixes it.
+When one of these blocks a run, Fulla names it in the card, with a **Report a bug** button that opens a ready-made GitHub issue.

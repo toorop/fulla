@@ -2,9 +2,11 @@
 title: Troubleshooting
 description: Fixes for the common problems with Fulla, from a first image that won't start to a colour cast on the result.
 ---
+import { Image } from 'astro:assets';
 import AskAssistant from '../../../components/AskAssistant.astro';
+import menu from '../../../assets/examples/c10-menu.png';
 
-When a provider blocks a run, Fulla names the reason in the card and links the page that fixes it. The common cases:
+When a provider blocks a run, Fulla names the reason in the card. The common cases:
 
 ## OpenRouter says I have no credits
 
@@ -32,6 +34,8 @@ The selection was too tight. Select again with room for the object and its shado
 
 ## Something else
 
-[Report a bug](https://github.com/toorop/fulla/issues) on GitHub, or use **Report a bug** in the panel's menu (≡).
+Click **Report a bug** under the card's **Details**: it opens a GitHub issue with the error already filled in. You still describe what you did, and can attach a screenshot or the photo. The same button is in the panel's menu (≡, top right), without the error.
+
+<Image src={menu} alt="The Fulla panel with its ≡ menu open: Documentation, Report a bug, Request a model or provider and About Fulla 0.1.0, between Photoshop's own panel menu items (Tab Group, Close, Close Tab Group), shown here in French since Photoshop itself was set to French" width={555} />
 
 <AskAssistant task="fix a problem with Fulla" />

@@ -25,4 +25,27 @@ function errorReport({ error, provider, model, size, plugin, host, when = new Da
   return lines.join("\n");
 }
 
-module.exports = { errorReport };
+const REPO = "https://github.com/toorop/fulla";
+
+/**
+ * A "Report a bug" link that opens the bug template with the error already in it: Fulla and
+ * Photoshop versions in their own fields, the rest (provider, model, message...) as the same
+ * report errorReport() gives, in "What happened". The user still fills in "What you did" and can
+ * attach a screenshot; GitHub fills a field from the URL by the field's id in bug.yml.
+ * @param {object} o  the same fields as errorReport()
+ * @param {string} [o.repo]  override for testing; defaults to the real repo
+ * @returns {string}
+ */
+function reportBugUrl(o) {
+  const e = (o && o.error) || {};
+  const title = `Bug: ${(e.message || String(e) || "unknown error").replace(/\s+/g, " ")}`.slice(0, 120);
+  const fields = { template: "bug.yml", title, result: errorReport(o) };
+  if (o && o.plugin) fields.fulla = o.plugin;
+  if (o && o.host) fields.photoshop = o.host;
+  const query = Object.entries(fields)
+    .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+    .join("&");
+  return `${(o && o.repo) || REPO}/issues/new?${query}`;
+}
+
+module.exports = { errorReport, reportBugUrl };

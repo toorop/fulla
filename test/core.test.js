@@ -392,6 +392,23 @@ test("error report: versions, provider, model, message, status, code and provide
   assert.ok(plain.split("\n").pop().length <= "Detail: ".length + 1000);
 });
 
+test("report a bug URL: opens the real template, pre-fills Fulla/Photoshop and the same report", () => {
+  const { errorReport, reportBugUrl } = require("../plugin/src/report");
+  const { ProviderError } = require("../plugin/src/providers/http");
+  const err = new ProviderError("The model is having trouble right now.", { status: 502, code: "502", detail: "502: Provider returned error" });
+  const info = { error: err, provider: "OpenRouter", model: "google/gemini-nano-banana-2.1", size: "Auto", plugin: "0.1.0", host: "28.0.1", when: new Date("2026-11-08T18:00:00Z"), repo: "https://github.com/toorop/fulla" };
+  const url = reportBugUrl(info);
+  assert.ok(url.startsWith("https://github.com/toorop/fulla/issues/new?"));
+  const params = new URL(url).searchParams;
+  assert.equal(params.get("template"), "bug.yml");
+  assert.equal(params.get("title"), "Bug: The model is having trouble right now.");
+  assert.equal(params.get("fulla"), "0.1.0");
+  assert.equal(params.get("photoshop"), "28.0.1");
+  assert.equal(params.get("result"), errorReport(info));
+  // No version yet (first run, before the host answers): the two fields are left out, not "?".
+  assert.equal(new URL(reportBugUrl({ error: err })).searchParams.get("fulla"), null);
+});
+
 test("run gate: one run at a time; Cancel during a run drops it at once; the second half of a double click is ignored", async () => {
   const { createRunGate } = require("../plugin/src/run");
   let t = 1000;

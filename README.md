@@ -48,7 +48,7 @@ This only works if Photoshop keeps embedded profiles. Check **Edit > Color Setti
 
 For OpenAI and Google, **Add a key** in the Providers tab has a button that opens the page where the key is created. Fulla offers a tested catalogue of models; to ask for another one, use **Request a model or provider** in the panel's menu (≡, top right), which also links this documentation and a bug report.
 
-You pay the provider directly, per image. Each needs a funded account: OpenRouter needs credits (it shows the exact amount billed for each run), OpenAI needs credits, and Gemini's free tier allows 0 image generations, so billing must be on. OpenAI image models may also need your organization verified. When one of these blocks a run, Fulla names it and links the page that fixes it.
+You pay the provider directly, per image. Each needs a funded account: OpenRouter needs credits (it shows the exact amount billed for each run), OpenAI needs credits, and Gemini's free tier allows 0 image generations, so billing must be on. OpenAI image models may also need your organization verified. When one of these blocks a run, Fulla names it in the card, with a **Report a bug** button that opens a ready-made GitHub issue.
 
 ## Install
 

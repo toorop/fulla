@@ -26,13 +26,13 @@ body:
     id: steps
     attributes:
       label: What you did
-      description: Steps, document size, selection, settings.
+      description: Steps, document size, selection, settings. If it happens on one photo, attach it (or a crop around the selection) below, if you can — that's what makes it reproducible.
     validations:
       required: true
   - type: textarea
     id: result
     attributes:
       label: What happened
-      description: The exact message the panel shows, and a screenshot if useful. Never paste your API key.
+      description: The exact message the panel shows, a screenshot of the panel, and the result image if there is one. Never paste your API key.
     validations:
       required: true

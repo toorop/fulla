@@ -58,9 +58,13 @@
         </section>
         <div id="runCost" class="hint" hidden></div>
         <div id="status" class="status" aria-live="polite"></div>
-        <!-- After a provider or Photoshop error: the technical details, to select and copy into a bug report. -->
+        <!-- After a provider or Photoshop error: the technical details (also selectable, to copy by
+             hand), and Report a bug, which opens the same details pre-filled in a GitHub issue. -->
         <div id="details" class="stack" hidden>
-          <div class="row"><div id="detailsToggle" class="obtn"><div class="obtn-in">Details</div></div></div>
+          <div class="row">
+            <div id="detailsToggle" class="obtn"><div class="obtn-in">Details</div></div>
+            <div id="reportBug" class="obtn"><div class="obtn-in"><img class="ico" src="icons/external.svg" width="12" height="12" /><span>Report a bug</span></div></div>
+          </div>
           <textarea id="detailsText" class="details" readonly hidden></textarea>
         </div>
       </div>

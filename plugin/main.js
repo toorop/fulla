@@ -6,7 +6,7 @@ const { runGeneration, UserError } = require("./src/pipeline");
 const settings = require("./src/settings");
 const { toBase64 } = require("./src/bytes");
 const { newSpend, addSpend, spendText, spendAmount } = require("./src/cost");
-const { errorReport } = require("./src/report");
+const { errorReport, reportBugUrl } = require("./src/report");
 const { createRunGate } = require("./src/run");
 const connect = require("./src/connect");
 const { filterItems, modelMenuItems } = require("./src/menu");
@@ -65,11 +65,15 @@ function setStatus(text, kind) {
   if (text) showCard();
 }
 
-/** The "Details" button under an error, with its text (folded); "" removes it. */
-function showDetails(text) {
+// The last error's report, for "Report a bug" (null once cleared, or with no error to report).
+let lastErrorInfo = null;
+
+/** The "Details" button under an error, with its text (folded); "" removes it, with `info`. */
+function showDetails(text, info) {
   $("details").hidden = !text;
   $("detailsText").value = text || "";
   foldDetails();
+  lastErrorInfo = (text && info) || null;
 }
 
 // Folded whenever a menu opens: the native text field would draw over the menu.
@@ -339,7 +343,8 @@ async function generate() {
         // A message for the user (no selection, wrong shape...) needs no details; anything else may.
         else if (!(e instanceof UserError)) {
           const v = versions();
-          showDetails(errorReport({ error: e, provider: provider.name, model, size: currentResolution(), plugin: v.plugin, host: v.host }));
+          const info = { error: e, provider: provider.name, model, size: currentResolution(), plugin: v.plugin, host: v.host };
+          showDetails(errorReport(info), info);
         }
       }
     }
@@ -788,6 +793,9 @@ function bind() {
     closeMenu();
     $("detailsText").hidden = !show;
     $("detailsToggle").querySelector(".obtn-in").textContent = show ? "Hide details" : "Details";
+  });
+  $("reportBug").addEventListener("click", () => {
+    if (lastErrorInfo) openBrowser(reportBugUrl(lastErrorInfo), "Fulla opens GitHub with the error pre-filled.");
   });
   bindGrip();
   bindPromptHint();

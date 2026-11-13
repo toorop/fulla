@@ -22,11 +22,12 @@
     prompt (translated to English when he wrote French), draws, model, resolution, cost; say
     "Sample photo generated for this demo" for generated pictures. Exports from his Adobe RGB
     photos need the sRGB conversion (D4's first ones came out faded).
-  - Panel captures (C2, C6 done; `c3-generate`, `c3-en-cours`, `c4-modeles` (Your first fill), `c5-reglages` (Resolution), `c7-references` (Reference images) done 2026-11-13; the first
-    stands for c3-termine): he pastes them in the chat at 100 % (322 px wide), one by one, Claude
-    shows the whole panel, never cropped (his call 2026-11-13; c3-en-cours is still cropped to
-    hide the cursor, to redo without it). Claude
-    asks for each. Left: C10, C11; C1 installer with the release. No
+  - Panel captures (C2, C6, `c3-generate`/`c3-en-cours`/`c4-modeles` on Your first fill,
+    `c5-reglages` on Resolution, `c7-references` on Reference images, `c10-menu` on Troubleshooting
+    all done; C3 stands for c3-termine too). He pastes them in the chat at 100 % (322 px wide), one
+    by one, Claude asks for each, whole panel, never cropped (his call 2026-11-13; c3-en-cours is
+    still cropped to hide the cursor, to redo without it). Left: C11 (an error card, now with the
+    Report a bug button); C1 installer with the release. No
     English Photoshop (his call 2026-11-13): c1-ccx, C8 and C9 stay text.
   - Dev server: `.claude/launch.json` (local, excluded from git) via the preview tool,
     http://localhost:4321; restart it after renaming a docs page (`.md` to `.mdx`).
@@ -87,6 +88,18 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Recently done
 
+- 2026-11-13 — **Report a bug, pre-filled** (his idea, while discussing C11): a failed run's card
+  now has a **Report a bug** button next to Details (`reportBugUrl` in `report.js`), opening
+  GitHub's bug template with Fulla/Photoshop versions and the same report as Details already
+  filled into the `fulla`/`photoshop`/`result` fields (GitHub fills a form field from its `id` in
+  the URL). `bug.yml`'s "What you did"/"What happened" now ask for the photo (or a crop) and the
+  result image when useful, for reproducibility. Docs/README's old "links the page that fixes it"
+  (never true — no error message was ever a real link) corrected to describe this button instead.
+  **Verified by him in Photoshop (2026-11-13)**: works.
+- 2026-11-13 — Fixed by him: GitHub repo had Issues turned off (`has_issues: false`, not the
+  templates, which were fine), so "Report a bug" / "Request a model" 404'd. He ticked it on;
+  both links now ask to sign in as they should, and the repo has zero issues (no leftover
+  OpenFill ones — it never had any).
 - 2026-11-13 — Fixed and verified: reference file picker opened on the JPEG filter on Windows;
   `"*"` put first in `REF_TYPES` (`main.js`) opens it on all files, a non-image still fails cleanly.
 - 2026-11-13 — D5 on Getting good results (narrow against generous selection, both measured

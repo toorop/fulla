@@ -6,18 +6,29 @@
 
 ## Next action
 
-- **Resume here: the 4 comparison pages**, before go-live (`gpt-image-in-photoshop.md`,
-  `nano-banana-in-photoshop.md`, `fulla-vs-photoshop-generative-fill.md`,
-  `photoshop-generative-credits.md`, all still `draft: true`). 2026-11-13: checked again in the
-  beta — **GPT Image is still not in Photoshop's own Generative Fill** (only Generate Image and
-  Prompt to edit); Adobe's partner-models page (updated 10/11) confirms it, listing only Nano
-  Banana 2/Pro and FLUX for Generative Fill. Added one line to `gpt-image-in-photoshop.md` saying
-  so (a Fulla differentiator) — no "Photoshop now offers GPT" claim needed, that read of the
-  12/11 sighting was wrong. Every other figure in `photoshop-generative-credits.md` rechecked by
-  hand against that same Adobe page and matches, except the name "FLUX.2 pro" → **FLUX.2**
-  (fixed). Nano Banana and Fulla-vs-Photoshop pages already accurate, untouched. Left for him:
-  **judge the `#1e1e1e` background against the real photos now in place** (design call, open
-  http://localhost:4321), then remove the Draft banners; never write "the only one".
+- **Resume here: v0.1.0 draft release is up on GitHub**, untested so far by anyone but CI.
+  2026-11-13, his call: a friend will test the `.ccx` on a Mac instead of Stéphane's own
+  (packed away, old Photoshop) — releasing now, under a **draft** release he can pull the
+  `.ccx` from himself to send his friend, rather than waiting on his own Mac test first (his
+  2026-11-12 call is superseded). Tag `v0.1.0` pushed, CI green, draft release created
+  (`gh release view v0.1.0`; its tag page currently shows as "untagged-..." until published —
+  normal for a draft). **He downloads `fulla-0.1.0.ccx` from the draft release himself** and
+  sends it to his friend; nothing public yet (don't `gh release edit --draft=false` without his
+  go-ahead). Changelog's `## 0.1.0` section written and committed (models, auto resolution,
+  references, tone matching, cost shown, install Windows/macOS). Once the Mac test is back:
+  decide go/no-go on publishing the release and connecting `fulla.dppst.com` on Cloudflare
+  (Workers Builds project not yet connected there; DNS doesn't resolve yet — his side to set up,
+  Claude can walk him through it).
+- The 4 comparison pages (`gpt-image-in-photoshop.md`, `nano-banana-in-photoshop.md`,
+  `fulla-vs-photoshop-generative-fill.md`, `photoshop-generative-credits.md`, still
+  `draft: true`): figures rechecked 2026-11-13 against Adobe's partner-models page (updated
+  10/11) — confirmed again in the beta that **GPT Image is still not in Photoshop's own
+  Generative Fill** (only Generate Image and Prompt to edit, Nano Banana 2/Pro and FLUX are the
+  only Generative Fill partners); said so on the GPT Image page instead of the old "Photoshop
+  now offers GPT" read (wrong). Fixed a stale name, "FLUX.2 pro" → **FLUX.2**, in
+  `photoshop-generative-credits.md`; Nano Banana and Fulla-vs-Photoshop pages already accurate.
+  He's fine with the `#1e1e1e` background as is. Left: remove the Draft banners when he's ready;
+  never write "the only one".
 - Panel captures: **done** except **C1** (installer), with the release. No English Photoshop
   (his call 2026-11-13): `c1-ccx`, C8, C9 stay text. `c3-en-cours.png` is still cropped to hide
   the cursor, to redo without it if he feels like it (not urgent).
@@ -33,13 +44,13 @@
   If it comes back: rename the active layer to start with `Fulla: ` before writing
   `selftest.json`; Claude can write that file itself (full disk access), but only he can set the
   Photoshop-side state (active layer, live selection) first. Details in his ideas note, §16.
-- **Waiting on him, when he wants:** GPT Image tests (paid, cost first — also needed for the page
-  above); the `.ccx` on a Mac (**no release and no site go-live before it**, his call
-  2026-11-12; the docs already say "Windows and macOS"); Umami site id
+- **Waiting on him, when he wants:** GPT Image tests (paid, cost first — also needed for the
+  comparison pages above); his friend's Mac test of the `v0.1.0` `.ccx`; Umami site id
   (`site/src/lib/analytics.mjs`).
-- **Release workflow done (2026-11-12):** a `vX.Y.Z` tag runs the CI, checks the tag, takes the
-  notes from the site's Changelog page and creates a **draft** release; procedure in the README
-  and `CLAUDE.md`. Never run yet (no tag on GitHub).
+- **Release workflow (built 2026-11-12, first run 2026-11-13):** a `vX.Y.Z` tag runs the CI,
+  checks the tag, takes the notes from the site's Changelog page and creates a **draft** release;
+  procedure in the README and `CLAUDE.md`. `v0.1.0` tag pushed and release drafted 2026-11-13 —
+  see "Next action".
 - **Where the decisions are:** his vault, Fulla folder (not in this public repo): the roadmap,
   the SEO/GEO note, the note on Photoshop's generative fill, the illustrations list, the
   mockups, and a hand-off note for a session without Claude's local memory.
@@ -57,8 +68,9 @@
 
 ## Current step
 
-Step 6, website: milestones 1 and 2 done; real images and panel captures in place; now his GPT
-Image checks before go-live. Step 5 (local models) on hold.
+Straddling step 6 (website) and 7 (first public release): the site isn't live yet (Cloudflare
+not connected) but `v0.1.0` is tagged and drafted on GitHub to get a friend's Mac test going
+before going further on either. Step 5 (local models) on hold.
 
 ## Roadmap (order agreed 2026-11-07, revised that evening; details in Stéphane's notes)
 
@@ -75,6 +87,9 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Recently done
 
+- 2026-11-13 — **First release tagged**: `## 0.1.0` changelog written, `v0.1.0` tag pushed, CI
+  green, draft GitHub release created with `fulla-0.1.0.ccx`, the Windows zip and
+  `SHA256SUMS.txt`. Not published — he pulls the `.ccx` himself to send a friend for a Mac test.
 - 2026-11-13 — Rechecked the 4 comparison-page drafts: confirmed (beta + Adobe's partner-models
   page) GPT Image is still not in Photoshop's own Generative Fill; fixed "FLUX.2 pro" → "FLUX.2"
   in `photoshop-generative-credits.md`; added a line to `gpt-image-in-photoshop.md`.

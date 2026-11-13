@@ -24,9 +24,7 @@
   "macOS: being tested". Later: a full SEO audit (his call, 2026-11-13); a 10-15 s panel video
   on the home page and YouTube. Search Console (Domain property `fulla.dppst.com`, DNS TXT,
   sitemap submitted) and Bing Webmaster Tools: done 2026-11-13.
-  GitHub's social preview image: his click (Settings > General, `site/public/og.jpg`). The site
-  lacks the README's "Limits" (4K cap, mask as a guide, Cancel may still bill, WebP profile):
-  worth a docs section some day.
+  GitHub's social preview image: his click (Settings > General, `site/public/og.jpg`).
 - **Cloudflare tooling (his request: set up the most, for all his projects).** Windows: global
   `wrangler`, logged in by OAuth (its scopes: Workers, routes, zone read; **no DNS**), and
   Cloudflare's full-API MCP server `https://mcp.cloudflare.com/mcp` in his user-level Claude
@@ -105,6 +103,7 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
   (`head` frontmatter; headings and sidebar unchanged). `v0.1.0` released (his click). Search
   Console and Bing set up (his clicks). GitHub page: description, homepage, 18 topics (`gh repo
   edit`); README rewritten for users first (badges, image, links to the site; dev part kept).
+  New docs page `/docs/limits/` (Help, after FAQ), each limit checked in the code.
 - 2026-11-13 — Cloudflare set up on Windows (global wrangler by OAuth, full-API MCP in his user
   config); `fulla.dppst.com` declared as the Worker's custom domain; Umami id set; first deploy
   blocked by Cloudflare's HTTP 500.

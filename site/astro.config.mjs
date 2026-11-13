@@ -64,6 +64,7 @@ export default defineConfig({
 						'docs/colours',
 						'docs/troubleshooting',
 						'docs/faq',
+						'docs/limits',
 						'docs/privacy',
 						'docs/changelog',
 						{ label: 'About Fulla', link: '/about/' },

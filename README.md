@@ -45,10 +45,12 @@ Then open **Plugins > Fulla** and click **Connect with OpenRouter**, or add a Go
 
 ## Limits
 
+More in [Limits](https://fulla.dppst.com/docs/limits/) on the website.
+
 - The providers return at most about 4K pixels. Filling most of a large photo means upscaling, which looks softer; the panel tells you when that happens.
 - The providers treat the mask as a guide, not a hard edge. Fulla clips their result to your selection.
 - Cancel stops Fulla from using a result, but the provider may still bill the request it already received.
-- Colours are right only when Photoshop keeps embedded profiles (see [Colours](https://fulla.dppst.com/docs/colours/)). A result that comes back as JPEG or WebP instead of PNG gets no profile yet.
+- Colours are right only when Photoshop keeps embedded profiles (see [Colours](https://fulla.dppst.com/docs/colours/)). A result that comes back as WebP gets no profile yet (PNG and JPEG do).
 - The Windows installer is Windows only; on macOS use the `.ccx`.
 
 ## Develop

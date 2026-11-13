@@ -3,17 +3,17 @@
 Photoshop UXP plugin: generative fill with the user's own AI provider (OpenRouter, OpenAI, Gemini; local models on hold since 2026-11-08). MIT, open source. Maintainer: Stéphane (toorop). Started on 2026-11-06 from OpenFill by Daman Reddy (MIT, github.com/damanjz/openfill); no upstream tracking, the projects have parted. Spec: `docs/spec.md`.
 
 ## Working with Stéphane
-- Start every session by reading `STATE.md` and resume from its `## Next action`.
+- Start every session by reading the hand-off note in Stéphane's own notes (outside this repo; ask him where if you don't know) and resume from its `## Prochaine action`.
 - Talk to him in French, one question at a time, with a recommendation. Repository files stay in English.
 - Ideas and decisions live in his own notes, outside this repo (ask him where if you don't know). Read the ideas note before starting work; record decisions there.
-- Ask first: git commit/push, anything on GitHub, releases, installing into Photoshop, anything outside this folder.
+- Ask first: git commit/push, anything on GitHub, releases, deploying the website, installing into Photoshop, anything outside this folder.
 
 ## Commands
 - `npm test`: all unit tests (Node built-in runner, no dependencies).
 - `npm run package`: builds `dist/fulla-<version>.ccx` and `fulla-<version>-windows.zip` (self-test left out). Keep `version` equal in `package.json` and `plugin/manifest.json`.
 - Release: set `version` in both files, add a `## X.Y.Z` section to the site's Changelog page (`site/src/content/docs/docs/changelog.md`), commit, push a `vX.Y.Z` tag. `.github/workflows/release.yml` runs the CI, checks the tag (`scripts/release-notes.js`), builds, and creates a **draft** release with the files, `SHA256SUMS.txt` and that section as notes; Stéphane publishes it by hand.
 - `node scripts/icons.js`: regenerates panel icons.
-- Website (`site/`, Astro + Starlight, own `package.json`): `cd site && npm run dev` serves it at http://localhost:4321, `npm run build` builds `site/dist`. Home and marketing pages in `site/src/pages`, docs in `site/src/content/docs/docs/`; every docs page also exists as Markdown (`/docs/<page>.md`), with `llms.txt` and `llms-full.txt`.
+- Website (`site/`, Astro + Starlight, own `package.json`): `cd site && npm run dev` serves it at http://localhost:4321, `npm run build` builds `site/dist`, `wrangler deploy` (from `site/`, after a build) publishes it. Home and marketing pages in `site/src/pages`, docs in `site/src/content/docs/docs/`; every docs page also exists as Markdown (`/docs/<page>.md`), with `llms.txt` and `llms-full.txt`.
 
 ## In-Photoshop self-test (dev builds only; release packages leave out `src/selftest.js`)
 - Development runs through UXP Developer Tools: Stéphane loads `plugin/manifest.json` (Load, then Watch to reload on save). Photoshop's own developer mode (Preferences > Plugins) must be on, or Load fails with "Failed to load the devtools plugin". Never install with `installer/install.ps1` at the same time (same plugin id).
@@ -45,10 +45,10 @@ Photoshop UXP plugin: generative fill with the user's own AI provider (OpenRoute
 - Keep the suite lean: one test per behaviour, not per function; no test that only restates the code; merge or delete tests a change made redundant. The whole suite stays fast (under a few seconds).
 - Photoshop behaviour the fakes can't reproduce gets a self-test scenario in `plugin/src/selftest.js` instead.
 
-## STATE.md
-- `STATE.md` (repo root) is the hand-off, not a log: a new session must be able to resume from its first ~60 lines alone. Sections in this order: `## Next action` (always first), `## Current step`, `## Recently done` (dated one-liners), `## Decisions taken` (one line of rationale each), `## Open questions / blockers`. Under ~150 lines; older history goes to the git log.
+## Hand-off
+- The hand-off lives in Stéphane's notes, not in this repo (public). It is a hand-off, not a log: next action first, under ~150 lines, older history in the git log.
 - Update it after every significant action, not only at the end of a task (a crash or power cut must not lose the thread), and never end a response without updating it if anything changed.
-- No private paths or personal data in it: the repo is public.
+- Nothing from it goes into the repo: no private paths, personal data or plans in committed files.
 
 ## Done means
-- Tests written, `npm test` green, `npm run package` builds, the in-Photoshop self-test passes, and `STATE.md` is up to date.
+- Tests written, `npm test` green, `npm run package` builds, the in-Photoshop self-test passes, and the hand-off is up to date.

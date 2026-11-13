@@ -3,6 +3,10 @@ title: Getting good results
 description: How to select and what to write in the prompt to get the best fills, and what to do when a result misses.
 ---
 
+import Selection from '../../../../components/Selection.astro';
+import tight from '../../../../assets/examples/d5-serree.jpg';
+import large from '../../../../assets/examples/d5-large.jpg';
+
 A few habits make the difference between a fill that shows and one that doesn't.
 
 ## Select generously
@@ -10,6 +14,18 @@ A few habits make the difference between a fill that shows and one that doesn't.
 Leave room around what you add or remove.
 
 To add an object, the model fits it to your selection: **give the selection the proportions of the finished object, shadow included**. With the wrong proportions, the object comes out cut at the edge of the selection, most often its shadow. In low, raking light the shadow is long: widen the selection on the side where it falls.
+
+<div class="selection-pair">
+	<Selection image={tight} alt="A small white enamel mug on a wooden table, inside a narrow selection, taller than wide; its long shadow stops in a straight line at the right edge of the selection" rect={{ left: 34.2, top: 33.9, width: 34.5, height: 56.7 }}>
+		**Narrow selection, taller than wide.** It doesn't have the proportions of the mug and its shadow: the mug comes out small, and its shadow is cut off at the edge of the selection.
+	</Selection>
+
+	<Selection image={large} alt="The same table with a larger white enamel mug, inside a wide selection that leaves room on the right; its whole shadow falls across the table" rect={{ left: 3.1, top: 9.0, width: 88.9, height: 85.9 }}>
+		**Generous selection, room for the shadow.** The whole shadow falls on the table.
+	</Selection>
+</div>
+
+Same photo, same reference image and prompt: “Put the mug from the reference image on the table.” Nano Banana 2.1, 2K, $0.06 each. Sample photos generated for this demo.
 
 ## Ask for the light, the perspective and the depth of field
 

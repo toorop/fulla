@@ -83,3 +83,8 @@ h1#_top { font-weight: 800; letter-spacing: -0.035em; }
 }
 @media (min-width: 90rem) { :root { --sl-content-width: 50rem; } }
 @media (min-width: 120rem) { html { font-size: 112.5%; } :root { --sl-content-width: 54rem; } }
+
+/* Two results, each with its selection (Getting good results), one under the other: side by side,
+   the detail that matters (a cut shadow) is too small to see. */
+.selection-pair { display: grid; gap: 1.5rem; margin-top: 1.5rem; }
+.selection-pair figcaption p { margin: 0; }

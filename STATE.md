@@ -6,14 +6,12 @@
 
 ## Next action
 
-- **Resume here: D5, waiting on his export** (step 6, the site images, card by card in the order
-  of his illustrations note, vault, Fulla folder). D5 = tight against large selection with the
-  mug on the Getting good results page. The large one is A3 (already here); asked of him on
-  2026-11-13: only `d5-serree.png` (a draw with the shadow cut, same document and size as A3,
-  1672 x 941, sRGB) and its caption facts. No marching-ants captures: Claude finds both
-  selections by diffing against `a3-avant` (as for A1) and draws the ants. Then D6 (colour
-  policy Off against Preserve Embedded Profiles, an Adobe RGB document, about $0.12; optional,
-  could stay text).
+- **Resume here: D6, or the panel captures** (step 6, the site images, card by card in the order
+  of his illustrations note, vault, Fulla folder). D5 done 2026-11-13 (Getting good results:
+  narrow selection taller than wide, shadow cut, above; A3's generous one below). D6 = colour
+  policy Off against Preserve Embedded Profiles, Adobe RGB document, about $0.12; optional,
+  could stay text. His exports must be 8-bit PNG: his first D5 export (8-bit box unchecked) came
+  out warmer everywhere; the 8-bit one matched A3 exactly.
   - Done 2026-11-12: home page A1 to A5 (carousel), docs D1 (Your first fill), D4 (Variations),
     A1 and A2 on Remove and extend. Skipped: D2 (no photo with fine detail; the Resolution page
     keeps its text). D3 (tone matching) waits for a draw that really drifts, exported with and
@@ -85,6 +83,9 @@ Each step and sub-step is discussed and validated by Stéphane, and starts only 
 
 ## Recently done
 
+- 2026-11-13 — D5 on Getting good results (narrow against generous selection, both measured
+  by diff: x 376-755 y 385-862, and x 34-1012 y 176-898, of 1672 x 941); docs Markdown export
+  keeps the text of multi-line MDX components (test added).
 - 2026-11-13 — Share image `public/og.jpg` (headline + A1 split through the boat, 110 KB;
   `site/scripts/og.sh`) and favicon redrawn on a 16-pixel grid, plus `favicon.ico` and
   `apple-touch-icon.png` (`site/scripts/favicon.mjs`).

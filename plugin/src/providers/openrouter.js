@@ -18,6 +18,9 @@ const GEMINI_RATIOS = ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", 
 const GEMINI_PRO_RATIOS = ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"];
 const QWEN_RATIOS = ["1:1", "1:2", "2:1", "1:4", "4:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9"];
 const OPENAI_RATIOS = ["1:1", "3:2", "2:3", "4:3", "3:4", "16:9", "9:16", "21:9"];
+// Checked 2026-11-14.
+const SEEDREAM_RATIOS = ["1:1", "1:2", "2:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "9:19.5", "19.5:9", "9:20", "20:9", "9:21", "21:9"];
+const MINIMAX_RATIOS = ["1:1", "1:2", "1:3", "2:1", "2:3", "3:1", "2.35:1", "3:2", "3:4", "4:3", "4:5", "5:2", "5:4", "5:7", "7:5", "9:16", "16:9", "9:19.5", "19.5:9", "9:20", "20:9", "9:21", "21:9"];
 
 // Catalogue: models Fulla offers through OpenRouter. maxN = variations per request (1 = one request
 // each). OpenAI models take no `resolution` (the provider picks the pixels) but can be asked for PNG.
@@ -29,6 +32,9 @@ const MODELS = [
   { id: "google/gemini-3-pro-image", label: "Nano Banana Pro", ratios: GEMINI_PRO_RATIOS, tiers: ["2K", "4K"], maxN: 1, inputs: 14 },
   { id: "qwen/qwen-image-3", label: "Qwen Image 3", ratios: QWEN_RATIOS, tiers: ["2K"], maxN: 6, inputs: 3, dropScene: true },
   { id: "qwen/qwen-image-2.1-pro", label: "Qwen Image 2.1 Pro", ratios: QWEN_RATIOS, tiers: ["2K"], maxN: 6, inputs: 4, dropScene: true },
+  // On trial (2026-11-14): kept only if as good as Nano Banana for less. Seedream also has a 1.5K tier.
+  { id: "minimax/minimax-h3-image", label: "MiniMax H3 Image", ratios: MINIMAX_RATIOS, tiers: ["1K", "2K", "4K"], maxN: 4, png: true, inputs: 16 },
+  { id: "bytedance-seed/seedream-5-5", label: "Seedream 5.5", ratios: SEEDREAM_RATIOS, tiers: ["1K", "2K"], maxN: 1, png: true, inputs: 10 },
   { id: "openai/gpt-image-2.6-sunburst", label: "GPT Image 2.6 Sunburst", ratios: OPENAI_RATIOS, tiers: ["1K", "2K"], maxN: 4, noResolution: true, png: true, inputs: 16 },
   { id: "openai/gpt-image-2.5-sunburst", label: "GPT Image 2.5 Sunburst", ratios: OPENAI_RATIOS, tiers: ["1K", "2K"], maxN: 4, noResolution: true, png: true, inputs: 16 },
 ];

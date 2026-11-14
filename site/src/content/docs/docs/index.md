@@ -13,7 +13,7 @@ Fulla is a free, open-source Photoshop plugin for generative fill. You select an
 
 ## Where to start
 
-1. [Install Fulla](/docs/install/) in Photoshop 2026 (27.11 or later).
+1. [Install Fulla](/docs/install/) in Photoshop 27.11 or later.
 2. [Connect an AI service](/docs/first-run/): OpenRouter takes a few clicks from the panel.
 3. [Make your first fill](/docs/generative-fill/).
 

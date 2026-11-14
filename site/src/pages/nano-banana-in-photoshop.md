@@ -24,7 +24,7 @@ Fulla is a free, open-source Photoshop plugin. Its recommended model is **Nano B
 
 ## Set up Nano Banana in Photoshop with Fulla
 
-1. [Install Fulla](/docs/install/) in Photoshop 2026 (27.11 or later).
+1. [Install Fulla](/docs/install/) in Photoshop 27.11 or later.
 2. Open **Plugins > Fulla** and click **Connect with OpenRouter**, or add a Google (Gemini API) key. See [First run](/docs/first-run/).
 3. Nano Banana 2.1 is already selected. Select an area, describe what you want, and click **Generate**.
 

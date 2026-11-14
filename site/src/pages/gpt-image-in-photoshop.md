@@ -23,7 +23,7 @@ OpenAI models make images up to 2K. Fulla's recommended model stays Nano Banana 
 
 ## Set up GPT Image in Photoshop with Fulla
 
-1. [Install Fulla](/docs/install/) in Photoshop 2026 (27.11 or later).
+1. [Install Fulla](/docs/install/) in Photoshop 27.11 or later.
 2. Connect OpenRouter from the panel, or add an OpenAI key. See [First run](/docs/first-run/).
 3. Pick a GPT Image model with the model button under the prompt, then select, describe and click **Generate**.
 

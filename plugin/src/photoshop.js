@@ -41,7 +41,7 @@ async function bp(descriptors) {
 
 function ensureSupported() {
   if (!imaging || typeof imaging.getPixels !== "function") {
-    throw new HostError("Fulla needs Photoshop 2026 version 27.11 or newer. Update Photoshop and try again.");
+    throw new HostError("Fulla needs Photoshop 27.11 or later. Update Photoshop and try again.");
   }
 }
 

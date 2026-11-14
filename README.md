@@ -26,7 +26,7 @@ Models: Nano Banana 2.1 (recommended), Nano Banana Pro, GPT Image, Qwen Image, t
 
 ## Install
 
-You need **Photoshop 2026 (27.11 or later)**.
+You need **Photoshop 27.11 or later**.
 
 **With the Creative Cloud app (Windows and macOS):** download `fulla-<version>.ccx` from [Releases](https://github.com/toorop/fulla/releases/latest) and double-click it. Creative Cloud warns that the plugin comes from a third-party developer; the first time, Windows may ask for administrator rights.
 

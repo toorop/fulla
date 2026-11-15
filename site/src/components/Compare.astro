@@ -31,16 +31,19 @@ interface Props {
 	reference?: { image: ImageMetadata; alt: string };
 	/** Above the fold (the home page hero): load both images at once, the "before" first. */
 	priority?: boolean;
+	/** The labels are names (Fulla, Photoshop): captions keep their case. */
+	names?: boolean;
 }
-const { before, after, beforeAlt, afterAlt, start = 50, sizes = '(min-width: 1100px) 1000px, 100vw', class: cls, id, afterLabel = 'After', variants = [], reference, priority = false } = Astro.props;
+const { before, after, beforeAlt, afterAlt, start = 50, sizes = '(min-width: 1100px) 1000px, 100vw', class: cls, id, afterLabel = 'After', variants = [], reference, priority = false, names = false } = Astro.props;
 const switchable = variants.length > 0 || reference;
+const caption = (label: string) => `After, ${names ? label : label.toLowerCase()}`;
 const widths = [640, 1000, 1400, 1800].filter((w) => w <= after.width);
 const load = priority ? { loading: 'eager' as const, decoding: 'async' as const } : {};
 ---
 
 <div class:list={['compare', 'not-content', cls]} data-compare style={`--pos: ${start}%`} id={id}>
-	<figure class="c-after"><Picture src={after} alt={afterAlt} widths={widths} sizes={sizes} formats={['avif', 'webp']} {...load} /><figcaption>{switchable ? `After, ${afterLabel.toLowerCase()}` : 'After'}</figcaption></figure>
-	{variants.map((v, i) => <figure class="c-after c-alt" data-v={i + 1}><Picture src={v.image} alt={v.alt} widths={widths} sizes={sizes} formats={['avif', 'webp']} /><figcaption>After, {v.label.toLowerCase()}</figcaption></figure>)}
+	<figure class="c-after"><Picture src={after} alt={afterAlt} widths={widths} sizes={sizes} formats={['avif', 'webp']} {...load} /><figcaption>{switchable ? caption(afterLabel) : 'After'}</figcaption></figure>
+	{variants.map((v, i) => <figure class="c-after c-alt" data-v={i + 1}><Picture src={v.image} alt={v.alt} widths={widths} sizes={sizes} formats={['avif', 'webp']} /><figcaption>{caption(v.label)}</figcaption></figure>)}
 	<figure class="c-before"><Picture src={before} alt={beforeAlt} widths={widths} sizes={sizes} formats={['avif', 'webp']} {...load} fetchpriority={priority ? 'high' : undefined} /><figcaption>Before</figcaption></figure>
 	{reference && <figure class="c-ref"><Picture src={reference.image} alt={reference.alt} widths={[640, 1000, 1400, 1800].filter((w) => w <= reference.image.width)} sizes={sizes} formats={['avif', 'webp']} /><figcaption>Reference</figcaption></figure>}
 	<span class="c-handle" aria-hidden="true"></span>

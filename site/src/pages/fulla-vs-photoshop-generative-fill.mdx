@@ -1,0 +1,93 @@
+---
+layout: ../layouts/Article.astro
+title: Fulla vs Photoshop's generative fill
+metaTitle: 'Fulla vs Photoshop generative fill: price, models, resolution'
+description: How Fulla compares with Photoshop's own generative fill, point by point, with Nano Banana on both sides, dated prices and sources.
+updated: 2026-11-15
+---
+
+import Compare from '../components/Compare.astro';
+import faceBefore from '../assets/examples/v1-avant.jpg';
+import faceFulla from '../assets/examples/v1-fulla.jpg';
+import facePhotoshop from '../assets/examples/v1-photoshop.jpg';
+import edgeBefore from '../assets/examples/v2-avant.jpg';
+import edgeFulla from '../assets/examples/v2-fulla.jpg';
+import edgePhotoshop from '../assets/examples/v2-photoshop.jpg';
+
+Fulla is a free Photoshop plugin that works like Photoshop's own generative fill: select, describe, click Generate. The difference is who makes the images and how you pay for them. With Photoshop's generative fill, Adobe makes them and you pay in generative credits from your plan. With Fulla, an AI service you choose makes them, and you pay that service per image.
+
+## The short answer
+
+- **Choose Fulla** if you want to pay only for the images you make, see each image's cost in dollars, use models Photoshop doesn't offer, such as the newer Nano Banana 2.1, or get results up to 4K.
+- **Keep Photoshop's own tool** for quick fills with Firefly Fill & Expand, which costs 1 credit, or if your plan already gives you more credits than you use.
+
+## Side by side
+
+Prices are for Nano Banana on both sides, unless the row says otherwise: Nano Banana 2 in Photoshop, the newer Nano Banana 2.1 in Fulla.
+
+| | Photoshop generative fill | Fulla |
+| --- | --- | --- |
+| Price of the plugin | Included in Photoshop | Free (MIT licence) |
+| Who makes the images | Adobe (Firefly, and partner models) | The AI service you connect: OpenRouter, Google or OpenAI |
+| One fill, Nano Banana, 1K to 2K | 20 credits, about $0.10 at the smallest monthly add-on | about $0.05, billed per image |
+| One fill, Nano Banana, 4K | 30 credits, about $0.15 | about $0.12 |
+| Paid up front | A monthly plan; more credits mean a monthly add-on; credits left at the end of the month are lost | Nothing; a few dollars of credit, used image by image |
+| How you see the cost | A credit estimate, if tooltips are on | In dollars, after every image |
+| Models | Firefly, Nano Banana 2 and Pro, FLUX | Nano Banana 2.1 and Pro, Qwen Image, GPT Image, and more |
+| Output size | Firefly Image 5: 2K | Up to 4K, with models that offer it |
+| Reference images | Yes, with some models | Yes, up to 8 per document |
+| Where your photo goes | To Adobe | Straight to the AI service you chose |
+
+## Price
+
+Photoshop's generative fill is paid in generative credits. Each plan includes a number of credits per month, which don't carry over, and more credits are sold as monthly add-ons. What a fill costs depends on the model and the size: 1 credit with Firefly Fill & Expand, 20 credits with Nano Banana 2, 40 with Nano Banana Pro. At the smallest add-on, $9.99 for 2,000 credits, a credit is worth half a cent, so a Nano Banana 2 fill is about $0.10. The full detail is in [Photoshop generative credits, explained](/photoshop-generative-credits/).
+
+With Fulla, you pay the AI service per image, at its price. With Nano Banana 2.1, Fulla's recommended model, we measured $0.048 for a 1K image and $0.063 for a 2K one on 10 November 2026. The panel shows the cost of every run; with OpenRouter, it is the exact amount billed.
+
+## Models
+
+Photoshop offers Adobe's Firefly models and a few partner models. Fulla offers a tested list from several services, and adds a model when it does better or costs less. For Nano Banana, Photoshop offers version 2 and Fulla the newer 2.1 (checked on 15 November 2026). See [Models](/docs/models/).
+
+## Resolution
+
+Adobe's Firefly Image 5 makes images up to 2K, about 4 megapixels; beyond that, Adobe offers a separate Generative Upscale, paid in credits. Fulla's Auto resolution asks for about twice the size of your selection, up to 4K when the model offers it. See [Resolution](/docs/generative-fill/resolution/).
+
+## One test, Nano Banana on both sides
+
+On 15 November 2026 we ran the same fill in Photoshop's generative fill and in Fulla: a scan of an old glass plate, the same sharp rectangular selection around the girl's head (about 1,200 × 1,700 pixels), Google's Nano Banana on both sides, and the same prompt, in French: "ajoute un peu de netteté au visage de la petite fille. Attention c'est un restauration de plaque au bromure d'argent respecte bien le style et surtout le grain" (add a little sharpness to the little girl's face; this is the restoration of a silver bromide plate, keep its style and above all its grain).
+
+The versions differ: Photoshop's menu offers Nano Banana 2, Fulla offers the newer Nano Banana 2.1, its recommended model. Fulla's Auto resolution chose 2K, and the run cost $0.06. The size of the image and the way it meets the photo come from each tool; the face and the grain may also come from the model's version.
+
+Drag the slider to compare with the plate, and switch between the two results with the buttons.
+
+<Compare before={faceBefore} after={faceFulla} beforeAlt="Before: the face of a little girl on an old glass plate, soft and grainy" afterAlt="Fulla's result: the same face, sharper, round cheeks, the plate's fine grain kept" afterLabel="Fulla" variants={[{ label: 'Photoshop', image: facePhotoshop, alt: "Photoshop's result: a sharper face, thinner, with wide-open eyes, drawn lashes and eyebrows, and a softer, coarser grain" }]} names start={50} sizes="(min-width: 800px) 736px, 100vw" />
+
+What we measured on the two results:
+
+- **Fine detail.** Photoshop's result holds almost no detail finer than about 3 pixels: it looks like an image made at about 1,000 pixels and enlarged 1.6 times to fill the selection. Fulla's result keeps detail down to the size of the plate's grain.
+- **Grain.** Photoshop's grain is about half as strong as the plate's, and its grains are twice as large. Fulla's is 70 to 90% as strong as the plate's, and as fine.
+- **Edges.** Photoshop's result starts at full strength right at the edge of the selection: on the right, the tone steps and the hair breaks. Fulla's blends into the photo over about 20 pixels.
+- **Placement.** Photoshop keeps the eyes and the nose closer to where they were, within 6 pixels; Fulla moves them by 5 to 8 pixels. Fulla keeps the mouth closer: 5 pixels against 11.
+- **Tone.** Photoshop's face keeps the plate's brightness. Fulla's is slightly brighter, by 7 levels out of 255.
+
+<Compare before={edgeBefore} after={edgeFulla} beforeAlt="Before: the girl's hair and the door behind her, at the right edge of the selection" afterAlt="Fulla's result at the right edge of the selection: the hair continues across the edge" afterLabel="Fulla" variants={[{ label: 'Photoshop', image: edgePhotoshop, alt: "Photoshop's result at the right edge of the selection: a vertical line where the hair breaks and the tone changes" }]} names start={50} sizes="(min-width: 800px) 736px, 100vw" />
+
+What we saw: Photoshop's girl has a thinner face, wider eyes, drawn lashes and eyebrows, and another smile. Fulla's keeps her round face and the shape of her eyes and mouth. Both invent some detail, such as the light in the eyes.
+
+This is one test on one photo. Both results are cleaner than a real restoration would keep: a restorer would lower the opacity of the generated layer or paint its mask.
+
+## Privacy
+
+With Photoshop's generative fill, your image goes to Adobe. With Fulla, it goes from Photoshop straight to the AI service you chose: there is no Fulla server. See [Privacy and security](/docs/privacy/).
+
+## How we compared
+
+- Same need on both sides: generative fill inside Photoshop.
+- Nano Banana for prices, at the same sizes: version 2 in Photoshop, 2.1 in Fulla, the version each tool offers.
+- Adobe's prices are converted at the price of its smallest credit add-on. Fulla's are measured runs.
+- Every figure is dated. When a price changes, this page is updated.
+- For the test: the same photo, selection and prompt on both sides, with the Nano Banana each tool offers (2 in Photoshop, 2.1 in Fulla). Fine detail is compared through the frequency spectrum of the generated area, grain through the strength and size of its finest detail, edges through the difference with the original near the selection's edge.
+
+Sources, checked between September and November 2026: Adobe's [generative credits FAQ](https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html); credits per model and plan collected by [Voyager](https://voyager.so/blog/photoshop-generative-credits) (21 September 2026); the cost preview in Photoshop described by [Fstoppers](https://fstoppers.com/education/adobes-new-ai-credit-cost-preview-photoshop-what-need-know-902663) (27 May 2026); Fulla's own measured runs (8 and 10 November 2026); the side-by-side test (15 November 2026).
+
+Fulla is not affiliated with Adobe. Adobe and Photoshop are trademarks of Adobe.

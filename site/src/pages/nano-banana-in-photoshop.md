@@ -3,7 +3,7 @@ layout: ../layouts/Article.astro
 title: Nano Banana in Photoshop
 metaTitle: 'Nano Banana in Photoshop: two ways to use it for generative fill'
 description: Two ways to use Google's Nano Banana models in Photoshop, with Adobe's generative fill or with the free Fulla plugin, and how to set Fulla up.
-updated: 2026-11-10
+updated: 2026-11-15
 ---
 
 Nano Banana is the name of Google's Gemini image models. There are two ways to use them for generative fill in Photoshop: through Adobe's own generative fill, paid in credits, or through Fulla, a free plugin, paid per image to the AI service you connect.
@@ -14,7 +14,7 @@ Adobe offers Nano Banana 2 and Nano Banana Pro as partner models in Photoshop's 
 
 ## With Fulla
 
-Fulla is a free, open-source Photoshop plugin. Its recommended model is **Nano Banana 2.1**; it also offers **Nano Banana Pro** and, with a Google key, **Nano Banana 2 Lite**. You pay per image, about 5 cents for Nano Banana 2.1 at 1K or 2K, and see the cost of each run in dollars.
+Fulla is a free, open-source Photoshop plugin. Its recommended model is **Nano Banana 2.1**, a newer version than the Nano Banana 2 in Photoshop's generative fill; it also offers **Nano Banana Pro** and, with a Google key, **Nano Banana 2 Lite**. You pay per image, about 5 cents for Nano Banana 2.1 at 1K or 2K, and see the cost of each run in dollars.
 
 | Model in Fulla | Through OpenRouter | With a Google key |
 | --- | --- | --- |
@@ -32,6 +32,6 @@ With a Google key, billing must be turned on in your Google account: Gemini's fr
 
 ## Which one should I use?
 
-If your plan gives you more credits than you use, Adobe's tool costs you nothing more. If you run out of credits, want to see what each image costs, or want models Photoshop doesn't offer, Fulla lets you pay only for the images you make. See [Fulla vs Photoshop's generative fill](/fulla-vs-photoshop-generative-fill/).
+If your plan gives you more credits than you use, Adobe's tool costs you nothing more. If you run out of credits, want to see what each image costs, or want a newer Nano Banana and models Photoshop doesn't offer, Fulla lets you pay only for the images you make. See [Fulla vs Photoshop's generative fill](/fulla-vs-photoshop-generative-fill/).
 
 Fulla is not affiliated with Adobe or Google. Nano Banana and Gemini are trademarks of Google; Adobe and Photoshop are trademarks of Adobe.

@@ -19,7 +19,7 @@ export const GET: APIRoute = async () => {
 		'',
 		'## Pages',
 		'',
-		`- [Fulla vs Photoshop's generative fill](${SITE}/fulla-vs-photoshop-generative-fill/): price, models, resolution and privacy compared, with the same model on both sides and dated sources.`,
+		`- [Fulla vs Photoshop's generative fill](${SITE}/fulla-vs-photoshop-generative-fill/): price, models, resolution and privacy compared, with Nano Banana on both sides and dated sources.`,
 		`- [Photoshop generative credits, explained](${SITE}/photoshop-generative-credits/): credits per fill, per plan and per add-on, and what a credit costs in dollars.`,
 		`- [Nano Banana in Photoshop](${SITE}/nano-banana-in-photoshop/): two ways to use Google's Nano Banana models for generative fill in Photoshop.`,
 		`- [GPT Image in Photoshop](${SITE}/gpt-image-in-photoshop/): OpenAI's GPT Image models for generative fill in Photoshop with Fulla.`,

@@ -142,7 +142,15 @@ const jsonLd = [
 				<div class="prop"><h3>Your photos stay yours</h3><p>There is no Fulla server. Your photo goes straight to the AI service you chose.</p></div>
 				<div class="prop"><h3>Free, for good</h3><p>MIT licence. The code is public, and anyone can check what it does.</p></div>
 			</div>
-			<p class="aside">Curious about the models behind it? <a href="/docs/models/">See the models Fulla works with</a>.</p>
+			<div class="works">
+				<h3>Works with the AI service you choose</h3>
+				<div class="services">
+					<div class="svc"><h4>OpenRouter</h4><p>One account for every model below</p><ul><li>Nano Banana 2.1 <span>recommended</span></li><li>Nano Banana Pro</li><li>Seedream 5.5</li><li>MiniMax H3 Image</li><li>Qwen Image 3, 2.1 Pro</li><li>GPT Image 2.6, 2.5 Sunburst</li></ul></div>
+					<div class="svc"><h4>Google</h4><p>With a Gemini API key</p><ul><li>Nano Banana 2.1</li><li>Nano Banana Pro</li><li>Nano Banana 2 Lite</li></ul></div>
+					<div class="svc"><h4>OpenAI</h4><p>With an OpenAI API key</p><ul><li>GPT Image 2.5 Sunburst</li><li>GPT Image 2.5 Flare</li><li>GPT Image 2</li></ul></div>
+				</div>
+				<p class="aside"><a href="/docs/models/">Which model to choose</a> · <a href="/docs/providers/">Which service to connect</a></p>
+			</div>
 		</div>
 	</section>
 
@@ -309,6 +317,18 @@ const jsonLd = [
 	.prop h3 { font-size: clamp(20px, 2vw, 26px); font-weight: 600; letter-spacing: -0.015em; line-height: 1.2; }
 	.prop p { margin: 0; max-width: 36em; }
 	.aside { margin-top: 32px; color: var(--f-muted); }
+
+	/* The services and their models, under the properties. */
+	.works { margin-top: clamp(48px, 6vw, 72px); }
+	.works h3 { font-size: clamp(20px, 2vw, 26px); font-weight: 600; letter-spacing: -0.015em; margin-bottom: 24px; }
+	.services { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+	.svc { background: #262626; border: 1px solid var(--f-line); border-radius: 14px; padding: clamp(20px, 2.5vw, 28px); }
+	.svc h4 { font-size: 18px; font-weight: 600; color: var(--f-ink); }
+	.svc p { margin: 4px 0 16px; font-size: 14px; color: var(--f-muted); }
+	.svc ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; color: var(--f-ink-2); }
+	.svc li span { margin-left: 6px; font-size: 13px; color: var(--f-muted); }
+	.works .aside { margin-top: 24px; }
+	@media (max-width: 799px) { .services { grid-template-columns: 1fr; } }
 
 	/* Prices. */
 	.cost { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }

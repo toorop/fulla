@@ -21,6 +21,8 @@ It depends on the model and the size. With Nano Banana 2.1, the recommended mode
 | 2K | about $0.06 |
 | 4K | about $0.12 |
 
+Other models cost more or less. At 2K, MiniMax H3 Image costs about $0.04 and Seedream 5.5 about $0.06 (OpenRouter, 14 November 2026). See [Models](/docs/models/).
+
 ## Where do I see the cost?
 
 After each run, the card shows the cost of the run and of the session (since the panel was opened). With OpenRouter, it is the exact amount billed.

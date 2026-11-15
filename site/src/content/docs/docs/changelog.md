@@ -5,6 +5,13 @@ description: What changed in each version of Fulla.
 
 Every version is listed here, newest first, with the [releases on GitHub](https://github.com/toorop/fulla/releases).
 
+## 0.1.1
+
+Two more [models](/docs/models/) with OpenRouter:
+
+- **Seedream 5.5**, which gave very good results in our tests.
+- **MiniMax H3 Image**, good results for less: about $0.04 for a 2K image.
+
 ## 0.1.0
 
 Fulla's first release: generative fill in Photoshop 2026 (27.11 or later), through your own account with [OpenRouter](/docs/providers/), OpenAI or Google. Select an area, describe what you want, and click Generate.

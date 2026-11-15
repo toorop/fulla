@@ -32,7 +32,7 @@ const MODELS = [
   { id: "google/gemini-3-pro-image", label: "Nano Banana Pro", ratios: GEMINI_PRO_RATIOS, tiers: ["2K", "4K"], maxN: 1, inputs: 14 },
   { id: "qwen/qwen-image-3", label: "Qwen Image 3", ratios: QWEN_RATIOS, tiers: ["2K"], maxN: 6, inputs: 3, dropScene: true },
   { id: "qwen/qwen-image-2.1-pro", label: "Qwen Image 2.1 Pro", ratios: QWEN_RATIOS, tiers: ["2K"], maxN: 6, inputs: 4, dropScene: true },
-  // On trial (2026-11-14): kept only if as good as Nano Banana for less. Seedream also has a 1.5K tier.
+  // Kept after trial (2026-11-15): Seedream very good, MiniMax good and cheaper. Seedream also has a 1.5K tier.
   { id: "minimax/minimax-h3-image", label: "MiniMax H3 Image", ratios: MINIMAX_RATIOS, tiers: ["1K", "2K", "4K"], maxN: 4, png: true, inputs: 16 },
   { id: "bytedance-seed/seedream-5-5", label: "Seedream 5.5", ratios: SEEDREAM_RATIOS, tiers: ["1K", "2K"], maxN: 1, png: true, inputs: 10 },
   { id: "openai/gpt-image-2.6-sunburst", label: "GPT Image 2.6 Sunburst", ratios: OPENAI_RATIOS, tiers: ["1K", "2K"], maxN: 4, noResolution: true, png: true, inputs: 16 },

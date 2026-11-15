@@ -8,9 +8,17 @@ head:
   - tag: meta
     attrs: { property: og:title, content: "First run: connect Fulla to OpenRouter, Google or OpenAI" }
 ---
+import { Image } from 'astro:assets';
 import AskAssistant from '../../../components/AskAssistant.astro';
+import providers from '../../../assets/examples/c2-providers-vide.png';
+import authorize from '../../../assets/examples/c2-openrouter.png';
+import oneTimeCode from '../../../assets/examples/c2-openrouter-code.png';
+import pasteCode from '../../../assets/examples/c2-code.png';
+import connected from '../../../assets/examples/c2-connecte.png';
 
 The first time you open **Plugins > Fulla**, the panel opens on its **Providers** tab: Fulla needs an account with an AI service to make images. You have two choices.
+
+<Image src={providers} alt="The Fulla panel, Providers tab, before any connection: Connect a provider, a blue Connect with OpenRouter button marked Recommended, then Already have a key? with an Add a key button for Google and one for OpenAI" width={322} />
 
 ## Connect with OpenRouter (recommended)
 
@@ -18,16 +26,28 @@ OpenRouter gives you every model Fulla offers with one account, and there is no 
 
 1. Click **Connect with OpenRouter**. Photoshop asks for permission: "The plugin Fulla wants to open" an openrouter.ai address. Click **Allow** (tick **Remember my choice** if you don't want to be asked again). The browser window may open behind Photoshop.
 2. On openrouter.ai, sign in or create an account. You can set a spending limit and an expiry date for the key there.
-3. Click **Authorize**. OpenRouter shows a code.
-4. Paste that code into the panel. OpenRouter's page says "terminal": it means the panel.
+
+   <Image src={authorize} alt="OpenRouter's Authorization Request page: Fulla requests access to your account, with the account, the key label Fulla, the expiration, an optional credit limit, and the Deny and Authorize buttons" width={360} />
+
+3. Click **Authorize**. OpenRouter shows a one-time code, with a button to copy it.
+
+   <Image src={oneTimeCode} alt="OpenRouter's page after Authorize: Paste this one-time code into your terminal to finish signing in, the code with a copy button, and The code can be used once and expires after 10 minutes" width={400} />
+
+4. Paste that code into the panel and click **Connect**. OpenRouter's page says "terminal": it means the panel.
+
+   <Image src={pasteCode} alt="The Fulla panel during the connection: three steps to follow, the code pasted in the field next to the Connect button, and Open the page again and Cancel under it" width={322} />
+
+The panel then shows OpenRouter as **Connected**, and the **Generate** tab is ready.
+
+<Image src={connected} alt="The Fulla panel, Providers tab, after the connection: OpenRouter Connected, with the end of the key and the Test and Remove buttons; Google and OpenAI still show No key" width={322} />
 
 A new OpenRouter account needs credits before its first image. The panel says so and links the page where you add them; $5 is about 100 images.
 
-If, after creating your account, you don't land on the page with the **Authorize** button, go back to the panel and click **Open the page again**. You are signed in by then, so it goes straight there.
+If, after creating your account, you don't land on the page with the **Authorize** button, go back to the panel and click **Open the page again**. You are signed in by then, so it goes straight there. A code lasts 10 minutes.
 
 ## Use a Google or OpenAI key
 
-Already have a key? Choose **Add a key**, pick Google (Gemini API) or OpenAI, and paste it. The button next to the field opens the page where the key is created. Fulla checks the key with a free request before saving it. See [Providers](/docs/providers/) for what each service needs.
+Already have a key? Click **Add a key** under Google (Gemini API) or OpenAI, and paste it. The button next to the field opens the page where the key is created. Fulla checks the key with a free request before saving it. See [Providers](/docs/providers/) for what each service needs.
 
 ## Where your key is kept
 

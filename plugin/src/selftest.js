@@ -897,8 +897,12 @@ const SCENARIOS = {
     const span = (b) => `${Math.round(b.top)}..${Math.round(b.bottom)}`;
     await click($("tab-generate"));
     // A pasted prompt: the hint goes away (UXP does not repaint it), and comes back once emptied.
-    const hint = $("prompt").getAttribute("placeholder");
+    // The hint is read with the prompt emptied: a prompt left in the panel has already hidden it.
     const v0 = $("prompt").value;
+    $("prompt").value = "";
+    $("prompt").dispatchEvent(new Event("input"));
+    await tick();
+    const hint = $("prompt").getAttribute("placeholder");
     $("prompt").value = "pasted prompt";
     $("prompt").dispatchEvent(new Event("paste"));
     await tick();

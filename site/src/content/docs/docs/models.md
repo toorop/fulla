@@ -17,7 +17,21 @@ A model is what makes the image. The same model can come from more than one prov
 | Google (Gemini API) | Nano Banana 2.1 (default), Nano Banana Pro, Nano Banana 2 Lite |
 | OpenAI | GPT Image 2.5 Sunburst (default), GPT Image 2.5 Flare, GPT Image 2 |
 
-In our tests, **Seedream 5.5** gave very good results, and **MiniMax H3 Image** good ones for less: removing a boat from a photo at 2K cost about $0.04 with MiniMax H3 Image and $0.06 with Seedream 5.5, the same as Nano Banana 2.1 (OpenRouter, 14 November 2026).
+Of these, only Nano Banana Pro is also in Photoshop's own generative fill, which offers Nano Banana 2, not 2.1. Seedream, MiniMax, Qwen Image and GPT Image are not there (checked on 16 November 2026).
+
+## Which one to choose
+
+What we found in our own tests, a handful per model so far, not a benchmark. Prices are for one 2K image through OpenRouter.
+
+- **Nano Banana 2.1**, about $0.06: the one we tested most, on faces, objects added from a reference image and extended canvases. Start with it.
+- **Seedream 5.5**, about $0.06: very good on a black and white photo where we removed a boat, and it kept the photo's contrast better than MiniMax H3 Image. Worth a try when contrast matters.
+- **MiniMax H3 Image**, about $0.04: good on the same photo, for less. Worth it for a simple removal.
+- **Qwen Image 3**: it erased a boat behind thin posts well, but it has no room for the whole photo, takes a single reference image, and did clearly worse than Nano Banana 2.1 when adding an object from a reference.
+- **GPT Image**: kept faces less close to the original than Nano Banana 2.1 in our tests. It is there when you prefer its look.
+
+These tests ran from 6 to 14 November 2026. The panel shows what each run cost, so you can compare on your own photos.
+
+## Pick a model
 
 Pick a model with the button under the prompt. The [settings](/docs/generative-fill/resolution/) only show what the current model lets you choose.
 

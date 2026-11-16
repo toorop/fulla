@@ -10,7 +10,7 @@ Fulla is a free, open-source Photoshop plugin for generative fill, made by Stép
 
 ## Who makes it?
 
-Stéphane wrote his first lines of code on a TRS-80 and has been programming ever since. He has published open-source software since 2010, mostly in Go: about 150 public repositories [on GitHub](https://github.com/toorop). Among them, [tmail](https://github.com/toorop/tmail), an SMTP server, and [go-dkim](https://github.com/toorop/go-dkim), an implementation of DKIM, the cryptographic signature of emails. He is also an amateur photographer.
+Stéphane has been programming for about forty years. He has published open-source software since 2010, mostly in Go: about 150 public repositories [on GitHub](https://github.com/toorop). Among them, [tmail](https://github.com/toorop/tmail), an SMTP server, and [go-dkim](https://github.com/toorop/go-dkim), an implementation of DKIM, the cryptographic signature of emails. He is also an amateur photographer.
 
 ## Is Fulla written with AI?
 

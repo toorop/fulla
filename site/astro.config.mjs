@@ -53,6 +53,7 @@ export default defineConfig({
 						'docs/generative-fill/variations',
 						'docs/generative-fill/resolution',
 						'docs/generative-fill/tone-matching',
+						'docs/colours',
 						'docs/generative-fill/cost',
 						'docs/generative-fill/tips',
 					],
@@ -61,7 +62,6 @@ export default defineConfig({
 				{
 					label: 'Help',
 					items: [
-						'docs/colours',
 						'docs/troubleshooting',
 						'docs/faq',
 						'docs/limits',

@@ -4,6 +4,9 @@
 //                                        for Photoshop without the Creative Cloud app
 // plus the same two under names without the version (fulla.ccx, fulla-windows.zip), so the site's
 // Download links can point to github.com/.../releases/latest/download/<name> and never go stale.
+// When package.json has a "marketplaceId" (the plugin ID Adobe's Developer Distribution portal gives
+// the listing), also dist-marketplace/fulla-<version>.ccx: the same plugin under that ID, for the
+// Adobe Marketplace only. It stays out of dist/ so GitHub releases never ship the Marketplace ID.
 
 const fs = require("node:fs");
 const path = require("node:path");
@@ -12,6 +15,7 @@ const zlib = require("node:zlib");
 const ROOT = path.resolve(__dirname, "..");
 const SRC = path.join(ROOT, "plugin");
 const DIST = path.join(ROOT, "dist");
+const DIST_MARKETPLACE = path.join(ROOT, "dist-marketplace");
 
 function crc32(buf) {
   let c = ~0;
@@ -91,6 +95,21 @@ function releaseNames(version) {
   return { ccx: `fulla-${version}.ccx`, zip: `fulla-${version}-windows.zip`, latestCcx: "fulla.ccx", latestZip: "fulla-windows.zip" };
 }
 
+/**
+ * The plugin files for the Adobe Marketplace: the same files with the listing's ID in manifest.json.
+ * Adobe's portal wants host.minVersion as "a.b" ("27.11", not "27.11.0").
+ */
+function marketplaceFiles(files, id) {
+  return files.map((f) => {
+    if (f.name !== "manifest.json") return f;
+    const manifest = JSON.parse(f.data.toString("utf8"));
+    if (!/^\d+\.\d+$/.test(manifest.host.minVersion)) {
+      throw new Error(`host.minVersion must be "a.b" for the Adobe Marketplace, not "${manifest.host.minVersion}"`);
+    }
+    return { name: f.name, data: Buffer.from(JSON.stringify({ ...manifest, id }, null, 2) + "\n", "utf8") };
+  });
+}
+
 function main() {
   const manifest = JSON.parse(fs.readFileSync(path.join(SRC, "manifest.json"), "utf8"));
   const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
@@ -123,7 +142,16 @@ function main() {
   for (const name of [names.ccx, names.latestCcx]) fs.writeFileSync(path.join(DIST, name), ccx);
   for (const name of [names.zip, names.latestZip]) fs.writeFileSync(path.join(DIST, name), winZip);
   console.log(`Built dist/${names.ccx} (${(ccx.length / 1024).toFixed(1)} KB) and dist/${names.zip} (${(winZip.length / 1024).toFixed(1)} KB), ${files.length} plugin files, and copies named ${names.latestCcx} and ${names.latestZip}`);
+
+  fs.rmSync(DIST_MARKETPLACE, { recursive: true, force: true });
+  if (!pkg.marketplaceId) {
+    console.log("No marketplaceId in package.json: no Marketplace build");
+    return;
+  }
+  fs.mkdirSync(DIST_MARKETPLACE);
+  fs.writeFileSync(path.join(DIST_MARKETPLACE, names.ccx), zip(marketplaceFiles(files, pkg.marketplaceId)));
+  console.log(`Built dist-marketplace/${names.ccx} with the Marketplace ID ${pkg.marketplaceId}`);
 }
 
 if (require.main === module) main();
-module.exports = { zip, walk, releaseNames };
+module.exports = { zip, walk, releaseNames, marketplaceFiles };

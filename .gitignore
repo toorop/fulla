@@ -1,3 +1,4 @@
 dist/
+dist-marketplace/
 node_modules/
 .wrangler/

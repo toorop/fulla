@@ -8,7 +8,7 @@ kind: legal
 
 ## Publisher
 
-This website is published by Stéphane Depierrepont, as a private individual and not as a business. He is also its publication director. To reach him, use the [contact form](https://dppst.com/#contact-form).
+This website is published by Stéphane Depierrepont, as a private individual and not as a business. He is also its publication director. To reach him: [fulla@dppst.com](mailto:fulla@dppst.com), or the [contact form](https://dppst.com/#contact-form).
 
 ## Host
 
@@ -17,3 +17,7 @@ Cloudflare, Inc., 101 Townsend Street, San Francisco, CA 94107, United States. P
 ## Personal data
 
 What this website and the Fulla plugin do with your data: see [Privacy](/docs/privacy/).
+
+## Terms of use
+
+The terms for using the plugin and this website: see [Terms of use](/terms/).

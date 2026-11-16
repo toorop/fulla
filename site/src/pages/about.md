@@ -2,7 +2,7 @@
 layout: ../layouts/Article.astro
 title: About Fulla
 description: Who makes Fulla, why it exists, and how to get in touch.
-updated: 2026-11-11
+updated: 2026-11-16
 kind: about
 ---
 
@@ -31,6 +31,6 @@ Fulla started in November 2026 from [OpenFill](https://github.com/damanjz/openfi
 ## Get in touch
 
 - A bug or a request: [open an issue on GitHub](https://github.com/toorop/fulla/issues).
-- Anything else: [contact form](https://dppst.com/#contact-form).
+- Help with Fulla, or anything else: [fulla@dppst.com](mailto:fulla@dppst.com), or the [contact form](https://dppst.com/#contact-form).
 
 The source code is on [GitHub](https://github.com/toorop/fulla), under the MIT licence.

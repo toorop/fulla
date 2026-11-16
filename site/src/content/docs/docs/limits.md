@@ -27,15 +27,15 @@ Now and then a model redraws the whole picture it was sent, not only the area to
 
 ## Cancel may still be billed
 
-**Cancel** stops Fulla from using the result, and Fulla never sends a new request after it. But a request the AI service has already received may still be billed.
+**Cancel** stops Fulla from using the result, and Fulla never sends a new request after it. But a request the AI service has already received may still be billed. To cap what you can spend, set a spending limit on your key: OpenRouter lets you do it when you [connect](/docs/first-run/), or later on openrouter.ai.
 
 ## Colour profiles
 
-Colours match your document only when Photoshop keeps embedded profiles: see [Colours](/docs/colours/). A result that an AI service sends back as WebP gets no colour profile yet; PNG and JPEG results do. It hasn't happened with the current models so far.
+Colours match your document only when Photoshop keeps embedded profiles, one setting to check once. A generated area holds only colours sRGB can show, at 8 bits per channel, and a result sent back as WebP gets no colour profile yet (it hasn't happened with the current models). [Colours](/docs/colours/) explains the setting and what each of these means for your photo.
 
 ## Some models see less of the photo
 
-Fulla sends the whole photo along as a reference, so the model can judge scale and light. Qwen models have no room for it and only see the area to fill with its margin. The number of [reference images](/docs/generative-fill/reference-images/) also depends on the model.
+Fulla sends the whole photo along as a reference, so the model can judge scale and light. Qwen models have no room for it and only see the area to fill with its margin. The number of [reference images](/docs/generative-fill/reference-images/) also depends on the model. When the fill depends on the rest of the photo or on references, use Nano Banana 2.1: see [Which one to choose](/docs/models/#which-one-to-choose).
 
 ## Online only, Photoshop 27.11 or later
 

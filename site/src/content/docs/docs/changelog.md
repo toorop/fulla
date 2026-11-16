@@ -5,6 +5,10 @@ description: What changed in each version of Fulla.
 
 Every version is listed here, newest first, with the [releases on GitHub](https://github.com/toorop/fulla/releases).
 
+## 0.1.2
+
+- **Add a key** now works for OpenRouter too: paste a key you created on openrouter.ai, for example one with a credit limit. Connect with OpenRouter stays the easy way.
+
 ## 0.1.1
 
 Two more [models](/docs/models/) with OpenRouter:

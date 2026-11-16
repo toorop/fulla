@@ -13,7 +13,7 @@ A provider is the AI service Fulla sends your request to, and the one that bills
 
 ## OpenRouter (recommended)
 
-One account for every model Fulla offers. **Connect with OpenRouter** in the panel: no key to create. A new account needs credits before its first image; OpenRouter shows the exact amount billed for each run.
+One account for every model Fulla offers. **Connect with OpenRouter** in the panel: no key to create. If you already have an OpenRouter key, **Add a key** takes it, with whatever credit limit you gave it. A new account needs credits before its first image; OpenRouter shows the exact amount billed for each run.
 
 ## Google (Gemini API)
 

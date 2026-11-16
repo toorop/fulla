@@ -878,8 +878,10 @@ async function anyKey() {
 }
 
 /**
- * Rows, plus the first-run state: with no key at all, the welcome screen replaces the OpenRouter row
- * and the Generate tab says a provider is needed. Returns whether any provider has a key.
+ * Rows, plus the first-run state: with no key at all, the welcome screen comes first (its button is
+ * the guided OpenRouter connect) and the Generate tab says a provider is needed. Every provider can
+ * also take a pasted key: OpenRouter users may already have one, with the credit limit they chose.
+ * Returns whether any provider has a key.
  */
 async function renderProviders() {
   const any = await anyKey();
@@ -890,7 +892,6 @@ async function renderProviders() {
   renderIdle();
   for (const p of PROVIDERS) {
     const key = await settings.getKey(p.id);
-    $(`prow-${p.id}`).hidden = !any && p.id === "openrouter";
     const state = $(`pstate-${p.id}`);
     state.textContent = key ? "Connected" : "No key";
     state.className = key ? "pstate on" : "pstate";
@@ -901,9 +902,9 @@ async function renderProviders() {
     if (key) {
       actions.appendChild(button("Test", () => testKey(p), "check"));
       actions.appendChild(button("Remove", () => removeKey(p), "trash"));
-    } else if (p.id === "openrouter") {
-      actions.appendChild(button("Connect", startConnect, "plus")); // guided, no key to paste
     } else {
+      // The guided connect, unless the welcome screen above already offers it.
+      if (p.id === "openrouter" && any) actions.appendChild(button("Connect", startConnect, "plus"));
       actions.appendChild(button("Add a key", () => openAdd(p), "plus"));
     }
     actions.hidden = adding(p);

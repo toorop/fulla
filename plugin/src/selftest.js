@@ -1224,7 +1224,9 @@ const SCENARIOS = {
       expect(b, `no "${label}" button in ${id}`);
       return b;
     };
-    // OpenRouter connects through its guided flow (no key form), so take another provider.
+    // OpenRouter without a key offers its guided connect and a key form: check its buttons, then
+    // test the form on another provider (a refused OpenRouter key check is not billed either).
+    const openRouterButtons = () => Array.from($("pactions-openrouter").querySelectorAll(".obtn")).map((b) => b.textContent);
     let p = null;
     for (const x of PROVIDERS) if (!p && x.id !== "openrouter" && !(await settings.getKey(x.id))) p = x;
     if (!p) return { skipped: "every provider with a key form has a key" };
@@ -1234,9 +1236,10 @@ const SCENARIOS = {
     try {
       await click("tab-providers");
       if (firstRun) {
-        // No key anywhere: welcome screen instead of the OpenRouter row, and Generate says so.
-        expect(!$("welcome").hidden && $("prow-openrouter").hidden, "first run: welcome screen should replace the OpenRouter row");
+        // No key anywhere: the welcome screen (its button connects OpenRouter), and Generate says so.
+        expect(!$("welcome").hidden, "first run: the welcome screen should show");
         expect(!$("noProvider").hidden, "first run: the Generate tab should say a provider is needed");
+        expect(openRouterButtons().join() === "Add a key", `first run: OpenRouter row buttons "${openRouterButtons()}", expected only Add a key`);
       }
       expect($(`pstate-${id}`).textContent === "No key", `state: "${$(`pstate-${id}`).textContent}"`);
       expect($(`padd-${id}`).children.length === 0, "key form open before Add");
@@ -1259,9 +1262,8 @@ const SCENARIOS = {
       await tick();
       expect($(`pstate-${id}`).textContent === "Connected", `state with a key: "${$(`pstate-${id}`).textContent}"`);
       expect($("welcome").hidden && $("noProvider").hidden, "with a key, no welcome screen and no Generate notice");
-      if (firstRun) {
-        expect(!$("prow-openrouter").hidden, "with a key, the OpenRouter row is back");
-        buttonIn("pactions-openrouter", "Connect"); // guided connect, not a key form
+      if (!(await settings.getKey("openrouter"))) {
+        expect(openRouterButtons().join() === "Connect,Add a key", `OpenRouter row buttons "${openRouterButtons()}", expected Connect and Add a key`);
       }
       expect(/\.\.\.1234$/.test($(`pkey-${id}`).textContent), `key hint: "${$(`pkey-${id}`).textContent}"`);
       await click(buttonIn(`pactions-${id}`, "Remove"));
@@ -1272,6 +1274,41 @@ const SCENARIOS = {
       return { provider: id, firstRun, refused };
     } finally {
       await settings.setKey(id, "");
+      await click("tab-generate");
+    }
+  },
+
+  async panelOpenRouterKey() {
+    // OpenRouter without a key: its row offers a key form (what Adobe's reviewers use, with a
+    // capped key), next to the guided Connect unless the welcome screen already shows it. A saved
+    // OpenRouter key is put aside for the test and restored, whatever happens. Free: no request.
+    const $ = (id) => document.getElementById(id);
+    const tick = (ms = 150) => new Promise((r) => setTimeout(r, ms));
+    const click = async (elOrId) => {
+      (typeof elOrId === "string" ? $(elOrId) : elOrId).dispatchEvent(new Event("click"));
+      await tick();
+    };
+    const buttons = (id) => Array.from($(id).querySelectorAll(".obtn"));
+    const labels = (id) => buttons(id).map((b) => b.textContent).join();
+    const saved = await settings.getKey("openrouter");
+    try {
+      if (saved) await settings.setKey("openrouter", "");
+      let others = false;
+      for (const x of PROVIDERS) if (await settings.getKey(x.id)) others = true;
+      await click("tab-providers");
+      await tick();
+      const expected = others ? "Connect,Add a key" : "Add a key";
+      expect(!$("prow-openrouter").hidden, "the OpenRouter row should show");
+      expect(labels("pactions-openrouter") === expected, `OpenRouter row buttons "${labels("pactions-openrouter")}", expected "${expected}"`);
+      await click(buttons("pactions-openrouter").find((b) => b.textContent === "Add a key"));
+      expect($("key-openrouter") && $("pactions-openrouter").hidden, "Add a key did not open the OpenRouter form");
+      expect(buttons("padd-openrouter").some((b) => b.textContent === "Get a key on openrouter.ai"), "no Get a key on openrouter.ai button");
+      await click(buttons("padd-openrouter").find((b) => b.textContent === "Cancel"));
+      expect(!$("key-openrouter"), "Cancel left the OpenRouter key field");
+      return { others, buttons: expected };
+    } finally {
+      if (saved) await settings.setKey("openrouter", saved);
+      await click("tab-providers");
       await click("tab-generate");
     }
   },

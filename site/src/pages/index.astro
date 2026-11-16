@@ -28,12 +28,15 @@ const description =
 // Where the boat is in the hero photo (A1), in percent: the marching ants go there.
 // Measured from the before/after pair (2026-11-12): the area that changed.
 const selection = { left: 54.2, top: 42.8, width: 17.6, height: 20.3 };
+// The selection of the mug example (A3), measured the same way (2026-11-16): the steps show it.
+const mugSelection = { left: 2.1, top: 18.7, width: 58.4, height: 76.9 };
+const box = (r: typeof selection) => `left:${r.left}%;top:${r.top}%;width:${r.width}%;height:${r.height}%`;
 
 // Draft figures (10 November 2026): to check again before release, see the pricing note.
 const prices = {
 	checked: '10 November 2026',
 	photoshop: { fill2k: '20 credits', fill2kMoney: 'about $0.10 at the smallest monthly add-on', fill4k: '30 credits, about $0.15' },
-	fulla: { fill2k: 'about $0.05', fill4k: 'about $0.12' },
+	fulla: { fill2k: 'about $0.05', fill4k: 'about $0.12', cheaper: 'About $0.04 at 2K with MiniMax H3 Image, good for a simple removal' },
 };
 
 const jsonLd = [
@@ -57,8 +60,8 @@ const jsonLd = [
 
 <Base title={title} description={description} jsonLd={jsonLd}>
 	<div class="wrap intro">
-		<h1>Generative fill in Photoshop. Pay only for the images you make.</h1>
-		<div>
+		<h1>Generative fill in Photoshop.<br /> Pay only for the images you make.</h1>
+		<div class="intro-row">
 			<p class="lede">
 				Fulla is a free Photoshop plugin. Select an area, say what you want, click Generate: just like Photoshop's own
 				generative fill. Connect once in a few clicks, and Fulla picks a recommended model for you. From about 5 cents an
@@ -69,66 +72,151 @@ const jsonLd = [
 	</div>
 
 	<div class="board">
-		<div class="wrap board-in">
-			<div class="doc" id="doc">
-				<Compare
-					id="hero-compare"
-					before={heroBefore}
-					after={heroAfter}
-					beforeAlt="Before: a small motorboat moored along a pier at low tide, black and white"
-					afterAlt="After: the same pier, the boat removed"
-					start={100}
-					sizes="(min-width: 1280px) 820px, 100vw"
-					priority
-				/>
-				<div class="ants" id="ants" style={`left:${selection.left}%;top:${selection.top}%;width:${selection.width}%;height:${selection.height}%`} aria-hidden="true">
-					<svg preserveAspectRatio="none" viewBox="0 0 100 100"><rect class="w" width="100" height="100"></rect><rect class="k" width="100" height="100"></rect></svg>
+		<div class="wrap">
+			<div class="stage">
+				<div class="doc" id="doc">
+					<Compare
+						id="hero-compare"
+						before={heroBefore}
+						after={heroAfter}
+						beforeAlt="Before: a small motorboat moored along a pier at low tide, black and white"
+						afterAlt="After: the same pier, the boat removed"
+						start={100}
+						sizes="(min-width: 1280px) 1100px, 100vw"
+						priority
+					/>
+					<div class="ants" id="ants" style={box(selection)} aria-hidden="true">
+						<svg preserveAspectRatio="none" viewBox="0 0 100 100"><rect class="w" width="100" height="100"></rect><rect class="k" width="100" height="100"></rect></svg>
+					</div>
 				</div>
-			</div>
-			<div class="panel" aria-hidden="true">
-				<div class="panel-title"><span>Fulla</span><span>Nano Banana 2.1</span></div>
-				<div class="prompt" id="prompt"><span class="ph">Describe what to add, or leave empty to remove</span></div>
-				<div class="row"><span class="chip">+ Reference</span><span class="gen" id="gen">Generate</span></div>
-				<div class="status" id="status"></div>
-				<div class="layers">
-					<div class="layer new" id="newlayer"><span class="th th-new"></span>Fulla: Fill</div>
-					<div class="layer"><span class="th th-bg"></span>Background</div>
+				<div class="readout strip" id="strip">
+					<div class="ex-prompt empty" id="prompt">Prompt left empty</div>
+					<span class="gen" id="gen" aria-hidden="true">Generate</span>
+					<div class="strip-end">
+						<div class="status" id="status" aria-hidden="true"></div>
+						<dl class="facts">
+							<div><dt>Model</dt><dd>Nano Banana 2.1</dd></div>
+							<div><dt>Size</dt><dd>2K</dd></div>
+							<div><dt>Tries</dt><dd>1</dd></div>
+							<div><dt>Cost</dt><dd>$0.06</dd></div>
+						</dl>
+					</div>
 				</div>
+				<p class="board-note">Drag across the photo to compare. No retouching after Fulla.</p>
 			</div>
-			<p class="board-note">Drag across the photo to compare. Prompt left empty. First try (Nano Banana 2.1, 2K, $0.06), no retouching after Fulla.</p>
 		</div>
 	</div>
 
 	<section>
 		<div class="wrap">
-			<h2 class="head">If you know Photoshop's generative fill, you already know Fulla.</h2>
+			<h2 class="head">If you know Photoshop's generative&nbsp;fill,<br /> you already know Fulla.</h2>
 			<ol class="steps">
 				<li>
 					<div class="mini" aria-hidden="true">
-						<Picture src={heroBefore} alt="" widths={[480, 800]} sizes="(min-width: 900px) 400px, 100vw" formats={['avif', 'webp']} />
-						<div class="ants on" style={`left:${selection.left}%;top:${selection.top}%;width:${selection.width}%;height:${selection.height}%`}><svg preserveAspectRatio="none" viewBox="0 0 100 100"><rect class="w" width="100" height="100"></rect><rect class="k" width="100" height="100"></rect></svg></div>
+						<Picture src={mugBefore} alt="" widths={[480, 800]} sizes="(min-width: 900px) 400px, 100vw" formats={['avif', 'webp']} />
+						<div class="ants on" style={box(mugSelection)}><svg preserveAspectRatio="none" viewBox="0 0 100 100"><rect class="w" width="100" height="100"></rect><rect class="k" width="100" height="100"></rect></svg></div>
 					</div>
 					<h3>Select the area to change</h3>
 					<p>With any selection tool: lasso, marquee, Select Subject.</p>
 				</li>
 				<li>
 					<div class="mini" aria-hidden="true">
-						<Picture src={heroBefore} alt="" widths={[480, 800]} sizes="(min-width: 900px) 400px, 100vw" formats={['avif', 'webp']} />
-						<div class="ants on" style={`left:${selection.left}%;top:${selection.top}%;width:${selection.width}%;height:${selection.height}%`}><svg preserveAspectRatio="none" viewBox="0 0 100 100"><rect class="w" width="100" height="100"></rect><rect class="k" width="100" height="100"></rect></svg></div>
-						<div class="mini-prompt"><span class="ph">Empty: remove what is selected</span></div>
+						<Picture src={mugBefore} alt="" widths={[480, 800]} sizes="(min-width: 900px) 400px, 100vw" formats={['avif', 'webp']} />
+						<div class="ants on" style={box(mugSelection)}><svg preserveAspectRatio="none" viewBox="0 0 100 100"><rect class="w" width="100" height="100"></rect><rect class="k" width="100" height="100"></rect></svg></div>
+						<div class="mini-prompt"><span class="mini-ref"><Picture src={mugRef} alt="" widths={[120]} sizes="48px" formats={['avif', 'webp']} /></span><span>Put the mug from the reference image on the table.</span></div>
 					</div>
 					<h3>Say what you want</h3>
-					<p>“A small boat by the pier”, “make her smile”. Leave it empty to remove what's selected.</p>
+					<p>In plain words. Add a reference image if you have one.</p>
 				</li>
 				<li>
 					<div class="mini" aria-hidden="true">
-						<Picture src={heroAfter} alt="" widths={[480, 800]} sizes="(min-width: 900px) 400px, 100vw" formats={['avif', 'webp']} />
-						<div class="mini-layers"><div class="layer on"><span class="th th-new"></span>Fulla 1</div><div class="layer"><span class="th th-bg"></span>Background</div></div>
+						<Picture src={mugAfter} alt="" widths={[480, 800]} sizes="(min-width: 900px) 400px, 100vw" formats={['avif', 'webp']} />
+						<div class="mini-layers"><div class="layer on"><span class="th th-mug"></span>Fulla 1</div><div class="layer"><span class="th th-bg"></span>Background</div></div>
 					</div>
 					<h3>Click Generate</h3>
 					<p>The result lands on a new layer, masked by your selection. Your photo itself is never touched.</p>
 				</li>
 			</ol>
+		</div>
+	</section>
+
+	<section class="examples band">
+		<div class="wrap">
+			<h2 class="head">Real results, straight from the panel</h2>
+			<p class="sub">Drag across a photo to compare. Under each one, the prompt it was given.</p>
+
+			<figure class="ex wide">
+				<figcaption class="ex-head">
+					<h3>Extend a photo</h3>
+					<p>Canvas enlarged in Photoshop, each empty band filled in turn. <span class="ex-note">Sample photo generated for this demo.</span> <a href="/docs/generative-fill/remove-and-extend/">How to extend</a></p>
+				</figcaption>
+				<div class="frame">
+					<Compare before={extendBefore} after={extendAfter} beforeAlt="Before: a beach at sunset on a canvas made wider and taller, the new bands empty" afterAlt="After: the sky, the dunes and the beach continued into both bands" start={100} sizes="(min-width: 1280px) 1184px, 100vw" />
+				</div>
+				<div class="readout">
+					<div class="ex-prompt empty">Prompt left empty</div>
+					<dl class="facts">
+						<div><dt>Model</dt><dd>Nano Banana 2.1</dd></div>
+						<div><dt>Size</dt><dd>4K</dd></div>
+						<div><dt>Tries</dt><dd>1 per band</dd></div>
+					</dl>
+				</div>
+			</figure>
+
+			<figure class="ex wide">
+				<figcaption class="ex-head">
+					<h3>Put the mug where you want it</h3>
+					<p>Your selection sets its place and size. <span class="ex-note">Sample photos generated for this demo.</span> <a href="/docs/generative-fill/tips/#select-generously">Tip: leave room for the shadow</a></p>
+				</figcaption>
+				<div class="frame">
+					<Compare before={mugBefore} after={mugAfter} beforeAlt="Before: a wooden kitchen table in low morning light, a croissant on a plate, empty space on the left" afterAlt="After: the white enamel mug from the reference image standing on the table, its shadow cast by the low light" start={64} sizes="(min-width: 1280px) 1184px, 100vw" />
+					<div class="ref"><Picture src={mugRef} alt="Reference image: a white enamel mug with a dark blue rim" widths={[300, 600]} sizes="(min-width: 900px) 260px, 30vw" formats={['avif', 'webp']} /><span>Reference</span></div>
+				</div>
+				<div class="readout">
+					<div class="ex-prompt">Put the mug from the reference image on the table.</div>
+					<dl class="facts">
+						<div><dt>Model</dt><dd>Nano Banana 2.1</dd></div>
+						<div><dt>Size</dt><dd>2K</dd></div>
+						<div><dt>Tries</dt><dd>1 with this selection</dd></div>
+					</dl>
+				</div>
+			</figure>
+
+			<figure class="ex square">
+				<figcaption class="ex-head">
+					<h3>Bring back what was really there</h3>
+					<p>With another shot from the same series as the reference, the model redraws the real wheels; without it, it invents plausible machinery. Switch between them on the photo. <a href="/docs/generative-fill/reference-images/">How to use references</a></p>
+				</figcaption>
+				<div class="frame">
+					<Compare before={trainBefore} after={trainWithRef} beforeAlt="Before: a railwayman standing in front of an electric locomotive numbered 5402, decked with flags, in an archive photo" afterAlt="After, with the reference: the man removed, the locomotive's front bogie and wheels as on the real machine" afterLabel="With reference" variants={[{ label: 'Without reference', image: trainWithoutRef, alt: 'After, without the reference: the man removed, the model invented a bulky block of machinery and a larger wheel' }]} reference={{ image: trainRef, alt: 'Reference image: another shot of the same series, the locomotive without the man' }} start={45} sizes="(min-width: 1280px) 720px, 100vw" />
+				</div>
+				<div class="readout">
+					<div class="ex-prompt">Remove the person and use reference image 1 to rebuild what is behind him.</div>
+					<dl class="facts">
+						<div><dt>Model</dt><dd>Nano Banana 2.1</dd></div>
+						<div><dt>Size</dt><dd>2K</dd></div>
+						<div><dt>Tries</dt><dd>1 with the reference</dd></div>
+					</dl>
+				</div>
+			</figure>
+
+			<figure class="ex wide">
+				<figcaption class="ex-head">
+					<h3>Swap a face</h3>
+					<p>Freckles and mole from the reference, light from the terrace. <span class="ex-note">Sample photos generated for this demo: no real person.</span> <a href="/docs/generative-fill/reference-images/">How to use references</a></p>
+				</figcaption>
+				<div class="frame">
+					<Compare before={faceBefore} after={faceAfter} beforeAlt="Before: four friends laughing at a café terrace in warm evening light" afterAlt="After: the woman second from the left has the face of the reference portrait, freckles and mole included, with her own hair, pose and the terrace light" afterLabel="Result" reference={{ image: faceRef, alt: 'Reference image: a portrait of a woman with freckles, auburn hair tied back, in grey window light' }} start={58} sizes="(min-width: 1280px) 1184px, 100vw" />
+				</div>
+				<div class="readout">
+					<div class="ex-prompt">Replace the face of the woman sitting at the table with the face of the woman in the reference image. Keep her hair, her pose, the angle of her head and the light of the terrace. Do not paste the reference image: only her face should change.</div>
+					<dl class="facts">
+						<div><dt>Model</dt><dd>Nano Banana 2.1</dd></div>
+						<div><dt>Size</dt><dd>2K</dd></div>
+						<div><dt>Tries</dt><dd>1</dd></div>
+					</dl>
+				</div>
+			</figure>
 		</div>
 	</section>
 
@@ -155,13 +243,13 @@ const jsonLd = [
 		</div>
 	</section>
 
-	<section>
+	<section class="band">
 		<div class="wrap">
 			<h2 class="head">What a fill really costs</h2>
-			<p class="sub">Nano Banana on both sides: version 2 in Photoshop, the newer 2.1 in Fulla.</p>
+			<p class="sub">The same family of model on both sides: Nano Banana 2 in Photoshop, the newer 2.1 in Fulla.</p>
 			<div class="cost">
 				<div class="card">
-					<h3>Photoshop generative fill</h3>
+					<h3>Photoshop generative fill, with Nano Banana 2</h3>
 					<dl>
 						<div><dt>One fill, 1K to 2K</dt><dd><span class="big">{prices.photoshop.fill2k}</span><br />{prices.photoshop.fill2kMoney}</dd></div>
 						<div><dt>One fill, 4K</dt><dd>{prices.photoshop.fill4k}</dd></div>
@@ -170,71 +258,18 @@ const jsonLd = [
 					</dl>
 				</div>
 				<div class="card fulla">
-					<h3>Fulla</h3>
+					<h3>Fulla, with Nano Banana 2.1</h3>
 					<dl>
 						<div><dt>One fill, 1K to 2K</dt><dd><span class="big">{prices.fulla.fill2k}</span><br />billed per image by the AI service you connect</dd></div>
 						<div><dt>One fill, 4K</dt><dd>{prices.fulla.fill4k}</dd></div>
+						<div><dt>With a cheaper model</dt><dd>{prices.fulla.cheaper}</dd></div>
 						<div><dt>Paid up front</dt><dd>Nothing. A few dollars of credit, used image by image.</dd></div>
 						<div><dt>How you see the cost</dt><dd>In dollars, after every image</dd></div>
 					</dl>
 				</div>
 			</div>
-			<p class="note">Prices checked on {prices.checked}. <a href="/photoshop-generative-credits/">How we worked them out</a>. Other models work too, such as GPT Image.</p>
+			<p class="note">Prices checked on {prices.checked}, MiniMax on 14 November. <a href="/photoshop-generative-credits/">How we worked them out</a>. Other models work too, such as GPT Image.</p>
 			<div class="after-cta"><a class="btn btn-solid" data-umami-event="install-cta" data-umami-event-from="prices" href={DOWNLOAD_PAGE}>Download Fulla, free</a></div>
-		</div>
-	</section>
-
-	<section>
-		<div class="wrap">
-			<h2 class="head">Real results, straight from the panel</h2>
-			<p class="sub">Drag across a photo to compare.</p>
-			<div class="carousel" data-carousel>
-				<button class="nav prev" type="button" hidden><span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"></path></svg></span><span class="nav-label"></span></button>
-				<div class="reel" tabindex="-1">
-					<figure class="ex">
-						<div class="ex-in">
-							<div class="frame">
-								<Compare before={heroBefore} after={heroAfter} beforeAlt="Before: a motorboat moored along the pier" afterAlt="After: the boat removed" start={45} sizes="(min-width: 1100px) 900px, 95vw" />
-							</div>
-							<figcaption><h3>Remove a boat</h3><p>Prompt left empty. First try, Nano Banana 2.1, 2K, $0.06. <a href="/docs/generative-fill/tips/">Tip: select generously</a></p></figcaption>
-						</div>
-					</figure>
-					<figure class="ex wide">
-						<div class="ex-in">
-							<div class="frame">
-								<Compare before={extendBefore} after={extendAfter} beforeAlt="Before: a beach at sunset on a canvas made wider and taller, the new bands empty" afterAlt="After: the sky, the dunes and the beach continued into both bands" start={30} sizes="(min-width: 1100px) 900px, 95vw" />
-							</div>
-							<figcaption><h3>Extend a photo</h3><p>Canvas enlarged in Photoshop, each empty band filled in turn. Prompt left empty. First try for each band, Nano Banana 2.1, 4K, $0.12 each. Sample photo generated for this demo. <a href="/docs/generative-fill/remove-and-extend/">How to extend</a></p></figcaption>
-						</div>
-					</figure>
-					<figure class="ex wide">
-						<div class="ex-in">
-							<div class="frame">
-								<Compare before={mugBefore} after={mugAfter} beforeAlt="Before: a wooden kitchen table in low morning light, a croissant on a plate, empty space on the left" afterAlt="After: the white enamel mug from the reference image standing on the table, its shadow cast by the low light" start={8} sizes="(min-width: 1100px) 900px, 95vw" />
-								<div class="ref"><Picture src={mugRef} alt="Reference image: a white enamel mug with a dark blue rim" widths={[300, 600]} sizes="(min-width: 900px) 200px, 30vw" formats={['avif', 'webp']} /><span>Reference</span></div>
-							</div>
-							<figcaption><h3>Put the mug where you want it</h3><p>“Put the mug from the reference image on the table.” Your selection sets its place and size. First try with this selection, Nano Banana 2.1, 2K, $0.06. Sample photos generated for this demo. <a href="/docs/generative-fill/tips/#select-generously">Tip: leave room for the shadow</a></p></figcaption>
-						</div>
-					</figure>
-					<figure class="ex square">
-						<div class="ex-in">
-							<div class="frame">
-								<Compare before={trainBefore} after={trainWithRef} beforeAlt="Before: a railwayman standing in front of an electric locomotive numbered 5402, decked with flags, in an archive photo" afterAlt="After, with the reference: the man removed, the locomotive's front bogie and wheels as on the real machine" afterLabel="With reference" variants={[{ label: 'Without reference', image: trainWithoutRef, alt: 'After, without the reference: the man removed, the model invented a bulky block of machinery and a larger wheel' }]} reference={{ image: trainRef, alt: 'Reference image: another shot of the same series, the locomotive without the man' }} start={45} sizes="(min-width: 1100px) 600px, 95vw" />
-							</div>
-							<figcaption><h3>Bring back what was really there</h3><p>“Remove the person and use reference image 1 to rebuild what is behind him.” With another shot from the same series as the reference, the model redraws the real wheels; without it, it invents plausible machinery. Switch between them on the photo. First try with the reference, Nano Banana 2.1, 2K, $0.06. <a href="/docs/generative-fill/reference-images/">How to use references</a></p></figcaption>
-						</div>
-					</figure>
-					<figure class="ex wide">
-						<div class="ex-in">
-							<div class="frame">
-								<Compare before={faceBefore} after={faceAfter} beforeAlt="Before: four friends laughing at a café terrace in warm evening light" afterAlt="After: the woman second from the left has the face of the reference portrait, freckles and mole included, with her own hair, pose and the terrace light" afterLabel="Result" reference={{ image: faceRef, alt: 'Reference image: a portrait of a woman with freckles, auburn hair tied back, in grey window light' }} start={30} sizes="(min-width: 1100px) 900px, 95vw" />
-							</div>
-							<figcaption><h3>Swap a face</h3><p>“Replace the face of the woman sitting at the table with the face of the woman in the reference image. Keep her hair, her pose, the angle of her head and the light of the terrace. Do not paste the reference image: only her face should change.” Freckles and mole from the reference, light from the terrace. First try, Nano Banana 2.1, 2K, $0.06. Sample photos generated for this demo: no real person. <a href="/docs/generative-fill/reference-images/">How to use references</a></p></figcaption>
-						</div>
-					</figure>
-				</div>
-				<button class="nav next" type="button" hidden><span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span><span class="nav-label"></span></button>
-			</div>
 		</div>
 	</section>
 
@@ -251,15 +286,22 @@ const jsonLd = [
 </Base>
 
 <style>
-	.intro { padding-block: clamp(40px, 7vw, 96px) clamp(32px, 4vw, 48px); display: grid; grid-template-columns: 1.15fr 1fr; gap: 24px 64px; align-items: end; }
-	h1 { font-size: clamp(2.6rem, 5.4vw, 5rem); line-height: 0.98; font-weight: 800; letter-spacing: -0.035em; }
-	.lede { margin: 0 0 20px; max-width: 34em; }
+	/* The intro is kept short (title on two lines, then the text and the buttons in one row) so the
+	   hero photo and its strip can be seen whole when the page opens. */
+	.intro { padding-block: clamp(24px, 4vw, 48px) clamp(20px, 2.5vw, 32px); }
+	h1 { font-size: clamp(2.4rem, 4.6vw, 4rem); line-height: 1; font-weight: 800; letter-spacing: -0.035em; }
+	.intro-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 48px; margin-top: 20px; }
+	.lede { margin: 0; flex: 1 1 30em; max-width: 52em; }
 	.actions { display: flex; gap: 12px; flex-wrap: wrap; }
 
-	/* The workspace: a pasteboard with the document and the Fulla panel. */
-	.board { background: var(--f-board); border-block: 1px solid #111; padding: clamp(24px, 5vw, 64px) 0; }
-	.board-in { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-end; gap: clamp(20px, 3vw, 40px); }
-	.doc { position: relative; width: min(100%, 820px); box-shadow: 0 0 0 1px #000, 0 24px 60px rgba(0, 0, 0, 0.55); }
+	/* The workspace: a pasteboard with the document and, right under it, the Fulla panel laid out
+	   as a strip, like the readout of the examples. Photo and strip fit the window together. */
+	.board { background: var(--f-board); border-block: 1px solid #111; padding: clamp(16px, 2vw, 28px) 0 clamp(24px, 4vw, 48px); }
+	/* The photo gets the height left in the window once the header, the intro and the strip are
+	   counted (header 64, intro text and paddings, board top 28, strip 70 to 125, margin 16 = the 340px plus
+	   the two title lines and the intro paddings), never wider than 1100px nor narrower than 600px. */
+	.stage { container-type: inline-size; width: min(100%, 1100px, max(600px, calc((100svh - 340px - 2 * clamp(2.4rem, 4.6vw, 4rem) - clamp(24px, 4vw, 48px) - clamp(20px, 2.5vw, 32px)) * 1.5))); margin: 0 auto; }
+	.doc { position: relative; box-shadow: 0 0 0 1px #000, 0 24px 60px rgba(0, 0, 0, 0.55); }
 	.ants { position: absolute; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
 	.ants.on { opacity: 1; }
 	.ants svg { width: 100%; height: 100%; overflow: visible; display: block; }
@@ -267,50 +309,87 @@ const jsonLd = [
 	.ants .w { stroke: #fff; }
 	.ants .k { stroke: #000; stroke-dasharray: 5 5; animation: march 0.6s linear infinite; }
 	@keyframes march { to { stroke-dashoffset: -10; } }
-	.doc:not(.ready) :global(.c-handle), .doc:not(.ready) :global(input) { visibility: hidden; }
+	.doc:not(.ready) :global(.c-handle), .doc:not(.ready) :global(.c-grip), .doc:not(.ready) :global(input) { visibility: hidden; }
 
-	.panel { width: 300px; margin-bottom: 24px; background: var(--f-panel); border: 1px solid #1a1a1a; border-radius: 10px; padding: 14px; font-size: 13px; color: var(--f-ink-2); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45); }
-	.panel-title { display: flex; justify-content: space-between; color: var(--f-muted); font-size: 12px; margin-bottom: 12px; }
-	.prompt { background: var(--f-field); border: 1px solid var(--f-line); border-radius: 8px; min-height: 84px; padding: 10px 12px; color: var(--f-ink); font-size: 14px; }
-	.prompt .ph { color: var(--f-muted); }
-	.prompt :global(.caret) { display: inline-block; width: 1px; height: 1.1em; background: var(--f-ink); vertical-align: -2px; animation: blink 1s steps(1) infinite; }
-	@keyframes blink { 50% { opacity: 0; } }
-	.row { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; gap: 8px; }
-	.chip { border: 1px solid var(--f-line); border-radius: 6px; padding: 6px 8px; color: var(--f-muted); }
-	.gen { background: var(--f-ink); color: #1c1c1c; border-radius: 999px; padding: 8px 16px; font-weight: 600; transition: transform 0.1s; }
+	.gen { flex: none; background: var(--f-ink); color: #1c1c1c; border-radius: 999px; padding: 9px 18px; font-size: 14px; font-weight: 600; transition: transform 0.1s; }
 	.gen.press { transform: scale(0.95); }
-	.status { margin-top: 12px; min-height: 40px; }
+	/* The end of the strip: the progress while it generates, then the facts, in the same place. */
+	.strip-end { flex: none; display: grid; }
+	.strip-end > * { grid-area: 1 / 1; align-self: center; }
+	.status { font-size: 14px; color: var(--f-ink-2); }
 	.status :global(.bar) { height: 3px; background: var(--f-line); border-radius: 2px; overflow: hidden; margin-top: 6px; }
 	.status :global(.bar i) { display: block; height: 100%; width: 0; background: var(--f-blue); }
-	.layers { margin-top: 14px; border-top: 1px solid var(--f-line); padding-top: 10px; }
+	.strip.playing .facts { visibility: hidden; }
+	/* A narrow photo: the facts go under the prompt, which keeps one line. */
+	@container (max-width: 899px) {
+		.readout.strip { display: grid; grid-template-columns: 1fr auto; align-items: center; }
+		.strip-end { grid-column: 1 / -1; }
+	}
+	.board-note { text-align: center; font-size: 13px; color: var(--f-muted); margin: 14px 0 0; }
+
+	/* Layers, in the third step. */
 	.layer { display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-radius: 4px; }
 	.layer.on { background: #363636; color: var(--f-ink); }
-	.layer.new { background: #363636; color: var(--f-ink); max-height: 0; padding-block: 0; overflow: hidden; opacity: 0; transition: max-height 0.4s, padding 0.4s, opacity 0.4s; }
-	.layer.new.on { max-height: 40px; padding-block: 6px; opacity: 1; }
 	.th { width: 28px; height: 22px; border: 1px solid #111; flex: none; }
 	.th-bg { background: linear-gradient(#bbb 45%, #777 45%); }
-	.th-new { background: #fff; position: relative; }
-	.th-new::after { content: ''; position: absolute; inset: 4px 9px 3px 13px; background: #000; }
-	.board-note { flex-basis: 100%; text-align: center; font-size: 13px; color: var(--f-muted); margin: 8px 0 0; }
+	/* The mug's layer mask: white where the selection was (the left part of the frame), black elsewhere. */
+	.th-mug { background: #000; position: relative; }
+	.th-mug::after { content: ''; position: absolute; left: 2%; top: 19%; width: 58%; height: 77%; background: #fff; }
 
 	section { padding: clamp(64px, 9vw, 120px) 0; }
 	section + section { border-top: 1px solid var(--f-line); }
-	h2 { font-size: clamp(2rem, 3.8vw, 3.2rem); line-height: 1.04; font-weight: 800; letter-spacing: -0.03em; max-width: 20ch; }
+	/* Every other section sits on the pasteboard grey, as the hero does, down to the end of the page. */
+	section.band { background: var(--f-board); border-block: 1px solid #111; }
+	section.band + section { border-top: 0; }
+	h2 { font-size: clamp(2rem, 3.8vw, 3.2rem); line-height: 1.04; font-weight: 800; letter-spacing: -0.03em; max-width: 32ch; text-wrap: balance; }
 	.head { margin-bottom: clamp(36px, 5vw, 60px); }
 	.sub { margin: calc(-1 * clamp(20px, 3vw, 40px)) 0 clamp(36px, 5vw, 56px); max-width: 40em; }
 
-	/* Steps, drawn over the hero photo in three states. */
+	/* Steps, drawn over the mug example in three states. */
 	.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(20px, 3vw, 36px); list-style: none; padding: 0; margin: 0; counter-reset: s; }
 	.steps li { counter-increment: s; }
-	.mini { position: relative; aspect-ratio: 3 / 2; border-radius: 10px; overflow: hidden; margin-bottom: 20px; box-shadow: 0 0 0 1px #101010; background: var(--f-board); }
+	.mini { position: relative; aspect-ratio: 16 / 9; border-radius: 10px; overflow: hidden; margin-bottom: 20px; box-shadow: 0 0 0 1px #101010; background: var(--f-board); }
 	.mini :global(img) { width: 100%; height: 100%; object-fit: cover; display: block; }
-	.mini-prompt { position: absolute; right: 12px; bottom: 12px; left: 34%; background: rgba(40, 40, 40, 0.92); border: 1px solid var(--f-line); border-radius: 8px; padding: 8px 10px; font-size: 13px; color: var(--f-ink); }
-	.mini-prompt .ph { color: var(--f-muted); }
-	.mini-layers { position: absolute; right: 12px; bottom: 12px; width: 52%; background: rgba(40, 40, 40, 0.94); border: 1px solid var(--f-line); border-radius: 8px; padding: 6px; font-size: 12px; }
+	/* Top right: the bottom of the photo holds the mug's shadow and the croissant. */
+	.mini-prompt { position: absolute; top: 8px; right: 8px; left: 46%; display: flex; align-items: center; gap: 8px; background: rgba(40, 40, 40, 0.94); border: 1px solid var(--f-line); border-radius: 8px; padding: 7px 9px; font-size: 12px; line-height: 1.35; color: var(--f-ink); }
+	.mini-ref { flex: none; width: 34px; height: 24px; border-radius: 3px; overflow: hidden; box-shadow: 0 0 0 1px #111; }
+	.mini-ref :global(img) { width: 100%; height: 100%; object-fit: cover; display: block; }
+	.mini-layers { position: absolute; top: 8px; right: 8px; width: 48%; background: rgba(40, 40, 40, 0.94); border: 1px solid var(--f-line); border-radius: 8px; padding: 6px; font-size: 12px; }
 	.mini-layers .layer { padding: 4px; }
 	.steps h3 { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 6px; }
 	.steps h3::before { content: counter(s) '. '; color: var(--f-muted); }
 	.steps p { margin: 0; }
+
+	/* Examples: on the pasteboard, like the hero, one under the other, all in view without a click.
+	   Each one reads top to bottom: what it shows, the photo, then the prompt it was given and the
+	   facts, as the panel showed them. A rule closes each example. */
+	.ex { margin: 0; }
+	.ex + .ex { margin-top: clamp(36px, 4vw, 56px); padding-top: clamp(24px, 2.5vw, 36px); border-top: 1px solid #2c2c2c; }
+	.ex-head { margin-bottom: 16px; }
+	.ex-head h3 { font-size: clamp(24px, 2.6vw, 32px); font-weight: 600; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 8px; }
+	.ex-head p { margin: 0; }
+	.ex-note { color: var(--f-muted); }
+	.frame { border-radius: 6px; overflow: hidden; aspect-ratio: 3 / 2; background: var(--f-board); position: relative; box-shadow: 0 0 0 1px #000, 0 18px 48px rgba(0, 0, 0, 0.5); }
+	.wide .frame { aspect-ratio: 16 / 9; }
+	/* The square one is as tall as a wide one, not as wide (it would not fit the screen), and centred. */
+	.square .frame, .square .readout { width: min(100%, 666px); margin-inline: auto; }
+	.square .frame { aspect-ratio: 1; }
+	.frame :global(img) { width: 100%; height: 100%; object-fit: cover; display: block; }
+	.frame :global(.compare.is-live) { height: 100%; }
+	/* A reference image, shown small in a corner of its example. */
+	.ref { position: absolute; top: 12px; right: 12px; width: 22%; pointer-events: none; border-radius: 6px; overflow: hidden; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85), 0 6px 18px rgba(0, 0, 0, 0.5); }
+	.frame .ref :global(img) { height: auto; aspect-ratio: 3 / 2; }
+	.ref span { position: absolute; left: 6px; bottom: 6px; padding: 2px 6px; border-radius: 4px; font-size: 11px; color: #fff; background: rgba(0, 0, 0, 0.6); }
+
+	/* The panel's readout, right under the photo: the same field and greys as the Fulla panel in the hero. */
+	.readout { margin-top: 12px; display: flex; align-items: center; gap: 12px 32px; background: var(--f-panel); border: 1px solid #0e0e0e; border-radius: 10px; padding: 12px; }
+	.ex-prompt { flex: 1; background: var(--f-field); border: 1px solid var(--f-line); border-radius: 8px; padding: 10px 12px; color: var(--f-ink); font-size: 15px; line-height: 1.45; }
+	.ex-prompt.empty { color: var(--f-muted); }
+	.facts { flex: none; margin: 0; padding-right: 8px; display: flex; gap: 12px 28px; }
+	.facts dt { font-size: 12px; color: var(--f-muted); }
+	.facts dd { margin: 2px 0 0; font-size: 15px; color: var(--f-ink); font-variant-numeric: tabular-nums lining-nums; white-space: nowrap; }
+	.square .readout { flex-direction: column; align-items: stretch; }
+	.square .facts { padding: 0 4px; }
 
 	/* Why: a properties list. */
 	.props { border-top: 1px solid var(--f-line); }
@@ -336,55 +415,12 @@ const jsonLd = [
 	.card { background: #262626; border: 1px solid var(--f-line); border-radius: 14px; padding: clamp(20px, 3vw, 32px); }
 	.card.fulla { background: #2c2c2c; border-color: #4a4a4a; }
 	.card h3 { font-size: 15px; font-weight: 600; color: var(--f-muted); margin-bottom: 18px; }
-	dl { margin: 0; display: grid; gap: 18px; }
-	dt { font-size: 14px; color: var(--f-muted); }
-	dd { margin: 2px 0 0; color: var(--f-ink); }
+	.cost dl { margin: 0; display: grid; gap: 18px; }
+	.cost dt { font-size: 14px; color: var(--f-muted); }
+	.cost dd { margin: 2px 0 0; color: var(--f-ink); }
 	.big { font-size: clamp(28px, 3vw, 40px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; }
 	.note { margin-top: 18px; font-size: 14px; color: var(--f-muted); }
 	.after-cta { margin-top: 36px; }
-
-	/* Examples: one at a time, an arrow on each side named after the example it leads to.
-	   Without JavaScript, a sideways scroll. On a wide screen every frame has the same height (--h,
-	   or less when a 16:9 frame would not fit the reel), so the arrows never move. */
-	.carousel { --h: min(62vh, 560px); display: grid; grid-template-columns: 130px minmax(0, 1fr) 130px; gap: 0 24px; align-items: start; }
-	.reel { grid-column: 2; grid-row: 1; display: grid; grid-auto-flow: column; grid-auto-columns: 100%; gap: 48px; overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; container-type: inline-size; }
-	.reel:focus { outline: none; }
-	.is-live .reel { scrollbar-width: none; }
-	.is-live .reel::-webkit-scrollbar { display: none; }
-	.ex { scroll-snap-align: start; margin: 0; display: flex; justify-content: center; }
-	.ex-in { --fit: min(var(--h), 100cqw * 9 / 16); width: calc(var(--fit) * 3 / 2); }
-	.wide .ex-in { width: calc(var(--fit) * 16 / 9); }
-	.square .ex-in { width: var(--fit); }
-	.nav { grid-row: 1; margin-top: calc(var(--fh, var(--h)) / 2 - 28px); display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 4px; background: none; border: 0; border-radius: 8px; color: var(--f-ink-2); font: inherit; font-size: 14px; line-height: 1.3; text-align: center; cursor: pointer; }
-	.nav.prev { grid-column: 1; }
-	.nav.next { grid-column: 3; }
-	.nav[hidden] { display: none; }
-	.nav:hover { color: var(--f-ink); }
-	/* Light disc, dark arrow: the controls must stand out from the page. */
-	.arrow { display: grid; place-items: center; width: 56px; height: 56px; flex: none; border-radius: 50%; background: var(--f-ink); color: #1c1c1c; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45); transition: background-color 0.15s, transform 0.15s; }
-	.arrow svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
-	.nav:hover .arrow { background: #fff; transform: scale(1.06); }
-	@media (max-width: 899px) {
-		.carousel { grid-template-columns: 1fr 1fr; gap: 20px 12px; }
-		.reel { grid-column: 1 / -1; }
-		.ex-in, .wide .ex-in, .square .ex-in { width: 100%; }
-		.nav { grid-row: 2; margin-top: 0; flex-direction: row; gap: 12px; text-align: left; }
-		.nav.prev { grid-column: 1; justify-self: start; }
-		.nav.next { grid-column: 2; justify-self: end; flex-direction: row-reverse; text-align: right; }
-		.arrow { width: 44px; height: 44px; }
-		.arrow svg { width: 22px; height: 22px; }
-	}
-	.frame { border-radius: 12px; overflow: hidden; aspect-ratio: 3 / 2; background: var(--f-board); position: relative; box-shadow: 0 0 0 1px #101010; }
-	.wide .frame { aspect-ratio: 16 / 9; }
-	.square .frame { aspect-ratio: 1; }
-	/* A reference image, shown small in a corner of its example. */
-	.ref { position: absolute; top: 12px; right: 12px; width: 22%; pointer-events: none; border-radius: 6px; overflow: hidden; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85), 0 6px 18px rgba(0, 0, 0, 0.5); }
-	.frame .ref :global(img) { height: auto; aspect-ratio: 3 / 2; }
-	.ref span { position: absolute; left: 6px; bottom: 6px; padding: 2px 6px; border-radius: 4px; font-size: 11px; color: #fff; background: rgba(0, 0, 0, 0.6); }
-	.frame :global(img) { width: 100%; height: 100%; object-fit: cover; display: block; }
-	.frame :global(.compare.is-live) { height: 100%; }
-	.ex h3 { font-size: 20px; font-weight: 600; margin: 16px 0 6px; letter-spacing: -0.01em; }
-	.ex p { margin: 0; font-size: 15px; }
 
 	.closing { text-align: center; }
 	.closing h2 { margin: 0 auto; max-width: 16ch; font-size: clamp(2.4rem, 5.4vw, 4.6rem); }
@@ -394,76 +430,34 @@ const jsonLd = [
 
 	@media (max-width: 900px) {
 		.intro, .steps, .cost, .prop { grid-template-columns: 1fr; }
-		.panel { width: 100%; max-width: 420px; margin: 0; }
+		.readout { flex-direction: column; align-items: stretch; }
+		.facts { padding: 0 4px; }
 	}
-	@media (prefers-reduced-motion: reduce) { .ants .k, .prompt :global(.caret) { animation: none; } }
+	@media (max-width: 560px) { .facts { flex-wrap: wrap; gap: 12px 32px; } }
+	@media (prefers-reduced-motion: reduce) { .ants .k { animation: none; } }
 </style>
 
 <script>
-	// Examples: the arrows move one example at a time, looping, and name the one they lead to.
-	// Swiping and the keyboard still scroll the reel; the arrows follow the example in view.
-	document.querySelectorAll<HTMLElement>('[data-carousel]').forEach((car) => {
-		const reel = car.querySelector<HTMLElement>('.reel')!;
-		const slides = [...reel.children] as HTMLElement[];
-		const prev = car.querySelector<HTMLButtonElement>('.prev')!;
-		const next = car.querySelector<HTMLButtonElement>('.next')!;
-		const titles = slides.map((s) => s.querySelector('h3')!.textContent!.trim());
-		const smooth = matchMedia('(prefers-reduced-motion: no-preference)').matches;
-		let cur = -1;
-		const left = (i: number) => slides[i].offsetLeft - slides[0].offsetLeft;
-		const go = (i: number) => reel.scrollTo({ left: left(i), behavior: smooth ? 'smooth' : 'auto' });
-		const wrap = (k: number) => (k + slides.length) % slides.length;
-		const label = (b: HTMLButtonElement, k: number, word: string) => {
-			b.querySelector('.nav-label')!.textContent = titles[k];
-			b.setAttribute('aria-label', `${word} example: ${titles[k]}`);
-		};
-		const update = () => {
-			let i = 0;
-			slides.forEach((_, k) => { if (Math.abs(left(k) - reel.scrollLeft) < Math.abs(left(i) - reel.scrollLeft)) i = k; });
-			car.style.setProperty('--fh', slides[i].querySelector<HTMLElement>('.frame')!.offsetHeight + 'px');
-			if (i === cur) return;
-			cur = i;
-			slides.forEach((s, k) => (s.inert = k !== i));
-			label(prev, wrap(i - 1), 'Previous');
-			label(next, wrap(i + 1), 'Next');
-		};
-		car.setAttribute('role', 'region');
-		car.setAttribute('aria-roledescription', 'carousel');
-		car.setAttribute('aria-label', 'Examples');
-		slides.forEach((s, k) => {
-			s.setAttribute('role', 'group');
-			s.setAttribute('aria-roledescription', 'slide');
-			s.setAttribute('aria-label', `${k + 1} of ${slides.length}: ${titles[k]}`);
-		});
-		prev.addEventListener('click', () => go(wrap(cur - 1)));
-		next.addEventListener('click', () => go(wrap(cur + 1)));
-		let t = 0;
-		reel.addEventListener('scroll', () => { clearTimeout(t); t = window.setTimeout(update, 80); });
-		addEventListener('resize', update);
-		prev.hidden = next.hidden = false;
-		car.classList.add('is-live');
-		update();
-	});
-
 	// One orchestrated moment: select, type, generate, reveal. Then the slider is the visitor's.
 	const doc = document.getElementById('doc')!;
 	const ants = document.getElementById('ants')!;
 	const prompt = document.getElementById('prompt')!;
 	const gen = document.getElementById('gen')!;
 	const status = document.getElementById('status')!;
-	const layer = document.getElementById('newlayer')!;
+	const strip = document.getElementById('strip')!;
 	const cmp = document.getElementById('hero-compare')!;
 	const range = cmp.querySelector('input')!;
+	// Through the input event, so the slider also shows or hides its labels.
 	const setPos = (v: number) => {
 		range.value = String(v);
 		cmp.style.setProperty('--pos', v + '%');
+		range.dispatchEvent(new Event('input'));
 	};
 	const finish = () => {
 		ants.classList.remove('on');
-		layer.classList.add('on');
-		prompt.textContent = '';
-		prompt.innerHTML = '<span class="ph">Prompt left empty: remove what is selected</span>';
-		status.textContent = 'Done. Cost: $0.06';
+		prompt.textContent = 'Prompt left empty';
+		status.textContent = '';
+		strip.classList.remove('playing');
 		doc.classList.add('ready');
 		setPos(50);
 		setTimeout(() => cmp.classList.remove('is-animating'), 1000);
@@ -473,6 +467,8 @@ const jsonLd = [
 		finish();
 	} else {
 		cmp.classList.add('is-animating');
+		strip.classList.add('playing');
+		prompt.textContent = 'Describe what to add, or leave empty to remove';
 		(async () => {
 			await wait(500);
 			ants.classList.add('on');

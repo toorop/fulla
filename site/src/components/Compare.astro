@@ -47,6 +47,7 @@ const load = priority ? { loading: 'eager' as const, decoding: 'async' as const 
 	<figure class="c-before"><Picture src={before} alt={beforeAlt} widths={widths} sizes={sizes} formats={['avif', 'webp']} {...load} fetchpriority={priority ? 'high' : undefined} /><figcaption>Before</figcaption></figure>
 	{reference && <figure class="c-ref"><Picture src={reference.image} alt={reference.alt} widths={[640, 1000, 1400, 1800].filter((w) => w <= reference.image.width)} sizes={sizes} formats={['avif', 'webp']} /><figcaption>Reference</figcaption></figure>}
 	<span class="c-handle" aria-hidden="true"></span>
+	<span class="c-grip" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9.5 7.5v9L4.5 12zM14.5 7.5v9l5-4.5z"></path></svg></span>
 	<input type="range" min="0" max="100" value={start} aria-label="Compare before and after" />
 	{switchable && (
 		<div class="c-variants" role="group" aria-label="Image shown" hidden>
@@ -65,7 +66,7 @@ const load = priority ? { loading: 'eager' as const, decoding: 'async' as const 
 	figcaption { position: absolute; top: 10px; left: 10px; padding: 3px 8px; border-radius: 4px; font-size: 12px; color: #fff; background: rgba(0, 0, 0, 0.55); }
 	.c-before { order: -1; }
 	.c-ref { order: 2; }
-	input, .c-handle { display: none; }
+	input, .c-handle, .c-grip { display: none; }
 
 	/* With JavaScript: stacked, the before image clipped at the split. */
 	.compare.is-live { display: block; overflow: hidden; touch-action: pan-y; }
@@ -77,15 +78,27 @@ const load = priority ? { loading: 'eager' as const, decoding: 'async' as const 
 	.is-live .c-ref { visibility: hidden; background: var(--f-board); }
 	.is-live .c-ref :global(img) { object-fit: contain; }
 	.is-live.show-ref .c-ref { visibility: visible; }
-	.is-live.show-ref .c-handle, .is-live.show-ref input { display: none; }
+	.is-live.show-ref .c-handle, .is-live.show-ref .c-grip, .is-live.show-ref input { display: none; }
 	.is-live figure :global(img) { height: 100%; object-fit: cover; user-select: none; -webkit-user-drag: none; }
 	.is-live .c-before { clip-path: inset(0 calc(100% - var(--pos)) 0 0); }
-	.is-live figcaption { display: none; }
+	/* Live labels sit in the bottom corners: "Before" is clipped with its image, the others are
+	   uncovered with theirs, so a label is only seen on the side that shows its picture. */
+	.is-live figcaption { top: auto; bottom: 10px; pointer-events: none; }
+	.is-live .c-after figcaption { left: auto; right: 10px; }
+	.is-live .c-alt:not(.on) figcaption { display: none; }
+	.cap-b-off .c-before figcaption, .cap-a-off .c-after figcaption { visibility: hidden; }
 	.is-live input { display: block; position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; appearance: none; -webkit-appearance: none; }
 	.is-live .c-handle { display: block; position: absolute; top: 0; bottom: 0; left: var(--pos); width: 0; pointer-events: none; }
-	.c-handle::before { content: ''; position: absolute; top: 0; bottom: 0; left: -1px; width: 2px; background: #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35); }
-	.c-handle::after { content: ''; position: absolute; top: 50%; left: -14px; width: 28px; height: 28px; margin-top: -14px; border-radius: 6px; background: #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); }
-	.compare:has(input:focus-visible) .c-handle::after { outline: 2px solid var(--f-blue); outline-offset: 3px; }
+	/* The handle: a line and a round grip with two arrows that say "drag sideways". It turns blue
+	   while it is held or has the keyboard focus: blue marks what is being handled. */
+	.c-handle::before { content: ''; position: absolute; top: 0; bottom: 0; left: -1px; width: 2px; background: #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3); }
+	/* The grip follows the line but stays whole inside the frame, even with the split at an edge. */
+	.is-live .c-grip { display: grid; }
+	.c-grip { position: absolute; top: 50%; left: clamp(0px, calc(var(--pos) - 21px), calc(100% - 42px)); pointer-events: none; width: 42px; height: 42px; margin-top: -21px; display: grid; place-items: center; border-radius: 50%; background: #fff; color: #1c1c1c; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25), 0 3px 12px rgba(0, 0, 0, 0.45); }
+	.c-grip svg { width: 24px; height: 24px; fill: currentColor; }
+	.compare:has(input:active) .c-handle::before, .compare:has(input:focus-visible) .c-handle::before { background: var(--f-blue); }
+	.compare:has(input:active) .c-grip, .compare:has(input:focus-visible) .c-grip { background: var(--f-blue); }
+	.compare:has(input:focus-visible) .c-grip { outline: 2px solid var(--f-blue); outline-offset: 3px; }
 	/* The variant switch, on the photo, above the slider's input. */
 	.c-variants { position: absolute; top: 10px; left: 10px; z-index: 2; display: flex; flex-wrap: wrap; gap: 2px; max-width: calc(100% - 20px); padding: 3px; border-radius: 18px; background: rgba(24, 24, 24, 0.8); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4); }
 	.c-variants[hidden] { display: none; }
@@ -94,17 +107,26 @@ const load = priority ? { loading: 'eager' as const, decoding: 'async' as const 
 	.c-variants button[aria-pressed='true'] { background: var(--f-ink); color: #1c1c1c; }
 	@media (prefers-reduced-motion: no-preference) {
 		.compare.is-animating .c-before { transition: clip-path 0.9s cubic-bezier(0.6, 0, 0.2, 1); }
-		.compare.is-animating .c-handle { transition: left 0.9s cubic-bezier(0.6, 0, 0.2, 1); }
+		.compare.is-animating .c-handle, .compare.is-animating .c-grip { transition: left 0.9s cubic-bezier(0.6, 0, 0.2, 1); }
 	}
 </style>
 
 <script>
 	document.querySelectorAll<HTMLElement>('[data-compare]').forEach((el) => {
 		const range = el.querySelector('input')!;
-		const set = () => el.style.setProperty('--pos', range.value + '%');
+		// A label is hidden when its side of the split is too narrow to hold it whole.
+		const fits = (cap: HTMLElement | null, room: number) => !cap || room >= cap.offsetWidth + 20;
+		const set = () => {
+			el.style.setProperty('--pos', range.value + '%');
+			const x = (el.clientWidth * Number(range.value)) / 100;
+			const after = el.querySelector<HTMLElement>('.c-alt.on figcaption') ?? el.querySelector<HTMLElement>('.c-after figcaption');
+			el.classList.toggle('cap-b-off', !fits(el.querySelector('.c-before figcaption'), x));
+			el.classList.toggle('cap-a-off', !fits(after, el.clientWidth - x));
+		};
 		el.classList.add('is-live');
 		set();
 		range.addEventListener('input', set);
+		addEventListener('resize', set);
 		const switcher = el.querySelector<HTMLElement>('.c-variants');
 		if (switcher) {
 			const buttons = [...switcher.querySelectorAll('button')];
@@ -113,6 +135,7 @@ const load = priority ? { loading: 'eager' as const, decoding: 'async' as const 
 					buttons.forEach((o) => o.setAttribute('aria-pressed', String(o === b)));
 					el.classList.toggle('show-ref', b.dataset.v === 'ref');
 					if (b.dataset.v !== 'ref') el.querySelectorAll('.c-alt').forEach((f) => f.classList.toggle('on', f.getAttribute('data-v') === b.dataset.v));
+					set();
 				}),
 			);
 			switcher.hidden = false;

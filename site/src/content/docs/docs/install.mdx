@@ -9,12 +9,15 @@ head:
     attrs: { property: og:title, content: "Install Fulla, the generative fill plugin for Photoshop" }
 ---
 import AskAssistant from '../../../components/AskAssistant.astro';
+import AutoDownload from '../../../components/AutoDownload.astro';
+
+<AutoDownload />
 
 Fulla runs in **Photoshop 27.11 or later** (Help > About Photoshop shows your version; on macOS, Photoshop > About Photoshop), on Windows and macOS. Install it with the Creative Cloud app; the Windows installer is there for computers where that isn't possible.
 
 ## With the Creative Cloud app (Windows and macOS)
 
-1. Download `fulla-<version>.ccx` from the [releases page](https://github.com/toorop/fulla/releases).
+1. Download [fulla.ccx](https://github.com/toorop/fulla/releases/latest/download/fulla.ccx), the latest version.
 2. Double-click it. Creative Cloud says the plugin comes from a third-party developer: click **OK**. The first time you install such a plugin, Windows may ask for administrator permission.
 3. In Photoshop, open **Plugins > Fulla**.
 
@@ -22,7 +25,7 @@ No administrator rights on this computer? Use the Windows installer below.
 
 ## Without the Creative Cloud app or administrator rights (Windows)
 
-1. Download `fulla-<version>-windows.zip` from the [releases page](https://github.com/toorop/fulla/releases) and unzip it.
+1. Download [fulla-windows.zip](https://github.com/toorop/fulla/releases/latest/download/fulla-windows.zip), the latest version, and unzip it.
 2. Close Photoshop.
 3. Double-click **Install Fulla.bat**. No admin rights are needed.
 4. Start Photoshop and open **Plugins > Fulla**.

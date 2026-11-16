@@ -1,7 +1,8 @@
 ---
 // Starlight's social links, then the Download button, always visible in the header.
 import Default from '@astrojs/starlight/components/SocialIcons.astro';
+import { DOWNLOAD_PAGE } from '../../lib/download.mjs';
 ---
 
 <Default />
-<a class="f-download" data-umami-event="install-cta" data-umami-event-from="docs-header" href="/docs/install/">Download</a>
+<a class="f-download" data-umami-event="install-cta" data-umami-event-from="docs-header" href={DOWNLOAD_PAGE}>Download</a>

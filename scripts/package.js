@@ -2,6 +2,8 @@
 //   dist/fulla-<version>.ccx          zip of plugin/ with manifest.json at the root (Creative Cloud double-click)
 //   dist/fulla-<version>-windows.zip  Fulla/ folder with the plugin, installer and "Install Fulla.bat"
 //                                        for Photoshop without the Creative Cloud app
+// plus the same two under names without the version (fulla.ccx, fulla-windows.zip), so the site's
+// Download links can point to github.com/.../releases/latest/download/<name> and never go stale.
 
 const fs = require("node:fs");
 const path = require("node:path");
@@ -84,6 +86,11 @@ function zip(files) {
   return Buffer.concat([...locals, cenBuf, end]);
 }
 
+/** Names of the release files: versioned, and the same files without the version (latest). */
+function releaseNames(version) {
+  return { ccx: `fulla-${version}.ccx`, zip: `fulla-${version}-windows.zip`, latestCcx: "fulla.ccx", latestZip: "fulla-windows.zip" };
+}
+
 function main() {
   const manifest = JSON.parse(fs.readFileSync(path.join(SRC, "manifest.json"), "utf8"));
   const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
@@ -112,11 +119,11 @@ function main() {
 
   fs.mkdirSync(DIST, { recursive: true });
   for (const f of fs.readdirSync(DIST)) fs.rmSync(path.join(DIST, f));
-  const base = `fulla-${manifest.version}`;
-  fs.writeFileSync(path.join(DIST, `${base}.ccx`), ccx);
-  fs.writeFileSync(path.join(DIST, `${base}-windows.zip`), winZip);
-  console.log(`Built dist/${base}.ccx (${(ccx.length / 1024).toFixed(1)} KB) and dist/${base}-windows.zip (${(winZip.length / 1024).toFixed(1)} KB), ${files.length} plugin files`);
+  const names = releaseNames(manifest.version);
+  for (const name of [names.ccx, names.latestCcx]) fs.writeFileSync(path.join(DIST, name), ccx);
+  for (const name of [names.zip, names.latestZip]) fs.writeFileSync(path.join(DIST, name), winZip);
+  console.log(`Built dist/${names.ccx} (${(ccx.length / 1024).toFixed(1)} KB) and dist/${names.zip} (${(winZip.length / 1024).toFixed(1)} KB), ${files.length} plugin files, and copies named ${names.latestCcx} and ${names.latestZip}`);
 }
 
 if (require.main === module) main();
-module.exports = { zip, walk };
+module.exports = { zip, walk, releaseNames };

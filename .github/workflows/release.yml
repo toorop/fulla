@@ -26,11 +26,11 @@ jobs:
           node-version: 24
       - name: Check the tag against the versions, take the notes from the Changelog
         run: node scripts/release-notes.js "$GITHUB_REF_NAME" "$RUNNER_TEMP/notes.md"
-      - name: Build the .ccx and the Windows zip
+      - name: Build the .ccx and the Windows zip (versioned, and copies without the version for the site's Download links)
         run: npm run package
       - name: Checksums
         working-directory: dist
-        run: sha256sum fulla-* > SHA256SUMS.txt && cat SHA256SUMS.txt
+        run: sha256sum fulla* > SHA256SUMS.txt && cat SHA256SUMS.txt
       - name: Create the draft release
         env:
           GH_TOKEN: ${{ github.token }}

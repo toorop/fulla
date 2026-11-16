@@ -3,10 +3,10 @@ layout: ../layouts/Article.astro
 title: Photoshop generative credits, explained
 metaTitle: 'Photoshop generative credits explained: cost per fill, per plan'
 description: How many generative credits a Photoshop generative fill uses, per model and size, how many each plan includes, and what a credit costs in dollars.
-updated: 2026-11-13
+updated: 2026-11-16
 ---
 
-Photoshop's generative fill is paid in generative credits. A fill uses 1 to 40 credits depending on the model and the size, plans include a monthly allowance that doesn't carry over, and extra credits are sold as monthly add-ons. At the smallest add-on, a credit is worth about half a cent, so a Nano Banana 2 fill costs about $0.10.
+Photoshop's generative fill is paid in generative credits. A fill uses 1 to 40 credits depending on the model and the size, plans include a monthly allowance that doesn't carry over, and extra credits are sold as monthly add-ons. At the smallest add-on, a credit is worth about half a cent, so a Nano Banana 2 fill costs about $0.10, if you use every credit you pay for.
 
 ## How many credits does a generative fill use?
 
@@ -21,6 +21,8 @@ Photoshop's generative fill is paid in generative credits. A fill uses 1 to 40 c
 | Nano Banana Pro | 40 |
 
 Adobe calls the partner models "premium" and gives their rates "for a limited time". For Gemini models, it says they use 10 to 40 credits depending on the output size, without publishing the size thresholds. The Remove tool is free.
+
+The size is not yours to choose: Photoshop's generative fill has no size setting, for any model (checked in Photoshop 28.0.1 beta on 16 November 2026). Photoshop picks it, and with it whether a Nano Banana 2 fill uses 20 or 30 credits.
 
 ## How many credits does each plan include?
 
@@ -47,13 +49,17 @@ Extra credits are sold only as monthly subscriptions:
 
 At the smallest add-on, a Nano Banana 2 fill (20 credits) costs about $0.10, a 4K one (30 credits) about $0.15, and a Nano Banana Pro fill about $0.20. With 250 credits a month, that is about 12 Nano Banana 2 fills, or 250 with Firefly Fill & Expand.
 
+These prices assume you use every credit. Credits you don't use are lost, so a fill costs more when you make fewer: with the 2,000-credit add-on and 25 Nano Banana 2 fills in a month, each fill costs about $0.40.
+
 ## How do I see what a fill will cost?
 
-Since spring 2026, hovering over Generate in Photoshop shows the estimated number of credits, if tooltips are turned on in the notification settings. The cost stays in credits, not in money.
+You can't, not exactly. Since spring 2026, hovering over Generate in Photoshop shows a range of credits, if tooltips are turned on in the notification settings: with Nano Banana 2, between 10 and 30 credits, three times as much at the top as at the bottom (Photoshop 28.0.1 beta, 16 November 2026).
+
+It never shows money. In dollars, the next fill costs nothing while your plan has credits left. Once they run out, it takes a monthly add-on, at least $9.99, whose unused credits are lost at the end of each month.
 
 ## Is there another way to pay?
 
-With [Fulla](/), a free plugin, you pay the AI service you connect per image, without a plan or credits. A Nano Banana 2.1 image measured $0.048 at 1K and $0.063 at 2K on 10 November 2026, and the panel shows the cost of every run in dollars. See [Fulla vs Photoshop's generative fill](/fulla-vs-photoshop-generative-fill/).
+With [Fulla](/), a free plugin, you pay the AI service you connect per image, without a plan or credits. A Nano Banana 2.1 image measured $0.048 at 1K and $0.063 at 2K on 10 November 2026, and the panel shows the cost of every run in dollars. You also choose the size: Auto, 1K, 2K or 4K, depending on the model (see [Resolution](/docs/generative-fill/resolution/)). See [Fulla vs Photoshop's generative fill](/fulla-vs-photoshop-generative-fill/).
 
 ## Sources
 

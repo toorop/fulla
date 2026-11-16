@@ -4,7 +4,7 @@
   "private": true,
   "description": "Generative fill, remove, expand and variations in Photoshop using your own OpenAI or Gemini API key.",
   "license": "MIT",
-  "marketplaceId": "",
+  "marketplaceId": "bd8f7dbc",
   "scripts": {
     "test": "node --test \"test/**/*.test.js\"",
     "package": "node scripts/package.js"

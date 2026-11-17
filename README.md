@@ -28,7 +28,9 @@ Models: Nano Banana 2.1 (recommended), Nano Banana Pro, GPT Image, Qwen Image, t
 
 You need **Photoshop 27.11 or later**.
 
-**With the Creative Cloud app (Windows and macOS):** download `fulla-<version>.ccx` from [Releases](https://github.com/toorop/fulla/releases/latest) and double-click it. Creative Cloud warns that the plugin comes from a third-party developer; the first time, Windows may ask for administrator rights.
+**From Adobe Exchange (recommended):** open [Fulla on Adobe Exchange](https://exchange.adobe.com/apps/cc/bd8f7dbc) and click **Free**; the Creative Cloud app installs it. Already have Fulla from GitHub? Uninstall it first, then connect your AI service again: the two are separate plugins and don't share keys or settings.
+
+**From GitHub, with the Creative Cloud app (Windows and macOS):** new versions come out here first, before Adobe's review. Download `fulla-<version>.ccx` from [Releases](https://github.com/toorop/fulla/releases/latest) and double-click it. Creative Cloud warns that the plugin comes from a third-party developer; the first time, Windows may ask for administrator rights.
 
 **Without the Creative Cloud app or administrator rights (Windows):** download `fulla-<version>-windows.zip`, unzip it, close Photoshop and double-click **Install Fulla.bat**. **Uninstall Fulla.bat** removes it again.
 

@@ -3,7 +3,7 @@
 // Markdown (src/pages/*.md) with this layout. A draft banner shows until the figures are
 // checked again before release.
 import Base from './Base.astro';
-import { DOWNLOAD_PAGE } from '../lib/download.mjs';
+import { EXCHANGE } from '../lib/download.mjs';
 
 interface Frontmatter {
 	title: string;
@@ -49,7 +49,7 @@ const jsonLd = [
 		<div class="prose"><slot /></div>
 		{frontmatter.kind !== 'legal' && <aside class="cta">
 			<p>Fulla is free. Try it on your next photo.</p>
-			<a class="btn btn-solid" data-umami-event="install-cta" data-umami-event-from="article" href={DOWNLOAD_PAGE}>Download Fulla, free</a>
+			<a class="btn btn-solid" data-umami-event="install-cta" data-umami-event-from="article" href={EXCHANGE}>Get Fulla, free</a>
 		</aside>}
 	</article>
 </Base>

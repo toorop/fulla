@@ -39,4 +39,4 @@ Fulla sends the whole photo along as a reference, so the model can judge scale a
 
 ## Online only, Photoshop 27.11 or later
 
-Every image is made by an online AI service: Fulla needs an internet connection and an account with credit. It runs in Photoshop 27.11 or later, including the Photoshop beta, not in older versions. The Windows installer is for Windows only; on macOS, [install](/docs/install/) the `.ccx` with the Creative Cloud app.
+Every image is made by an online AI service: Fulla needs an internet connection and an account with credit. It runs in Photoshop 27.11 or later, including the Photoshop beta, not in older versions. The Windows installer is for Windows only; on macOS, [install](/docs/install/) Fulla from Adobe Exchange or with the `.ccx`, both through the Creative Cloud app.

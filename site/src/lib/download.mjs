@@ -4,5 +4,5 @@ const LATEST = 'https://github.com/toorop/fulla/releases/latest/download';
 export const DOWNLOAD_CCX = `${LATEST}/fulla.ccx`;
 export const DOWNLOAD_ZIP = `${LATEST}/fulla-windows.zip`;
 
-/** Where the Download buttons go: the Install page, which starts the download of the .ccx. */
-export const DOWNLOAD_PAGE = '/docs/install/?download';
+/** Fulla's listing on Adobe Exchange, where the site's "Get Fulla" buttons go. */
+export const EXCHANGE = 'https://exchange.adobe.com/apps/cc/bd8f7dbc';

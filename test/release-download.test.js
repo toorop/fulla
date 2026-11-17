@@ -6,7 +6,7 @@ const path = require("node:path");
 // The site's Download links point to github.com/.../releases/latest/download/<name>: every release
 // must attach files under those exact names, or the links break at the next version.
 const { releaseNames } = require("../scripts/package");
-const { DOWNLOAD_CCX, DOWNLOAD_ZIP } = require("../site/src/lib/download.mjs");
+const { DOWNLOAD_CCX, DOWNLOAD_ZIP, EXCHANGE } = require("../site/src/lib/download.mjs");
 const { linkEvent } = require("../site/src/lib/analytics.mjs");
 
 test("the site's Download links point to files every release attaches, and count as downloads", () => {
@@ -21,4 +21,9 @@ test("the site's Download links point to files every release attaches, and count
 
   assert.equal(linkEvent(DOWNLOAD_CCX, "fulla.dppst.com"), "download");
   assert.equal(linkEvent(DOWNLOAD_ZIP, "fulla.dppst.com"), "download");
+});
+
+test("the site's Get Fulla buttons go to the Adobe Exchange listing of the Marketplace build", () => {
+  const { marketplaceId } = require("../package.json");
+  assert.equal(EXCHANGE, `https://exchange.adobe.com/apps/cc/${marketplaceId}`);
 });

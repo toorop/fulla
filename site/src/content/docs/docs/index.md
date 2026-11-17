@@ -9,7 +9,7 @@ head:
     attrs: { property: og:title, content: "Fulla guide: generative fill in Photoshop with your own AI" }
 ---
 
-Fulla is a free, open-source Photoshop plugin for generative fill. You select an area, say what you want, and click **Generate**, as with Photoshop's own generative fill. Fulla uses your own account with an AI service, and you pay that service per image: no subscription, no credits.
+Fulla is a free, open-source generative fill plugin for Photoshop. You select an area, say what you want, and click **Generate**, as with Photoshop's own generative fill. Fulla uses your own account with an AI service, and you pay that service per image: no subscription, no credits.
 
 ## Where to start
 

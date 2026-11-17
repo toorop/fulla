@@ -14,7 +14,7 @@ Adobe offers Nano Banana 2 and Nano Banana Pro as partner models in Photoshop's 
 
 ## With Fulla
 
-Fulla is a free, open-source Photoshop plugin. Its recommended model is **Nano Banana 2.1**, a newer version than the Nano Banana 2 in Photoshop's generative fill; it also offers **Nano Banana Pro** and, with a Google key, **Nano Banana 2 Lite**. You pay per image, about 5 cents for Nano Banana 2.1 at 1K or 2K, and see the cost of each run in dollars.
+Fulla is a free, open-source plugin for Photoshop. Its recommended model is **Nano Banana 2.1**, a newer version than the Nano Banana 2 in Photoshop's generative fill; it also offers **Nano Banana Pro** and, with a Google key, **Nano Banana 2 Lite**. You pay per image, about 5 cents for Nano Banana 2.1 at 1K or 2K, and see the cost of each run in dollars.
 
 | Model in Fulla | Through OpenRouter | With a Google key |
 | --- | --- | --- |

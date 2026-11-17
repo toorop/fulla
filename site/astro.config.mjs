@@ -14,7 +14,7 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: 'Fulla',
-			description: 'Fulla is a free Photoshop plugin for generative fill, paid per image to the AI service you connect.',
+			description: 'Fulla is a free generative fill plugin for Photoshop, paid per image to the AI service you connect.',
 			logo: { light: './src/assets/logo-light.svg', dark: './src/assets/logo.svg' },
 			favicon: '/favicon.svg',
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/toorop/fulla' }],

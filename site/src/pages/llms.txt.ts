@@ -9,7 +9,7 @@ export const GET: APIRoute = async () => {
 	const lines = [
 		'# Fulla',
 		'',
-		'> Fulla is a free, open-source Photoshop plugin for generative fill. Select an area, say what you want, click Generate, as with Photoshop\'s own generative fill. It uses your own account with an AI service (OpenRouter, Google or OpenAI) and you pay that service per image: no subscription, no credits. MIT licence.',
+		'> Fulla is a free, open-source generative fill plugin for Photoshop. Select an area, say what you want, click Generate, as with Photoshop\'s own generative fill. It uses your own account with an AI service (OpenRouter, Google or OpenAI) and you pay that service per image: no subscription, no credits. MIT licence.',
 		'',
 		`The whole guide in one file: ${SITE}/llms-full.txt`,
 		'',

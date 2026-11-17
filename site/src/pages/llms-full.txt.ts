@@ -6,7 +6,7 @@ import { docsInOrder } from '../lib/docs-order';
 
 export const GET: APIRoute = async () => {
 	const docs = docsInOrder(await getCollection('docs'));
-	const intro = '# Fulla, the complete guide\n\nFulla is a free, open-source Photoshop plugin for generative fill, paid per image to the AI service you connect. Every page of the guide follows.\n';
+	const intro = '# Fulla, the complete guide\n\nFulla is a free, open-source generative fill plugin for Photoshop, paid per image to the AI service you connect. Every page of the guide follows.\n';
 	const body = [intro, ...docs.map(pageMarkdown)].join('\n---\n\n');
 	return new Response(body, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
 };

@@ -6,7 +6,7 @@ updated: 2026-11-16
 kind: about
 ---
 
-Fulla is a free, open-source Photoshop plugin for generative fill, made by Stéphane Depierrepont, a developer and photographer.
+Fulla is a free, open-source generative fill plugin for Photoshop, made by Stéphane Depierrepont, a developer and photographer.
 
 ## Who makes it?
 

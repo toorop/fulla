@@ -1,6 +1,6 @@
 ---
 title: What it costs
-description: Fulla is free; you pay the AI service per image, from about 5 cents, and the panel shows the cost of every run.
+description: Fulla is free; you pay the AI service per image, about 5 cents at 1K or 2K and 12 at 4K, and the panel shows the cost of every run.
 # Tab and share title, richer than the page heading for search results.
 head:
   - tag: title
@@ -20,6 +20,8 @@ It depends on the model and the size. With Nano Banana 2.1, the recommended mode
 | 1K | about $0.05 |
 | 2K | about $0.06 |
 | 4K | about $0.12 |
+
+For pictures shown on the web, 1K or 2K is plenty. 4K, about twice the price, is for print or a large area. On a large selection, **Auto** picks 4K: if your picture is for the web, choose 1K or 2K yourself in the [Resolution](/docs/generative-fill/resolution/) setting.
 
 Other models cost more or less. At 2K, MiniMax H3 Image costs about $0.04 and Seedream 5.5 about $0.06 (OpenRouter, 14 November 2026). See [Models](/docs/models/).
 

@@ -15,6 +15,12 @@ import large from '../../../../assets/examples/d5-large.jpg';
 
 A few habits make the difference between a fill that shows and one that doesn't.
 
+## Write a detailed prompt
+
+Say everything you want. The models behind Fulla read long prompts well and keep what matters, so a detailed prompt almost always does better than a few words: what should appear or change, what must stay as it is, and the context when it counts. Unlike Photoshop's own generative fill, where a few words are the habit, you can't say too much here.
+
+Two things to avoid: details that contradict each other, and naming something only to forbid it, which can make some models draw it. Say what you want instead. Nano Banana 2.1 also followed our prompts written in French.
+
 ## Select generously
 
 Leave room around what you add or remove.
@@ -37,9 +43,13 @@ Same photo, same reference image and prompt: “Put the mug from the reference i
 
 The model doesn't always guess them. Add them to your prompt: `put the mug from ref 1 on the table, match the light, the perspective and the depth of field`.
 
-## Describe the change, not the photo
+## Give context, not a description of the photo
 
-Say what should appear or change in the selection, not the style of the whole photo: Fulla already sends the photo around it.
+Fulla already sends the photo around the selection, so there is no need to describe what is visible. What helps is what the model can't see: that you are restoring an old print, that the grain must stay, that the face must remain the same person.
+
+## When in doubt, use Nano Banana 2.1
+
+Some models take words too literally. Asked to fill the rounded corners of a scanned print “using the reference image”, with no reference image added, Qwen Image 3 took the photo itself as the reference and pasted all of it into the small corner. With exactly the same prompt, Nano Banana 2.1 filled the corners well. Still, mention a reference image only when you have added one. Nano Banana 2.1 is the most reliable model we have tried: if you'd rather not test models, stay with it. See [Models](/docs/models/).
 
 ## Use a reference for what was really there
 
